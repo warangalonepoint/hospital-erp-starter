@@ -1,2 +1,13 @@
 invoice_id,item,qty,price
-INV-001,Paracetamol,1,0.00
+INV-001,Paracetamol 500,1,40
+INV-001,Cough Syrup,1,120
+INV-001,Amoxicillin,1,290
+INV-002,ORS Pack,2,40
+INV-002,Paracetamol 500,2,40
+INV-003,Vitamins,1,150
+INV-004,Paracetamol 500,3,40
+INV-004,Amoxicillin,2,290
+INV-004,Gauze,5,10
+INV-005,ORS Pack,1,40
+INV-006,Cough Syrup,1,120
+INV-006,Vitamins,1,110
