@@ -1,35 +1,65 @@
+<!-- FILE: /pages/patient.html -->
 <!doctype html>
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Patients</title>
+  <title>Patient</title>
   <link rel="stylesheet" href="../styles/styles.css" />
 </head>
 <body>
-  <header class="app-topbar">
-    <nav class="nav">
-      <a class="link-back" href="./dashboard.html">← Dashboard</a>
-      <div class="spacer"></div>
-      <button class="pill" id="themeToggle">🌗</button>
-    </nav>
-  </header>
-  <main class="container">
-    <section class="panel">
-      <h2 style="margin-bottom:.25rem">Patients</h2>
-      <p>Stub page. Wire your data/API next.</p>
-      <div class="chart-block" style="margin-top:1rem"><h4>Placeholder</h4><div class="chart-placeholder"></div></div>
-    </section>
-  </main>
-  <script>
-    const root = document.documentElement;
-    const saved = localStorage.getItem('theme');
-    if (saved) root.setAttribute('data-theme', saved);
-    else if (window.matchMedia('(prefers-color-scheme: light)').matches) root.setAttribute('data-theme','light');
-    document.getElementById('themeToggle').onclick = () => {
-      const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-      root.setAttribute('data-theme', next); localStorage.setItem('theme', next);
-    };
-  </script>
+<header class="app-topbar">
+  <nav class="nav">
+    <a class="link-back" href="./patients.html">← Patients</a>
+    <div class="spacer"></div>
+    <button class="pill" id="themeToggle">🌗</button>
+  </nav>
+</header>
+
+<main class="container">
+  <section class="panel">
+    <h2 id="pTitle">Patient</h2>
+    <p id="pMeta"></p>
+  </section>
+
+  <section class="panel">
+    <h3>Pharmacy Invoices</h3>
+    <div class="table-wrap">
+      <table id="invT"><thead><tr>
+        <th>Invoice</th><th>Date</th><th>Total (₹)</th>
+      </tr></thead><tbody></tbody></table>
+    </div>
+  </section>
+</main>
+
+<script type="module">
+  import {parseCSV} from '../scripts/utils.js';
+  const root = document.documentElement;
+  const saved = localStorage.getItem('theme');
+  if (saved) root.setAttribute('data-theme', saved);
+  else if (window.matchMedia('(prefers-color-scheme: light)').matches) root.setAttribute('data-theme','light');
+  document.getElementById('themeToggle').onclick = () => {
+    const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next); localStorage.setItem('theme', next);
+  };
+
+  const url = new URL(location.href);
+  const pid = url.searchParams.get('pid');
+
+  async function load() {
+    if (!pid) { document.getElementById('pTitle').textContent = 'No PID'; return; }
+    const pts = await fetch('../data/patients.csv').then(r=>r.text()).then(parseCSV);
+    const inv = await fetch('../data/invoices.csv').then(r=>r.text()).then(parseCSV);
+
+    const p = pts.find(x=>x.patient_id===pid);
+    document.getElementById('pTitle').textContent = `${p?.name||'Unknown'} — ${pid}`;
+    document.getElementById('pMeta').textContent = p ? `${p.age} • ${p.gender} • ${p.mobile}` : 'not found';
+
+    const tbody = document.querySelector('#invT tbody');
+    const rows = inv.filter(r=>r.patient_id===pid);
+    tbody.innerHTML = rows.map(r=>`<tr><td>${r.invoice_id}</td><td>${r.date}</td><td>${Number(r.total).toFixed(2)}</td></tr>`).join('');
+  }
+  load();
+</script>
 </body>
 </html>
