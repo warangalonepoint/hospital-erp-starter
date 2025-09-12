@@ -1,6 +1,4 @@
-// /scripts/scanner.js
-// Uses ZXing to read EAN/UPC/QR from the device camera
-// Works offline via unpkg CDN module; no backend.
+// FILE: /scripts/scanner.js
 import {
   BrowserMultiFormatReader,
   NotFoundException
@@ -13,18 +11,15 @@ export async function startScan(videoEl, onResult, facing = "environment") {
   stopScan();
   codeReader = new BrowserMultiFormatReader();
 
-  // Pick a camera that matches facing; fallback to first
   const devices = await BrowserMultiFormatReader.listVideoInputDevices();
   if (!devices?.length) throw new Error("No camera devices found");
-  const pick =
-    devices.find(d => d.label.toLowerCase().includes(facing)) || devices[0];
+
+  const pick = devices.find(d => d.label.toLowerCase().includes(facing)) || devices[0];
   currentDeviceId = pick.deviceId;
 
   await codeReader.decodeFromVideoDevice(currentDeviceId, videoEl, (res, err) => {
     if (res?.getText) onResult(res.getText());
-    if (err && !(err instanceof NotFoundException)) {
-      console.warn("Decode error:", err);
-    }
+    if (err && !(err instanceof NotFoundException)) console.warn("Decode error:", err);
   });
 }
 
@@ -38,5 +33,5 @@ export async function switchCamera(videoEl, onResult) {
   const idx = devices.findIndex(d => d.deviceId === currentDeviceId);
   const next = devices[(idx + 1) % devices.length];
   stopScan();
-  await startScan(videoEl, onResult, next.label.toLowerCase().includes("back") ? "environment":"user");
+  await startScan(videoEl, onResult, next.label.toLowerCase().includes("back") ? "environment" : "user");
 }
