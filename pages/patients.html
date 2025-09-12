@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Patients</title>
+  <link rel="stylesheet" href="../styles/styles.css" />
+</head>
+<body>
+  <header class="app-topbar">
+    <nav class="nav">
+      <a class="link-back" href="./dashboard.html">← Dashboard</a>
+      <div class="spacer"></div>
+      <button class="pill" id="themeToggle">🌗</button>
+    </nav>
+  </header>
+  <main class="container">
+    <section class="panel">
+      <h2 style="margin-bottom:.25rem">Patients</h2>
+      <p>Stub page. Wire your data/API next.</p>
+      <div class="chart-block" style="margin-top:1rem"><h4>Placeholder</h4><div class="chart-placeholder"></div></div>
+    </section>
+  </main>
+  <script>
+    const root = document.documentElement;
+    const saved = localStorage.getItem('theme');
+    if (saved) root.setAttribute('data-theme', saved);
+    else if (window.matchMedia('(prefers-color-scheme: light)').matches) root.setAttribute('data-theme','light');
+    document.getElementById('themeToggle').onclick = () => {
+      const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next); localStorage.setItem('theme', next);
+    };
+  </script>
+</body>
+</html>

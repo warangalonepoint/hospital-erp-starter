@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hospital ERP · Dashboard</title>
+  <link rel="stylesheet" href="../styles/styles.css" />
+</head>
+<body>
+  <header class="app-topbar">
+    <nav class="nav">
+      <a class="link-back" href="../index.html">← Home</a>
+      <div class="spacer"></div>
+      <button class="pill" id="themeToggle" aria-label="Toggle theme">🌗</button>
+      <button class="pill" id="btnLogout">Logout</button>
+      <button class="pill" id="btnClearCache">Clear Cache</button>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="grid-cards">
+      <a class="card gradient-purple" href="./analytics.html"><h3>Analytics</h3><p>KPIs & weekly sales</p></a>
+      <a class="card gradient-sky" href="./pharmacy.html"><h3>Pharmacy</h3><p>Today ₹0.00 · MTD ₹0.00 · Top: —</p></a>
+      <a class="card gradient-green" href="./booking-status.html"><h3>Booking Status</h3><p>Today / Week / Month counts</p></a>
+      <a class="card gradient-pink" href="./patients.html"><h3>Patients</h3><p>Reminders & history · <b>0 due today</b></p></a>
+      <a class="card gradient-amber" href="./staff.html"><h3>Staff</h3><p>Roster & attendance (view-only)</p></a>
+      <a class="card gradient-lavender" href="./settings.html"><h3>Settings</h3><p>PINs, Staff, Patients</p></a>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Sales Analytics</h2>
+        <div class="segmented">
+          <button class="seg active">Today</button>
+          <button class="seg">7D</button>
+          <button class="seg">30D</button>
+        </div>
+      </div>
+
+      <div class="kpi-row">
+        <div class="kpi gradient-sky"><span>Total (₹)</span><strong>0.00</strong></div>
+        <div class="kpi gradient-purple"><span>Avg / Day (₹)</span><strong>0.00</strong></div>
+        <div class="kpi gradient-green"><span>Invoices</span><strong>0</strong></div>
+        <div class="kpi gradient-slate"><span>Top Item</span><strong>—</strong></div>
+        <div class="kpi gradient-lavender"><span>Follow-ups</span><strong>0</strong></div>
+      </div>
+
+      <div class="chart-block"><h4>Revenue by Day</h4><div class="chart-placeholder"></div></div>
+      <div class="chart-block"><h4>Top Items (Share)</h4><div class="chart-placeholder"></div></div>
+    </section>
+  </main>
+
+  <footer class="footer">Powered by Onestop AI</footer>
+
+  <script>
+    if (!sessionStorage.getItem('role')) location.replace('./login.html');
+
+    const root = document.documentElement;
+    const saved = localStorage.getItem('theme');
+    if (saved) root.setAttribute('data-theme', saved);
+    else if (window.matchMedia('(prefers-color-scheme: light)').matches) root.setAttribute('data-theme','light');
+    document.getElementById('themeToggle').onclick = () => {
+      const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next); localStorage.setItem('theme', next);
+    };
+
+    document.getElementById('btnLogout').onclick = () => { sessionStorage.clear(); location.href = './login.html'; };
+    document.getElementById('btnClearCache').onclick = () => {
+      localStorage.clear(); sessionStorage.clear();
+      if ('caches' in window) caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+      location.reload();
+    };
+
+    document.querySelectorAll('.segmented .seg').forEach(b => {
+      b.addEventListener('click', () => {
+        document.querySelectorAll('.segmented .seg').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+{
+  "tier": "Basic",
+  "features": {
+    "basic": [
+      "OPD/Appointments",
+      "Patient Records",
+      "Billing",
+      "Simple Reports"
+    ],
+    "standard": [
+      "Pharmacy",
+      "Lab Tests",
+      "Staff/Payroll",
+      "Inventory"
+    ],
+    "pro": [
+      "Multi-Branch",
+      "Insurance/TPA",
+      "Advanced Analytics",
+      "Role Access",
+      "WhatsApp/Email"
+    ]
+  }
+}
