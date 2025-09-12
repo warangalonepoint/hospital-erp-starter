@@ -15,11 +15,41 @@
     </nav>
   </header>
   <main class="container">
-    <section class="panel">
-      <h2 style="margin-bottom:.25rem">Pharmacy</h2>
-      <p>Stub page. Wire your data/API next.</p>
-      <div class="chart-block" style="margin-top:1rem"><h4>Placeholder</h4><div class="chart-placeholder"></div></div>
-    </section>
+   <section class="panel">
+  <h2>Inventory</h2>
+  <div class="controls">
+    <input class="input" id="qi" placeholder="Search item / SKU / scan..." />
+    <select class="input" id="stockFilter">
+      <option value="">All</option>
+      <option value="low">Low Stock (<=10)</option>
+      <option value="out">Out of Stock (=0)</option>
+    </select>
+    <button class="btn" id="scanBtn">📷 Scan</button>
+    <button class="btn" id="exportInvt">Export CSV</button>
+  </div>
+
+  <!-- Scanner modal -->
+  <div id="scanModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); backdrop-filter:blur(4px); z-index:50;">
+    <div style="max-width:720px;margin:6vh auto;background:var(--bg-soft);border:1px solid var(--ring);border-radius:18px;box-shadow:var(--shadow);padding:1rem;">
+      <div style="display:flex; align-items:center; gap:.5rem; margin-bottom:.5rem;">
+        <h3 style="flex:1;margin:0;">Scan barcode / QR</h3>
+        <button class="pill" id="switchCam">Switch Cam</button>
+        <button class="pill" id="closeScan">Close</button>
+      </div>
+      <video id="scanVideo" style="width:100%;border-radius:14px; background:black;aspect-ratio:16/9;"></video>
+      <div style="margin-top:.6rem;color:var(--muted);font-size:.9rem;">Tip: aim at the barcode; ensure lighting. USB scanners also work—just focus the search box and scan.</div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table id="invnTable">
+      <thead><tr>
+        <th>Item</th><th>SKU</th><th>MRP</th><th>Price</th><th>Qty</th><th>Reorder</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
   </main>
   <script>
     const root = document.documentElement;
