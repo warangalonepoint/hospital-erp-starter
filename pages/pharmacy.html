@@ -1,27 +1,11 @@
-<!doctype html>
-<html lang="en" data-theme="dark">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Pharmacy</title>
-  <link rel="stylesheet" href="../styles/styles.css" />
-</head>
-<body>
-  <header class="app-topbar">
-    <nav class="nav">
-      <a class="link-back" href="./dashboard.html">← Dashboard</a>
-      <div class="spacer"></div>
-      <button class="pill" id="themeToggle">🌗</button>
-    </nav>
-  </header>
-  <main class="container">
-   <section class="panel">
+<!-- FILE: /pages/pharmacy.html  (Inventory panel ONLY) -->
+<section class="panel">
   <h2>Inventory</h2>
   <div class="controls">
     <input class="input" id="qi" placeholder="Search item / SKU / scan..." />
     <select class="input" id="stockFilter">
       <option value="">All</option>
-      <option value="low">Low Stock (<=10)</option>
+      <option value="low">Low Stock (&lt;=10)</option>
       <option value="out">Out of Stock (=0)</option>
     </select>
     <button class="btn" id="scanBtn">📷 Scan</button>
@@ -43,23 +27,10 @@
 
   <div class="table-wrap">
     <table id="invnTable">
-      <thead><tr>
-        <th>Item</th><th>SKU</th><th>MRP</th><th>Price</th><th>Qty</th><th>Reorder</th>
-      </tr></thead>
+      <thead>
+        <tr><th>Item</th><th>SKU</th><th>MRP</th><th>Price</th><th>Qty</th><th>Reorder</th></tr>
+      </thead>
       <tbody></tbody>
     </table>
   </div>
 </section>
-  </main>
-  <script>
-    const root = document.documentElement;
-    const saved = localStorage.getItem('theme');
-    if (saved) root.setAttribute('data-theme', saved);
-    else if (window.matchMedia('(prefers-color-scheme: light)').matches) root.setAttribute('data-theme','light');
-    document.getElementById('themeToggle').onclick = () => {
-      const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-      root.setAttribute('data-theme', next); localStorage.setItem('theme', next);
-    };
-  </script>
-</body>
-</html>
