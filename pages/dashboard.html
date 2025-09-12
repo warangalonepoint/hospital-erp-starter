@@ -20,7 +20,10 @@
   <main class="container">
     <section class="grid-cards">
       <a class="card gradient-purple" href="./analytics.html"><h3>Analytics</h3><p>KPIs & weekly sales</p></a>
-      <a class="card gradient-sky" href="./pharmacy.html"><h3>Pharmacy</h3><p>Today ₹0.00 · MTD ₹0.00 · Top: —</p></a>
+      <a class="card gradient-sky" href="./pharmacy.html">
+        <h3>Pharmacy</h3>
+        <p>Today ₹<span id="kpiToday">0.00</span> · MTD ₹<span id="kpiMTD">0.00</span> · Top: <span id="kpiTop">—</span></p>
+      </a>
       <a class="card gradient-green" href="./booking-status.html"><h3>Booking Status</h3><p>Today / Week / Month counts</p></a>
       <a class="card gradient-pink" href="./patients.html"><h3>Patients</h3><p>Reminders & history · <b>0 due today</b></p></a>
       <a class="card gradient-amber" href="./staff.html"><h3>Staff</h3><p>Roster & attendance (view-only)</p></a>
@@ -30,29 +33,32 @@
     <section class="panel">
       <div class="panel-head">
         <h2>Sales Analytics</h2>
-        <div class="segmented">
-          <button class="seg active">Today</button>
-          <button class="seg">7D</button>
-          <button class="seg">30D</button>
+        <div class="segmented" id="rangeCtl">
+          <button class="seg active" data-range="today">Today</button>
+          <button class="seg" data-range="7d">7D</button>
+          <button class="seg" data-range="30d">30D</button>
         </div>
       </div>
 
       <div class="kpi-row">
-        <div class="kpi gradient-sky"><span>Total (₹)</span><strong>0.00</strong></div>
-        <div class="kpi gradient-purple"><span>Avg / Day (₹)</span><strong>0.00</strong></div>
-        <div class="kpi gradient-green"><span>Invoices</span><strong>0</strong></div>
-        <div class="kpi gradient-slate"><span>Top Item</span><strong>—</strong></div>
-        <div class="kpi gradient-lavender"><span>Follow-ups</span><strong>0</strong></div>
+        <div class="kpi gradient-sky"><span>Total (₹)</span><strong id="kpiTotal">0.00</strong></div>
+        <div class="kpi gradient-purple"><span>Avg / Day (₹)</span><strong id="kpiAvg">0.00</strong></div>
+        <div class="kpi gradient-green"><span>Invoices</span><strong id="kpiInvoices">0</strong></div>
+        <div class="kpi gradient-slate"><span>Top Item</span><strong id="kpiTopItem">—</strong></div>
+        <div class="kpi gradient-lavender"><span>Follow-ups</span><strong id="kpiFup">0</strong></div>
       </div>
 
-      <div class="chart-block"><h4>Revenue by Day</h4><div class="chart-placeholder"></div></div>
-      <div class="chart-block"><h4>Top Items (Share)</h4><div class="chart-placeholder"></div></div>
+      <div class="chart-block"><h4>Revenue by Day</h4><div class="chart-placeholder" id="revChart"></div></div>
+      <div class="chart-block"><h4>Top Items (Share)</h4><div class="chart-placeholder" id="topChart"></div></div>
     </section>
   </main>
 
   <footer class="footer">Powered by Onestop AI</footer>
 
-  <script>
+  <!-- NEW: analytics wiring -->
+  <script type="module">
+    import {parseCSV, renderBars} from '../scripts/utils.js';
+
     if (!sessionStorage.getItem('role')) location.replace('./login.html');
 
     const root = document.documentElement;
@@ -63,20 +69,83 @@
       const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
       root.setAttribute('data-theme', next); localStorage.setItem('theme', next);
     };
-
     document.getElementById('btnLogout').onclick = () => { sessionStorage.clear(); location.href = './login.html'; };
     document.getElementById('btnClearCache').onclick = () => {
       localStorage.clear(); sessionStorage.clear();
       if ('caches' in window) caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
       location.reload();
     };
-
-    document.querySelectorAll('.segmented .seg').forEach(b => {
-      b.addEventListener('click', () => {
-        document.querySelectorAll('.segmented .seg').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('#rangeCtl .seg').forEach(b=>{
+      b.addEventListener('click', ()=> {
+        document.querySelectorAll('#rangeCtl .seg').forEach(x=>x.classList.remove('active'));
         b.classList.add('active');
+        load(b.dataset.range);
       });
     });
+
+    async function load(range='today') {
+      const inv = await fetch('../data/invoices.csv').then(r=>r.text()).then(parseCSV);
+      const items = await fetch('../data/invoice_items.csv').then(r=>r.text()).then(parseCSV);
+
+      // date filter
+      const today = new Date();
+      const from = new Date(today);
+      if (range==='7d') from.setDate(today.getDate()-6);
+      if (range==='30d') from.setDate(today.getDate()-29);
+      const parseD = s => new Date(s.replace(/-/g,'/'));
+
+      const within = inv.filter(r=>{
+        const d = parseD(r.date);
+        if (range==='today') return d.toDateString()===today.toDateString();
+        return d>=from && d<=today;
+      });
+
+      // KPIs
+      const sum = within.reduce((a,b)=>a + Number(b.total||0), 0);
+      const days = (range==='today') ? 1 : Math.max(1, Math.round((today-from)/86400000)+1);
+      document.getElementById('kpiTotal').textContent = sum.toFixed(2);
+      document.getElementById('kpiAvg').textContent = (sum/days).toFixed(2);
+      document.getElementById('kpiInvoices').textContent = within.length.toString();
+
+      // Today + MTD + Top item (home cards)
+      const isToday = inv.filter(r=> parseD(r.date).toDateString()===today.toDateString())
+                         .reduce((a,b)=>a+Number(b.total||0),0);
+      const mtd = inv.filter(r=>{
+        const d=parseD(r.date); return d.getFullYear()===today.getFullYear() && d.getMonth()===today.getMonth();
+      }).reduce((a,b)=>a+Number(b.total||0),0);
+      document.getElementById('kpiToday').textContent = isToday.toFixed(2);
+      document.getElementById('kpiMTD').textContent = mtd.toFixed(2);
+
+      const idSet = new Set(within.map(r=>r.invoice_id));
+      const filteredItems = items.filter(it=>idSet.has(it.invoice_id));
+      const byItem = {};
+      filteredItems.forEach(it=>{
+        const val = Number(it.qty||0)*Number(it.price||0);
+        byItem[it.item]=(byItem[it.item]||0)+val;
+      });
+      let top='—', topVal=0; Object.entries(byItem).forEach(([k,v])=>{ if(v>topVal){top=k;topVal=v;} });
+      document.getElementById('kpiTop').textContent = top||'—';
+      document.getElementById('kpiTopItem').textContent = top||'—';
+
+      // charts
+      const map = new Map();
+      within.forEach(r=> map.set(r.date, (map.get(r.date)||0)+Number(r.total||0)));
+      // build series from range
+      const series=[]; const cur = new Date(from);
+      while (cur <= today) {
+        const y=cur.getFullYear(), m=String(cur.getMonth()+1).padStart(2,'0'), d=String(cur.getDate()).padStart(2,'0');
+        const key=`${y}-${m}-${d}`;
+        series.push({label:key, value:Number(map.get(key)||0)});
+        cur.setDate(cur.getDate()+1);
+      }
+      renderBars(document.getElementById('revChart'), series, {});
+
+      const topSeries = Object.entries(byItem).map(([k,v])=>({label:k, value:v}))
+                            .sort((a,b)=>b.value-a.value).slice(0,8);
+      renderBars(document.getElementById('topChart'), topSeries, {});
+    }
+
+    load('today');
   </script>
 </body>
 </html>
