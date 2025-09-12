@@ -1,4 +1,3 @@
-# FILE: /data/inventory.csv
 item,sku,mrp,price,qty,reorder
 Paracetamol 500,PARA500,50,40,25,10
 Cough Syrup,COUGH100,140,120,6,10
