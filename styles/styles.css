@@ -1,249 +1,128 @@
-/* =========================================================
-   Hospital ERP — UNIVERSAL STYLES (all pages)
-   – Uses your color tokens + pastel tints
-   – Light/Dark via html[data-theme]
-   – One set of components for Dashboard/Analytics/Pharmacy
-   ========================================================= */
-
-/* ========== TOKENS (LIGHT) ========== */
-:root {
-  --bg: #f7f8fb;
+/* ========= Design Tokens (Light / Dark) ========= */
+:root{
+  --bg: #f4f6fb;
   --fg: #0f172a;
-  --card-bg: #ffffff;
-  --accent: #2563eb;        /* primary action / active tab */
-  --muted: #6b7280;
+  --muted:#6b7280;
+  --card:#ffffff;
+  --chip:#0b1324;
+  --ring: 37,99,235;        /* rgb for shadow mixes */
+  --accent:#2563eb;
 
-  --radius: 16px;
-  --shadow: 0 6px 18px rgba(0,0,0,0.10);
+  /* Pastel tints + matching text (used in gradients) */
+  --t-sky:#d2e5ff;  --c-sky:#0b3c91;
+  --t-mint:#c8f7e1; --c-mint:#0c4e3b;
+  --t-lilac:#e0d4ff;--c-lilac:#3c1a7a;
+  --t-rose:#ffd1df; --c-rose:#7a123f;
+  --t-amber:#ffe2cf;--c-amber:#7a3a14;
 
-  /* Bold pastel tints */
-  --t-lilac: #e0d4ff;
-  --t-blue:  #d2e5ff;
-  --t-mint:  #c8f7e1;
-  --t-peach: #ffd7d2;
-  --t-rose:  #ffcfe0;
-
-  /* Paired text colors for tints */
-  --c-lilac: #4c1d95;
-  --c-blue:  #1e40af;
-  --c-mint:  #065f46;
-  --c-peach: #9a3412;
-  --c-rose:  #9d174d;
+  --radius:18px;
+  --shadow:0 10px 28px rgba(2,8,23,.10);
+  --shadow-deep:0 16px 40px rgba(2,8,23,.16);
 }
 
-/* ========== TOKENS (DARK) ========== */
-html[data-theme="dark"] {
-  --bg: #0b1220;
-  --fg: #e6edf7;
-  --card-bg: #111827;
-  --accent: #3b82f6;
-  --muted: #9ca3af;
+html[data-theme="dark"]{
+  --bg:#0b1220;
+  --fg:#e6edf7;
+  --muted:#9aa3b2;
+  --card:#0f172a;
+  --chip:#111827;
+  --accent:#3b82f6;
 
-  --t-lilac:#352359;
-  --t-blue:#1e2a48;
-  --t-mint:#123d2d;
-  --t-peach:#4a2a23;
-  --t-rose:#4a1e33;
+  --t-sky:#1d2a48;   --c-sky:#b4cffc;
+  --t-mint:#123d2d;  --c-mint:#9ae6c5;
+  --t-lilac:#2c2146; --c-lilac:#c8b8ff;
+  --t-rose:#3c2231;  --c-rose:#f5b3cf;
+  --t-amber:#3a2a22; --c-amber:#ffd6b8;
 
-  --c-lilac:#c4b5fd;
-  --c-blue:#93c5fd;
-  --c-mint:#6ee7b7;
-  --c-peach:#fca5a5;
-  --c-rose:#f9a8d4;
+  --shadow:0 10px 28px rgba(0,0,0,.45);
+  --shadow-deep:0 16px 40px rgba(0,0,0,.55);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme]) { color-scheme: dark; }
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--bg); color:var(--fg); font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif; line-height:1.45;
 }
 
-/* ========== BASE ========== */
-* { box-sizing: border-box; }
-html, body { height: 100%; }
-body {
-  margin: 0;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
-  background: var(--bg);
-  color: var(--fg);
-  line-height: 1.5;
-  -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
-  padding-bottom: env(safe-area-inset-bottom);
-}
-a { color: var(--fg); text-decoration: none; }
-a:hover { text-decoration: underline; }
-
-/* ========== LAYOUT HELPERS ========== */
-.container { max-width: 1140px; margin: 0 auto; }
-.section   { background: var(--card-bg); margin: 12px; padding: 18px; border-radius: var(--radius); box-shadow: var(--shadow); }
-@media (min-width:768px){ .section{ margin:12px auto; } }
-
-.row   { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
-.grid  { display:grid; gap:18px; }
-.grid-2{ grid-template-columns: 1fr; }
-@media (min-width:860px){ .grid-2{ grid-template-columns: 1fr 1fr; } }
-
-.right { text-align:right; }
-.muted { color: var(--muted); }
-.hide  { display:none !important; }
-.mono  { font-variant-numeric: tabular-nums; }
-
-/* ========== BANNER (optional, shared) ========== */
+/* ========== Banner (logo + theme toggle) ========== */
 header.banner{
-  position:relative; height:148px; border-radius:18px; overflow:hidden;
-  margin:12px 12px 8px; box-shadow: var(--shadow);
-  background:#0c3a5c url('/hospital-erp-starter/public/assets/banner.png') center/cover no-repeat;
+  position:relative; max-width:1140px; margin:18px auto 10px; border-radius:22px;
+  background:#0b2a44 url('../public/assets/banner.png') center / contain no-repeat;
+  height:160px; box-shadow:var(--shadow);
 }
-header.banner .floating-toggle{
-  position:absolute; top:12px; right:12px; width:44px; height:44px;
-  border-radius:50%; display:grid; place-items:center; font-size:18px;
-  background: rgba(255,255,255,0.92); border:1px solid rgba(0,0,0,.06); backdrop-filter: blur(6px); cursor:pointer;
+header .toggle{
+  position:absolute; right:14px; top:14px; width:46px; height:46px; border-radius:50%;
+  display:grid; place-items:center; background:rgba(255,255,255,.9); color:#111;
+  border:1px solid rgba(0,0,0,.06); cursor:pointer; backdrop-filter:blur(6px);
 }
-@media (min-width:1024px){
-  header.banner{ height:180px; margin:16px auto 12px; max-width:1140px;
-    background:#0b2a44 url('/hospital-erp-starter/public/assets/banner.png') center/contain no-repeat; }
-}
+html[data-theme="dark"] header .toggle{ background:rgba(255,255,255,.14); color:#fff; border-color:rgba(255,255,255,.2) }
 
-/* ========== FIXED/UTILITY ACTIONS ========== */
-.fixed-actions{
-  position: sticky; top: calc(6px + env(safe-area-inset-top)); z-index:10;
-  display:flex; gap:10px; flex-wrap:wrap; padding:6px 12px; margin:0 12px 12px;
+/* ========== Page Toolbar (chips) ========== */
+.toolbar{ max-width:1140px; margin:0 auto 12px; padding:0 8px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; position:sticky; top:6px; z-index:20 }
+.chip{
+  background:var(--card); color:var(--fg); border:1px solid rgba(0,0,0,.08);
+  padding:10px 14px; border-radius:999px; font-weight:600; cursor:pointer; box-shadow:var(--shadow);
 }
-.fixed-actions .chip{
-  font-size:14px; padding:10px 14px; border-radius:999px;
-  background: var(--card-bg); color: var(--fg);
-  border:1px solid rgba(0,0,0,.06); box-shadow: var(--shadow); cursor:pointer;
+html[data-theme="dark"] .chip{ border-color:rgba(255,255,255,.12) }
+.chip--ghost{ background:transparent }
+.chip--primary{ background:var(--accent); color:#fff; border-color:transparent; box-shadow:0 10px 20px rgba(var(--ring),.25) }
+.chip--pill{ padding:8px 12px }
+
+/* ========== Section / Panels ========== */
+.section{
+  max-width:1140px; margin:12px auto; background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+  padding:18px;
 }
-html[data-theme="dark"] .fixed-actions .chip{ border-color: rgba(255,255,255,.10); }
+.section h2{ margin:4px 0 10px; font-size:28px; letter-spacing:.2px }
+.section p.muted{ color:var(--muted) }
 
-/* ========== CARDS & PANELS ========== */
-.card-grid{ display:grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap:18px; }
-.card{
-  border-radius:18px; padding:20px; box-shadow: var(--shadow);
-  text-decoration:none; display:block; transition: transform .18s, box-shadow .18s;
-  border:1px solid rgba(0,0,0,.06); background: var(--card-bg); color: var(--fg);
+/* Gradient panels like on dashboard */
+.panel{
+  border-radius:22px; padding:18px; box-shadow:var(--shadow-deep); color:#101827;
 }
-.card:hover{ transform: translateY(-2px); box-shadow: 0 10px 24px rgba(0,0,0,.14); }
-.card h3{ font-size:22px; margin-bottom:8px; text-decoration: underline; text-underline-offset:3px; }
-.card p{ font-size:15px; opacity:.9; }
+.grad-lilac{ background:linear-gradient(135deg,var(--t-lilac),#cdbaff); color:var(--c-lilac) }
+.grad-mint{  background:linear-gradient(135deg,var(--t-mint), #aef0cf); color:var(--c-mint) }
+.grad-rose{  background:linear-gradient(135deg,var(--t-rose), #ffc0d2); color:var(--c-rose) }
+.grad-amber{ background:linear-gradient(135deg,var(--t-amber),#ffd2b5); color:var(--c-amber) }
+.grad-sky{   background:linear-gradient(135deg,var(--t-sky),  #bfd9ff); color:var(--c-sky) }
 
-/* colorful panels (dashboard shortcuts) */
-.panel--blue  { background: linear-gradient(135deg, var(--t-blue),  #bcdfff);  color: var(--c-blue); }
-.panel--mint  { background: linear-gradient(135deg, var(--t-mint),  #aaf5d0);  color: var(--c-mint); }
-.panel--peach { background: linear-gradient(135deg, var(--t-peach), #ffb9ad);  color: var(--c-peach); }
-.panel--lilac { background: linear-gradient(135deg, var(--t-lilac), #cab8ff);  color: var(--c-lilac); }
-.panel--rose  { background: linear-gradient(135deg, var(--t-rose),  #ffb6cc);  color: var(--c-rose); }
+/* KPI cards */
+.kpi-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px }
+.kpi{
+  padding:18px; border-radius:18px; box-shadow:var(--shadow); border:1px solid rgba(0,0,0,.06); background:var(--card);
+}
+.kpi .label{ opacity:.85; font-weight:700; margin-bottom:6px }
+.kpi .num{ font-size:28px; font-weight:800 }
 
-/* ========== BUTTONS ========== */
+/* Inputs / Selects / Buttons */
+input,select,textarea{
+  appearance:none; border:1px solid rgba(0,0,0,.12); background:var(--card); color:var(--fg);
+  padding:12px 14px; border-radius:12px; box-shadow:var(--shadow); width:100%;
+}
+textarea{ min-height:92px; resize:vertical }
+html[data-theme="dark"] input,html[data-theme="dark"] select,html[data-theme="dark"] textarea{
+  border-color:rgba(255,255,255,.12); background:#131a26; box-shadow:0 10px 26px rgba(0,0,0,.45)
+}
+input:focus,select:focus,textarea:focus{
+  outline:none; border-color:rgba(var(--ring),.5); box-shadow:0 0 0 3px rgba(var(--ring),.14), 0 10px 26px rgba(var(--ring),.20)
+}
 .btn{
-  background: var(--accent); color:#fff; border:0; padding:10px 14px;
-  border-radius:12px; font-weight:700; cursor:pointer;
-  box-shadow: 0 8px 18px color-mix(in srgb, var(--accent) 35%, transparent);
-  transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;
+  background:var(--accent); color:#fff; border:0; border-radius:12px; padding:11px 16px; font-weight:800;
+  box-shadow:0 12px 24px rgba(var(--ring),.25); cursor:pointer
 }
-.btn:hover{ transform: translateY(-1px); box-shadow: 0 12px 24px color-mix(in srgb, var(--accent) 40%, transparent); }
-.btn:active{ transform: translateY(0);   box-shadow: 0 6px 16px  color-mix(in srgb, var(--accent) 30%, transparent); }
-.btn:disabled{ opacity:.6; cursor:not-allowed; }
-.btn--ghost{
-  background:transparent; color:var(--accent);
-  border:1px solid color-mix(in srgb, var(--accent) 35%, #fff 65%);
-}
-.btn.icon{ width:42px; height:42px; display:inline-grid; place-items:center; padding:0; border-radius:999px; }
+.btn:disabled{ opacity:.6; cursor:not-allowed }
 
-/* keyboard focus */
-:where(a,button,.btn,.chip,.tab):focus-visible{
-  outline:2px solid color-mix(in srgb, var(--accent) 60%, #fff 40%);
-  outline-offset:2px; border-radius:10px;
-}
+/* Tables */
+.table{ width:100%; border-collapse:separate; border-spacing:0 10px }
+.table thead th{ text-align:left; font-weight:800; opacity:.95; padding:8px 10px }
+.table tbody td{ background:var(--card); padding:12px 10px; border-top:1px solid rgba(0,0,0,.06); border-bottom:1px solid rgba(0,0,0,.06) }
+.table tbody tr{ box-shadow:var(--shadow) }
+html[data-theme="dark"] .table tbody td{ border-color:rgba(255,255,255,.10) }
 
-/* ========== CHIPS / TABS ========== */
-.chips{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
-.chip, .tab{
-  --ring: rgba(37,99,235,.35);
-  padding: 8px 14px; border-radius:999px;
-  border:1px solid rgba(0,0,0,.08); background: var(--card-bg); color: var(--fg);
-  font-weight:600; line-height:1;
-  transition: transform .12s, box-shadow .12s, border-color .12s, background .12s;
-}
-.chip:hover, .tab:hover{ transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0,0,0,.08); }
-.chip:active, .tab:active{ transform: translateY(0);   box-shadow: 0 2px 8px rgba(0,0,0,.06); }
-.chip.active, .tab.active{
-  background: var(--accent); color:#fff; border-color: transparent;
-  box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 35%, transparent);
-}
-.chip--sm{ padding:6px 10px; font-size:.9rem; }
+/* Layout utilities */
+.grid-2{ display:grid; gap:16px; grid-template-columns:1fr }
+@media(min-width:900px){ .grid-2{ grid-template-columns:1.2fr .8fr } }
+.row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center }
 
-/* preset tinted chips (optional) */
-.chip--blue  { background: var(--t-blue);  color: var(--c-blue);  }
-.chip--mint  { background: var(--t-mint);  color: var(--c-mint);  }
-.chip--peach { background: var(--t-peach); color: var(--c-peach); }
-.chip--lilac { background: var(--t-lilac); color: var(--c-lilac); }
-.chip--rose  { background: var(--t-rose);  color: var(--c-rose);  }
-
-/* ========== INPUTS / FIELDS ========== */
-input[type="text"], input[type="search"], input[type="number"], input[type="date"],
-input[type="month"], input[type="tel"], select, textarea {
-  appearance:none; background: var(--card-bg); color: var(--fg);
-  border:1px solid rgba(0,0,0,.12); border-radius:12px; padding:10px 12px; line-height:1.2;
-  box-shadow: var(--shadow); transition: border-color .15s, box-shadow .15s, background .15s;
-}
-textarea { min-height: 92px; resize: vertical; }
-.input--sm, select.select--sm, input[type="date"].input--sm{
-  padding:8px 10px; border-radius:10px; box-shadow: 0 3px 10px rgba(0,0,0,.06); font-size:.95rem;
-}
-input:focus, select:focus, textarea:focus{
-  outline:none; border-color: rgba(37,99,235,.55);
-  box-shadow: 0 0 0 3px rgba(37,99,235,.10), 0 8px 20px rgba(37,99,235,.15);
-}
-::placeholder{ color: color-mix(in srgb, var(--muted) 80%, #fff 20%); }
-select{
-  background-image:
-    linear-gradient(45deg, transparent 50%, currentColor 50%),
-    linear-gradient(135deg, currentColor 50%, transparent 50%),
-    linear-gradient(to right, transparent, transparent);
-  background-position: calc(100% - 18px) 50%, calc(100% - 12px) 50%, 0 0;
-  background-size: 6px 6px, 6px 6px, 100% 100%;
-  background-repeat: no-repeat; padding-right: 28px;
-}
-
-/* dark-form contrast */
-html[data-theme="dark"] input, html[data-theme="dark"] select, html[data-theme="dark"] textarea{
-  background:#171b23; border-color:#273140; box-shadow: 0 6px 18px rgba(0,0,0,.35);
-}
-html[data-theme="dark"] .chip, html[data-theme="dark"] .tab{ border-color: rgba(255,255,255,.12); }
-
-/* ========== TABLES ========== */
-table { width:100%; border-collapse: separate; border-spacing: 0 8px; }
-thead th { font-weight:700; opacity:.95; }
-th, td { padding:.6rem .7rem; border-bottom:1px solid rgba(0,0,0,.08); }
-tbody tr:last-child td { border-bottom:0; }
-.table-compact th, .table-compact td { padding:.45rem .55rem; }
-
-/* ========== KPI / CHART WRAPPERS (Analytics) ========== */
-.kpi-grid{
-  display:grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr));
-  gap:12px; margin-top:12px;
-}
-.kpi{ border-radius:14px; padding:12px; text-align:center; box-shadow: var(--shadow);
-  border:1px solid rgba(0,0,0,.06); background: var(--card-bg); }
-.kpi h4{ font-size:.9rem; margin-bottom:6px; opacity:.9; }
-.kpi .num{ font-size:1.2rem; font-weight:600; }
-.chart-wrap{ border-radius:18px; background:var(--card-bg); padding:16px; box-shadow:var(--shadow); margin-top:16px; }
-.chart-title{ font-weight:800; margin-bottom:8px; }
-
-/* ========== TOOLBARS ========== */
-.toolbar{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; justify-content:space-between; }
-.toolbar .left, .toolbar .right{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
-
-/* ========== MOTION & PRINT ========== */
-@media (prefers-reduced-motion: reduce){
-  *{ transition:none !important; animation:none !important; }
-}
-@media print{
-  header.banner, .fixed-actions{ display:none; }
-  .section{ box-shadow:none; }
-  body{ background:#fff; color:#000; }
-}
-
-/* ========== THEME TOGGLE ICON VISIBILITY (if you show ☀️/🌙) ========== */
-.theme-toggle .sun, .theme-toggle .moon { display:none; }
-html[data-theme="light"] .theme-toggle .sun { display:block; }
-html[data-theme="dark"]  .theme-toggle .moon { display:block; }
+/* Footer spacer */
+.spacer{ height:28px }
