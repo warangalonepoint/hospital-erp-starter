@@ -1,22 +1,22 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Hospital ERP · Redirect</title>
-  <script>
-    // Decide target page based on stored role
-    const role = localStorage.getItem('role');
-    let target = 'pages/login.html';
-
-    if (role === 'doctor')      target = 'pages/analytics.html';
-    else if (role === 'supervisor') target = 'pages/supervisor.html';
-    else if (role === 'admin')      target = 'pages/admin.html';
-
-    location.replace(target);
-  </script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hospital ERP</title>
+  <meta http-equiv="refresh" content="0; url=pages/login.html" />
+  <script>location.replace('pages/login.html');</script>
+  <style>
+    html,body{height:100%}
+    body{margin:0;display:grid;place-items:center;font:15px/1.5 system-ui,Segoe UI,Roboto,sans-serif;color:#0b1220;background:#f7f8fb}
+    .card{padding:18px 20px;border-radius:14px;background:#fff;box-shadow:0 10px 30px rgba(2,6,23,.12),0 3px 10px rgba(2,6,23,.06)}
+    .muted{color:#6b7280}
+  </style>
 </head>
 <body>
-  Redirecting…
+  <div class="card">
+    <div>Redirecting to Login…</div>
+    <div class="muted" style="margin-top:6px"><a href="pages/login.html">Click here if not redirected</a></div>
+  </div>
 </body>
 </html>
