@@ -2,50 +2,39 @@
 <html lang="en" data-theme="light">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Admin • Hospital ERP</title>
-  <link rel="stylesheet" href="../styles/styles.css">
-  <link rel="icon" href="../public/assets/icon-192.png" />
-  <script src="../scripts/utils.js"></script>
-  <script>
-    // --- Guard: admin-only (redirects to login if not signed-in as admin)
-    document.addEventListener('DOMContentLoaded', () => {
-      ERP.requireRole('admin', './login.html');
-    });
-  </script>
-  <style>
-    /* small local helpers only */
-    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .grid-2{display:grid;grid-template-columns:1fr;gap:12px}
-    @media (min-width: 980px){ .grid-2{ grid-template-columns:1fr 1fr; } }
-  </style>
+  <link rel="stylesheet" href="../styles/styles.css" />
+  <link rel="icon" href="../public/manifest-icon-192.png" />
 </head>
 <body>
   <!-- Banner -->
   <header class="banner">
-    <button id="themeToggle" class="floating-toggle" title="Toggle theme">🌙</button>
+    <div style="font-weight:900;display:flex;align-items:center;gap:8px">
+      <span>🛠️</span><span>Admin</span>
+    </div>
+    <button id="themeToggle" class="toggle" title="Toggle theme">🌙</button>
   </header>
 
   <!-- Top actions -->
-  <div class="fixed-actions">
+  <nav class="toolbar">
     <a class="chip" href="./dashboard.html">← Dashboard</a>
-    <button class="chip" id="btnLogout">Logout</button>
-    <button class="chip" id="btnClear">Clear Cache</button>
-  </div>
+    <button id="btnClear" class="chip">Clear Cache</button>
+  </nav>
 
   <!-- Admin Hub -->
-  <section class="section">
+  <main class="section">
     <div class="panel grad-lilac">
       <h2>Admin & Setup</h2>
-      <p class="muted">PINs, staff, data tools, and inventory utilities.</p>
+      <p class="muted">Data tools, inventory utilities, quick exports.</p>
     </div>
 
     <div class="card-grid mt12">
-      <a class="card panel--mint" href="./settings.html#staff">
-        <h3>Staff & Roles</h3><p>Add/edit staff and roles</p>
+      <a class="card panel--mint" href="./settings.html#clinic">
+        <h3>Clinic Info</h3><p>Branding, address, contact</p>
       </a>
-      <a class="card panel--rose" href="./settings.html#patients">
-        <h3>Patients</h3><p>List, add, barcode IDs</p>
+      <a class="card panel--rose" href="./settings.html#users">
+        <h3>Staff</h3><p>Add/remove staff & roles</p>
       </a>
       <a class="card panel--peach" href="./pharmacy.html#tab-stock">
         <h3>Inventory</h3><p>Stock, batches & expiry</p>
@@ -54,7 +43,7 @@
         <h3>Analytics</h3><p>Sales KPIs & top items</p>
       </a>
     </div>
-  </section>
+  </main>
 
   <!-- Inventory Tools -->
   <section class="section">
@@ -75,16 +64,16 @@
         <div id="admin-scan-result" class="muted mt8">No scans yet…</div>
 
         <div class="row" style="margin-top:12px">
-          <input id="admin-name"   placeholder="Item name" style="max-width:240px">
-          <input id="admin-barcode" placeholder="Barcode"  style="max-width:200px">
-          <input id="admin-batch"  placeholder="Batch"     style="max-width:160px">
-          <input id="admin-expiry" placeholder="YYYY-MM"   style="max-width:140px">
+          <input id="admin-name"   class="input" placeholder="Item name" style="max-width:240px">
+          <input id="admin-barcode" class="input" placeholder="Barcode"  style="max-width:200px">
+          <input id="admin-batch"  class="input" placeholder="Batch"     style="max-width:160px">
+          <input id="admin-expiry" class="input" placeholder="YYYY-MM"   style="max-width:140px">
         </div>
-        <div class="row" style="margin-top:10px">
-          <input id="admin-mrp" type="number" step="0.01" placeholder="MRP" style="max-width:140px">
-          <input id="admin-gst" type="number" step="0.01" placeholder="GST %" style="max-width:140px">
-          <input id="admin-qty" type="number" step="1" placeholder="Qty" style="max-width:120px">
-          <button id="admin-save-stock" class="btn">Save to Stock</button>
+        <div class="row mt8">
+          <input id="admin-mrp" type="number" step="0.01" class="input" placeholder="MRP" style="max-width:140px">
+          <input id="admin-gst" type="number" step="0.01" class="input" placeholder="GST %" style="max-width:140px">
+          <input id="admin-qty" type="number" step="1" class="input" placeholder="Qty" style="max-width:120px">
+          <button id="admin-save-stock" class="btn primary">Save to Stock</button>
         </div>
       </div>
 
@@ -112,86 +101,40 @@
     </div>
   </section>
 
-  <!-- PIN Management -->
-  <section class="section">
-    <h2>Security & PIN Management</h2>
-    <div class="card-grid mt12">
-      <div class="card panel--lilac" style="max-width:860px">
-        <h3>Change PINs</h3>
-        <p class="muted">Only Admin can change these. PINs must be 4–6 digits.</p>
+  <footer class="section center muted">Admin · Hospital ERP</footer>
 
-        <div class="chips mt12">
-          <label class="chip">Show PINs
-            <input id="showPins" type="checkbox" style="margin-left:8px">
-          </label>
-          <span class="muted">Current Admin PIN required to save changes.</span>
-        </div>
-
-        <div class="grid-2 mt12">
-          <div class="section">
-            <h4 style="margin-bottom:6px">Admin PIN</h4>
-            <input id="pinAdminCurrent" type="password" inputmode="numeric" placeholder="Current Admin PIN">
-            <div class="row mt8">
-              <input id="pinAdminNew" type="password" inputmode="numeric" placeholder="New Admin PIN (4–6 digits)">
-              <input id="pinAdminConfirm" type="password" inputmode="numeric" placeholder="Confirm Admin PIN">
-            </div>
-          </div>
-
-          <div class="section">
-            <h4 style="margin-bottom:6px">Doctor & Supervisor PINs</h4>
-            <div class="row">
-              <input id="pinDoctorNew" type="password" inputmode="numeric" placeholder="Doctor PIN (4–6 digits)">
-              <input id="pinSupervisorNew" type="password" inputmode="numeric" placeholder="Supervisor PIN (4–6 digits)">
-            </div>
-          </div>
-        </div>
-
-        <div class="chips mt12">
-          <button id="btnSavePins" class="chip action">Save PINs</button>
-          <button id="btnResetPins" class="chip">Reset to Defaults</button>
-          <span id="pinMsg" class="muted">—</span>
-        </div>
-      </div>
-    </div>
-  </section>
-
+  <script src="../scripts/utils.js"></script>
   <script src="../scripts/scanner.js"></script>
   <script>
-    /* ========== Theme ========== */
+    // Theme toggle
     (function(){
-      const key='theme', root=document.documentElement, btn=document.getElementById('themeToggle');
-      const saved=localStorage.getItem(key)||'light'; root.dataset.theme=saved; btn.textContent=saved==='dark'?'🌙':'🌞';
-      btn.onclick=()=>{ const next=root.dataset.theme==='dark'?'light':'dark'; root.dataset.theme=next; localStorage.setItem(key,next); btn.textContent=next==='dark'?'🌙':'🌞'; };
+      const root=document.documentElement, btn=document.getElementById('themeToggle');
+      const saved=localStorage.getItem('theme')||'light';
+      root.dataset.theme=saved; btn.textContent=saved==='dark'?'🌙':'🌞';
+      btn.onclick=()=>{ const next=root.dataset.theme==='dark'?'light':'dark';
+        root.dataset.theme=next; localStorage.setItem('theme',next);
+        btn.textContent=next==='dark'?'🌙':'🌞';
+      };
     })();
 
-    /* ========== Logout / Clear Cache ========== */
-    document.getElementById('btnLogout').onclick = ()=>{
-      localStorage.removeItem('role');
-      location.href = './login.html';
-    };
-
-    // Clear app cache but keep theme + pins
+    // Clear cache (keep theme)
     document.getElementById('btnClear').onclick = async ()=>{
-      const keep = new Set(['theme','pins']);
-      const keys = Object.keys(localStorage);
-      for (const k of keys) if (!keep.has(k)) localStorage.removeItem(k);
-      if ('caches' in window) {
-        const names = await caches.keys();
-        await Promise.all(names.map(n => caches.delete(n)));
-      }
-      alert('Cleared local data (kept theme & PINs).');
+      const keep=new Set(['theme']);
+      Object.keys(localStorage).forEach(k=>{ if(!keep.has(k)) localStorage.removeItem(k); });
+      if('caches' in window){ const keys=await caches.keys(); await Promise.all(keys.map(k=>caches.delete(k))); }
+      alert('Cleared local data (kept theme).');
     };
 
-    /* ========== Scanner: Scan to Upload Stock ========== */
+    // --- Scan to Upload Stock ---
     const scanEls = {
-      result:  document.getElementById('admin-scan-result'),
-      name:    document.getElementById('admin-name'),
-      barcode: document.getElementById('admin-barcode'),
-      batch:   document.getElementById('admin-batch'),
-      expiry:  document.getElementById('admin-expiry'),
-      mrp:     document.getElementById('admin-mrp'),
-      gst:     document.getElementById('admin-gst'),
-      qty:     document.getElementById('admin-qty'),
+      result: document.getElementById('admin-scan-result'),
+      name:   document.getElementById('admin-name'),
+      barcode:document.getElementById('admin-barcode'),
+      batch:  document.getElementById('admin-batch'),
+      expiry: document.getElementById('admin-expiry'),
+      mrp:    document.getElementById('admin-mrp'),
+      gst:    document.getElementById('admin-gst'),
+      qty:    document.getElementById('admin-qty'),
     };
 
     const scan = (function(){
@@ -216,9 +159,9 @@
               }
             });
           } else {
-            alert('Scanner library not loaded. Check ../scripts/scanner.js');
+            alert('Scanner not loaded. Check ../scripts/scanner.js');
           }
-        }catch(e){ alert('Scanner failed: '+(e?.message||e)); }
+        }catch(e){ alert('Scanner failed: '+e.message); }
       }
       function stop(){ try{ stopFn && stopFn(); }catch(e){} stopFn=null; }
       return { start, stop };
@@ -227,25 +170,26 @@
     document.getElementById('admin-start-scan')?.addEventListener('click', scan.start);
     document.getElementById('admin-stop-scan')?.addEventListener('click', scan.stop);
 
+    // Save scanned/typed stock into inventory
     document.getElementById('admin-save-stock').onclick = ()=>{
       const pl = {
-        name:    scanEls.name.value.trim(),
+        name: scanEls.name.value.trim(),
         barcode: scanEls.barcode.value.trim(),
-        code:    scanEls.barcode.value.trim(),
-        batch:   scanEls.batch.value.trim(),
-        expiry:  scanEls.expiry.value.trim(),
-        mrp:     ERP.n(scanEls.mrp.value || 0),
-        gst:     ERP.n(scanEls.gst.value || 0),
-        qty:     ERP.n(scanEls.qty.value || 0),
+        code: scanEls.barcode.value.trim(),
+        batch: scanEls.batch.value.trim(),
+        expiry: scanEls.expiry.value.trim(),
+        mrp: Number(scanEls.mrp.value || 0),
+        gst: Number(scanEls.gst.value || 0),
+        qty: Number(scanEls.qty.value || 0),
       };
-      if(!pl.barcode && !pl.name){ alert('Barcode or name required'); return; }
+      if(!pl.barcode){ alert('Barcode required'); return; }
       const inv = ERP.load('inventory', []);
       ERP.applyPurchaseRows(inv, [pl]);
       scanEls.result.textContent = 'Saved to stock ✓';
       scanEls.qty.value = '';
     };
 
-    /* ========== CSV import/export ========== */
+    // CSV import/export
     document.getElementById('btnImportCSV').onclick = async ()=>{
       const f = document.getElementById('invCSVFile').files?.[0];
       if(!f) return alert('Choose a CSV file first');
@@ -253,70 +197,10 @@
       const count = await ERP.mergeInventoryCSVText(text);
       document.getElementById('importStatus').textContent = `Merged ${count} rows ✅`;
     };
-    document.getElementById('btnExportInv').onclick      = ()=> ERP.downloadCSV('inventory.csv', ERP.load('inventory', []));
+    document.getElementById('btnExportInv').onclick = ()=> ERP.downloadCSV('inventory.csv', ERP.load('inventory', []));
     document.getElementById('btnExportPatients').onclick = ()=> ERP.downloadCSV('patients.csv', ERP.load('patients', []));
     document.getElementById('btnExportInvoices').onclick = ()=> ERP.downloadCSV('invoices.csv', ERP.load('invoices', []));
     document.getElementById('btnExportInvItems').onclick = ()=> ERP.downloadCSV('invoice_items.csv', ERP.load('invoice_items', []));
-
-    /* ========== PIN Management (unified pins store) ========== */
-    (function pinSettings(){
-      const $ = id => document.getElementById(id);
-      const msg = (t, ok=false) => { const el=$('pinMsg'); el.textContent=t; el.style.color = ok ? 'var(--c-mint)' : 'var(--fg)'; };
-
-      // Ensure default pins exist (align with login)
-      const defaults = { doctor:'4321', supervisor:'1111', admin:'9999' };
-      const pins = Object.assign({}, defaults, ERP.load('pins', {}));
-      ERP.save('pins', pins); // persist merged
-
-      const showBox = $('showPins');
-      const fields = ['pinAdminCurrent','pinAdminNew','pinAdminConfirm','pinDoctorNew','pinSupervisorNew'].map($);
-
-      // show/hide pins
-      showBox?.addEventListener('change', ()=>{
-        const type = showBox.checked ? 'text' : 'password';
-        fields.forEach(f => { if(f) f.type = type; });
-      });
-
-      const isValid = (p) => /^\d{4,6}$/.test(String(p||'').trim());
-
-      $('btnSavePins').onclick = ()=>{
-        const cur  = $('pinAdminCurrent').value.trim();
-        const newA = $('pinAdminNew').value.trim();
-        const newC = $('pinAdminConfirm').value.trim();
-        const newD = $('pinDoctorNew').value.trim();
-        const newS = $('pinSupervisorNew').value.trim();
-
-        if (cur !== String(pins.admin)) { msg('Current Admin PIN incorrect'); return; }
-
-        const next = { ...pins };
-
-        if (newA || newC) {
-          if (newA !== newC) { msg('Admin PIN mismatch'); return; }
-          if (!isValid(newA)) { msg('Admin PIN must be 4–6 digits'); return; }
-          next.admin = newA;
-        }
-        if (newD) {
-          if (!isValid(newD)) { msg('Doctor PIN must be 4–6 digits'); return; }
-          next.doctor = newD;
-        }
-        if (newS) {
-          if (!isValid(newS)) { msg('Supervisor PIN must be 4–6 digits'); return; }
-          next.supervisor = newS;
-        }
-
-        ERP.save('pins', next);
-        // clear inputs (except current)
-        ['pinAdminNew','pinAdminConfirm','pinDoctorNew','pinSupervisorNew'].forEach(id => { const el=$(id); if(el) el.value=''; });
-        msg('PINs updated ✓', true);
-      };
-
-      $('btnResetPins').onclick = ()=>{
-        if(!confirm('Reset to defaults? Admin(9999), Doctor(4321), Supervisor(1111)')) return;
-        ERP.save('pins', defaults);
-        ['pinAdminCurrent','pinAdminNew','pinAdminConfirm','pinDoctorNew','pinSupervisorNew'].forEach(id => { const el=$(id); if(el) el.value=''; });
-        msg('PINs reset to defaults ✓', true);
-      };
-    })();
   </script>
 </body>
 </html>
