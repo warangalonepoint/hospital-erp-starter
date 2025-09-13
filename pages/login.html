@@ -4,60 +4,123 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Hospital ERP · Login</title>
-  <link rel="stylesheet" href="../styles/styles.css" />
+  <!-- cache-bust the stylesheet to avoid stale colors -->
+  <link rel="stylesheet" href="../styles/styles.css?v=2" />
+  <style>
+    .login-card{
+      max-width: 560px; margin: 32px auto; padding: 20px;
+      background: var(--panel); border:1px solid var(--ring);
+      border-radius: var(--radius-lg); box-shadow: var(--shadow);
+    }
+    .login-card h1{ margin:0 0 6px 0; font-size:1.8rem; font-weight:900; letter-spacing:.2px }
+    .login-sub{ margin:.25rem 0 1rem 0; opacity:.8; font-weight:700 }
+    .pin-row{ display:flex; gap:10px; align-items:center }
+    .pin-row .input{ flex:1; font-size:1.1rem; letter-spacing:.2rem; text-align:center }
+    .hint{ margin-top:10px; opacity:.9; font-weight:800 }
+    .chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top:6px }
+    .chip{
+      background: var(--pill-bg); color: var(--pill-fg);
+      border-radius: 999px; padding:8px 12px; font-weight:800; cursor:pointer;
+      border:1px solid var(--ring);
+    }
+    .footnote{ margin-top:18px; opacity:.7; font-weight:700; font-size:.9rem }
+    .form-row{ display:flex; gap:10px; margin-top:10px }
+    .form-row .btn{ flex:1 }
+  </style>
 </head>
 <body>
-  <div class="center">
-    <div class="form">
-      <h2 style="margin-bottom:.5rem">Welcome</h2>
-      <p>Enter your PIN to continue</p>
+  <header class="app-topbar">
+    <nav class="nav">
+      <a class="link-back" href="./login.html">← Login</a>
+      <div class="spacer"></div>
+      <button class="pill" id="themeToggle">🌗</button>
+      <button class="pill" id="btnClearCache">Clear Cache</button>
+    </nav>
+  </header>
 
-      <div style="height:.5rem"></div>
-      <label class="label" for="pin">PIN</label>
-      <input id="pin" class="input" type="password" placeholder="Enter PIN" />
+  <main class="container">
+    <section class="login-card">
+      <h1>Welcome</h1>
+      <div class="login-sub">Enter your PIN to continue</div>
 
-      <div style="height:.75rem"></div>
-      <button id="loginBtn" class="btn">Login</button>
+      <div class="pin-row">
+        <input id="pinInput" class="input" type="password" inputmode="numeric" placeholder="••••" maxlength="8" autofocus />
+      </div>
 
-      <div class="small">Doctor: <b>4321</b> · Supervisor: <b>9876</b> · Admin: <b>2468</b></div>
-      <div class="small"><button id="themeToggle" class="pill" style="margin-top:.5rem">🌗 Toggle theme</button></div>
-    </div>
-  </div>
+      <div class="form-row">
+        <button id="btnLogin" class="btn">Login</button>
+      </div>
 
-  <script>
-    // theme
+      <div class="hint">Quick PINs (tap to autofill)</div>
+      <div class="chips">
+        <!-- change these as needed -->
+        <span class="chip" data-pin="4321">Doctor: 4321</span>
+        <span class="chip" data-pin="9876">Supervisor: 9876</span>
+        <span class="chip" data-pin="2468">Admin: 2468</span>
+      </div>
+
+      <div class="footnote">Tip: you can switch Light/Dark with the moon button above.</div>
+    </section>
+  </main>
+
+  <footer class="footer">Login · Hospital ERP</footer>
+
+  <script type="module">
+    // same theme behavior as other pages
     const root = document.documentElement;
     const saved = localStorage.getItem('theme');
     if (saved) root.setAttribute('data-theme', saved);
-    else if (window.matchMedia('(prefers-color-scheme: light)').matches) root.setAttribute('data-theme','light');
-    document.getElementById('themeToggle').onclick = () => {
+    else if (matchMedia('(prefers-color-scheme: light)').matches) root.setAttribute('data-theme','light');
+    themeToggle.onclick = () => {
       const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
       root.setAttribute('data-theme', next); localStorage.setItem('theme', next);
     };
 
-    // PIN routing (single field)
-    const PINS = {
-      doctor:     ['4321'],
-      supervisor: ['9876'],
-      admin:      ['2468']
+    // clear cache
+    btnClearCache.onclick = async () => {
+      localStorage.clear(); sessionStorage.clear();
+      if ('caches' in window) { const keys = await caches.keys(); await Promise.all(keys.map(k => caches.delete(k))); }
+      location.reload();
     };
 
-    document.getElementById('loginBtn').onclick = () => {
-      const pin = (document.getElementById('pin').value || '').trim();
-      const role =
-        PINS.doctor.includes(pin)     ? 'doctor' :
-        PINS.supervisor.includes(pin) ? 'supervisor' :
-        PINS.admin.includes(pin)      ? 'admin' : null;
+    // PIN handling
+    const pinInput = document.getElementById('pinInput');
+    const btnLogin = document.getElementById('btnLogin');
 
-      if (!role) return alert('Wrong PIN');
+    // quick chips
+    document.querySelectorAll('.chip').forEach(el=>{
+      el.addEventListener('click', ()=> { pinInput.value = el.dataset.pin; pinInput.focus(); });
+    });
 
-      sessionStorage.setItem('role', role);
+    function routeByPin(pin){
+      // normalize
+      const p = String(pin).trim();
 
-      // route by role
-      if (role === 'doctor')      location.href = './dashboard.html';
-      else if (role === 'supervisor') location.href = './supervisor.html';
-      else if (role === 'admin')  location.href = './admin.html';
-    };
+      // map pin -> {role, target}
+      const map = {
+        '4321': { role:'doctor',     target:'./dashboard.html'  },
+        '9876': { role:'supervisor', target:'./supervisor.html' },
+        '2468': { role:'admin',      target:'./admin.html'      }
+      };
+
+      return map[p] || null;
+    }
+
+    function login(){
+      const pin = pinInput.value;
+      const info = routeByPin(pin);
+      if (!info){
+        alert('Invalid PIN'); return;
+      }
+      sessionStorage.setItem('role', info.role);
+      // you can store a token if needed: sessionStorage.setItem('token', 'demo');
+      location.href = info.target;
+    }
+
+    btnLogin.addEventListener('click', login);
+    pinInput.addEventListener('keydown', (e)=> {
+      if (e.key === 'Enter') login();
+    });
   </script>
 </body>
 </html>
