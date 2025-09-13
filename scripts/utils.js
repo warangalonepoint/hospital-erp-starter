@@ -1,6 +1,8 @@
 /* ====================================================================
    utils.js — Unified helpers for Pharmacy, Reports, Admin
-   - ES module exports + window.ERP global fallback
+   - Browser-first (window.ERP) with CommonJS export fallback
+   - ₹ formatting with lakh/crore, date helpers, CSV I/O
+   - Inventory indexing (case-insensitive barcodes), cart math, KPIs
    ==================================================================== */
 
 (function initERPFactory (global) {
@@ -15,6 +17,7 @@
 
   /* ----------------- Numbers / Dates ----------------- */
   ERP.n = (v) => Number.isFinite(+v) ? +v : 0;
+  ERP.round = (v, d = 2) => +ERP.n(v).toFixed(d);
   ERP.pct = (v) => ERP.n(v) / 100;
   ERP.todayISO = () => new Date().toISOString().slice(0, 10);
   ERP.asDate = (d) => (d instanceof Date ? d : new Date(d));
@@ -22,10 +25,42 @@
     const x = ERP.asDate(d);
     return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`;
   };
+  ERP.normalize = (s) => String(s ?? '').trim().toLowerCase();
+
+  /* ----------------- Formatting (reads Settings → erp:fmt) ----------------- */
+  function getFmt() {
+    try { return JSON.parse(localStorage.getItem('erp:fmt') || '{}'); }
+    catch { return {}; }
+  }
+  function formatIndianInt(x) {
+    const s = String(Math.trunc(Math.abs(x)));
+    const last3 = s.slice(-3);
+    const other = s.slice(0, -3);
+    const withCommas = other.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + (other ? ',' : '') + last3;
+    return (x < 0 ? '-' : '') + withCommas;
+  }
+  ERP.formatNumber = (num, decimals = undefined) => {
+    const cfg = getFmt();
+    const d = Number.isInteger(decimals) ? decimals : (Number(cfg.decimals) ?? 2);
+    const n = ERP.round(num, d);
+    if (cfg.lakh) {
+      const sign = n < 0 ? '-' : '';
+      const abs = Math.abs(n);
+      const intFmt = formatIndianInt(abs);
+      const dec = d > 0 ? '.' + String(abs.toFixed(d)).split('.')[1] : '';
+      return sign + intFmt + dec;
+    }
+    try {
+      return new Intl.NumberFormat('en-IN', { minimumFractionDigits: d, maximumFractionDigits: d }).format(n);
+    } catch {
+      return n.toFixed(d);
+    }
+  };
+  ERP.formatMoney = (num, decimals = undefined) => `₹ ${ERP.formatNumber(num, decimals)}`;
 
   /* ----------------- CSV utils ----------------- */
   ERP.csvToObjects = async function csvToObjects(text) {
-    // Robust CSV parser (quotes, commas, newlines)
+    // Robust CSV parser (quotes, commas, CRLF)
     const out = [];
     let i = 0, cell = '', row = [], inQ = false;
     const push = () => { row.push(cell); cell=''; };
@@ -95,17 +130,33 @@
     return { inv, invs, items, pats };
   };
 
-  /* ----------------- Inventory indexing ----------------- */
+  /* ----------------- Inventory indexing & finders ----------------- */
   ERP.indexInventory = function indexInventory(inv = []) {
-    const byBarcode = new Map();
-    const byName = new Map();
+    const byBarcode = new Map();  // normalized barcode/code -> row
+    const byName = new Map();     // lowercase name -> first row
     inv.forEach(it => {
-      const bc = (it.barcode || it.code || it.sku || '').trim();
-      if (bc) byBarcode.set(bc, it);
+      const bcKey = ERP.normalize(it.barcode || it.code || it.sku || '');
+      if (bcKey) byBarcode.set(bcKey, it);
       const nm = (it.name || '').toLowerCase().trim();
       if (nm && !byName.has(nm)) byName.set(nm, it);
     });
     return { byBarcode, byName };
+  };
+
+  ERP.findInventoryByTerm = function findInventoryByTerm(term) {
+    const inv = ERP.load('inventory', []);
+    const idx = ERP.indexInventory(inv);
+    const t = ERP.normalize(term);
+    return idx.byBarcode.get(t) || idx.byName.get(t) || null;
+  };
+
+  ERP.findPatientByIdOrBarcode = function findPatientByIdOrBarcode(code) {
+    const pats = ERP.load('patients', []);
+    const key = ERP.normalize(code);
+    return pats.find(p =>
+      ERP.normalize(p.patient_id) === key ||
+      ERP.normalize(p.barcode || '') === key
+    ) || null;
   };
 
   /* ===================================================================
@@ -146,12 +197,12 @@
   };
 
   ERP.renderCartTotals = function renderCartTotals(totals, ids = {}) {
-    const set = (id, v) => { if (!id) return; const el = document.getElementById(id); if (el) el.textContent = v; };
-    set(ids.itemsId, totals.items);
-    set(ids.subtotalId, totals.subtotal.toFixed(2));
-    set(ids.gstId, totals.gst.toFixed(2));
-    set(ids.discountId, totals.discount.toFixed(2));
-    set(ids.totalId, totals.total.toFixed(2));
+    const setTxt = (id, txt) => { if (!id) return; const el = document.getElementById(id); if (el) el.textContent = txt; };
+    setTxt(ids.itemsId, totals.items);
+    setTxt(ids.subtotalId, ERP.formatMoney(totals.subtotal));
+    setTxt(ids.gstId,      ERP.formatMoney(totals.gst));
+    setTxt(ids.discountId, ERP.formatMoney(totals.discount));
+    setTxt(ids.totalId,    ERP.formatMoney(totals.total));
   };
 
   ERP.addToCart = function addToCart(cart, row) {
@@ -174,10 +225,10 @@
 
   /**
    * purchaseRows: [{ code, barcode, name, batch, qty, mrp, gst, expiry }]
-   * Merge by (code|barcode + batch)
+   * Merge by (code|barcode + batch), case-insensitive code/barcode
    */
   ERP.applyPurchaseRows = function applyPurchaseRows(inventory = [], purchaseRows = []) {
-    const key = (r) => `${(r.code || r.barcode || '').trim()}@@${(r.batch || '').trim()}`;
+    const key = (r) => `${ERP.normalize(r.code || r.barcode || '')}@@${(r.batch || '').trim()}`;
     const map = new Map(inventory.map(r => [key(r), r]));
 
     for (const p of purchaseRows) {
@@ -186,11 +237,11 @@
         if (map.has(k)) {
           const cur = map.get(k);
           cur.qty   = String(ERP.n(cur.qty) + ERP.n(p.qty || 0));
-          if (p.mrp)    cur.mrp    = String(ERP.n(p.mrp));
-          if (p.gst!=null) cur.gst = String(ERP.n(p.gst));
-          if (p.expiry) cur.expiry = p.expiry;
-          if (p.name   && !cur.name) cur.name = p.name;
-          if (p.code   && !cur.code) cur.code = p.code;
+          if (p.mrp)      cur.mrp    = String(ERP.n(p.mrp));
+          if (p.gst!=null)cur.gst    = String(ERP.n(p.gst));
+          if (p.expiry)   cur.expiry = p.expiry;
+          if (p.name   && !cur.name)    cur.name = p.name;
+          if (p.code   && !cur.code)    cur.code = p.code;
           if (p.barcode&& !cur.barcode) cur.barcode = p.barcode;
         } else {
           map.set(k, {
@@ -314,22 +365,11 @@
   };
 
   /* ----------------- Expose ----------------- */
-  // attach to window (for non-module pages)
   global.ERP = Object.assign(global.ERP || {}, ERP);
 
-  // support ESM import (if used as <script type="module">)
-  try { if (typeof export !== 'undefined') {} } catch {}
-  // eslint-disable-next-line no-undef
-  if (typeof window !== 'undefined' && window.define === undefined) {
-    // we’re in browser; optionally no-op
-  }
-
-  // Provide named exports when imported as a module
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = ERP;
   } else {
-    // Create ESM-friendly exports
-    // (Some bundlers will ignore this; browsers using native modules will still access via window.ERP)
     Object.assign(global, { ERP });
   }
 
