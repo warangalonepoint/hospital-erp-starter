@@ -1,69 +1,85 @@
-// /scripts/utils.js
+/* utils.js — common helpers for Hospital ERP Starter
+   Safe to replace; functions are namespaced to avoid collisions.
+*/
 
-// tiny CSV parser (no quotes; good for our simple data)
-export function parseCSV(text) {
-  const [headerLine, ...lines] = text.trim().split(/\r?\n/);
-  const headers = headerLine.split(',').map(h=>h.trim());
-  return lines.filter(Boolean).map(line=>{
-    const cells = line.split(',').map(v=>v.trim());
-    const obj = {}; headers.forEach((h,i)=>obj[h]=cells[i]); return obj;
+window.ERP = window.ERP || {};
+const ERP = window.ERP;
+
+// -------- Storage helpers (local demo data) --------
+ERP.saveJSON = (key, obj) => localStorage.setItem(key, JSON.stringify(obj));
+ERP.loadJSON = (key, fallback = null) => {
+  try { return JSON.parse(localStorage.getItem(key)) ?? fallback; }
+  catch { return fallback; }
+};
+
+// -------- ID & Barcode helpers --------
+ERP.generatePatientId = function(seq = null, date = new Date()) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  const n = (seq ?? Number(localStorage.getItem('pid_seq') || 0) + 1);
+  localStorage.setItem('pid_seq', String(n));
+  return `PID-${y}${m}${d}-${String(n).padStart(4, '0')}`;
+};
+
+// Render Code128 barcode into an <svg> element
+ERP.renderBarcode = function(svgEl, text) {
+  if (!svgEl) return;
+  if (!window.JsBarcode) { console.warn('JsBarcode not loaded'); return; }
+  try {
+    JsBarcode(svgEl, text, { format: 'CODE128', displayValue: true, fontSize: 12, height: 60 });
+  } catch (e) { console.warn('Barcode render failed', e); }
+};
+
+// -------- CSV helpers --------
+ERP.csvStringify = function(rows) {
+  const esc = (v) => {
+    if (v == null) return '';
+    const s = String(v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  return rows.map(r => r.map(esc).join(',')).join('\n');
+};
+
+ERP.csvParse = function(csv) {
+  // Simple CSV parser for demo data (no multi-line quoted fields).
+  const lines = csv.trim().split(/\r?\n/);
+  const headers = lines.shift().split(',').map(h => h.trim());
+  return lines.map(line => {
+    const cols = [];
+    let cur = '', inQ = false;
+    for (let i=0;i<line.length;i++){
+      const ch = line[i];
+      if (inQ) {
+        if (ch === '"' && line[i+1] === '"') { cur += '"'; i++; }
+        else if (ch === '"') inQ = false;
+        else cur += ch;
+      } else {
+        if (ch === '"') inQ = true;
+        else if (ch === ',') { cols.push(cur); cur = ''; }
+        else cur += ch;
+      }
+    }
+    cols.push(cur);
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = (cols[i] ?? '').trim());
+    return obj;
   });
-}
+};
 
-// cache-busted fetch (avoids stale CSV on Vercel)
-export async function fetchCSV(path) {
-  const u = `${path}${path.includes('?') ? '&' : '?'}v=${Date.now()}`;
-  const txt = await fetch(u, { cache: 'no-store' }).then(r=>r.text());
-  return parseCSV(txt);
-}
+// Download an array of objects as CSV
+ERP.downloadCSV = function(filename, headers, rows) {
+  const data = [headers, ...rows.map(r => headers.map(h => r[h]))];
+  const csv = ERP.csvStringify(data);
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  document.body.appendChild(link); link.click(); link.remove();
+};
 
-export function formatINR(n) {
-  return Number(n||0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
+// Money fmt
+ERP.money = n => (Number(n) || 0).toFixed(2);
 
-// group array of rows by a key function → {key: sum}
-export function sumBy(rows, keyFn, valueFn) {
-  const m = new Map();
-  rows.forEach(r=>{
-    const k = keyFn(r);
-    const v = Number(valueFn(r)) || 0;
-    m.set(k, (m.get(k)||0) + v);
-  });
-  return m;
-}
-
-// simple SVG bar chart
-export function renderBars(el, series, {height=160,pad=24}={}) {
-  if (!el) return;
-  const w = el.clientWidth || 600, h = height;
-  const max = Math.max(1, ...series.map(s=>Number(s.value)||0));
-  const barW = (w - pad*2) / Math.max(1, series.length);
-  const bars = series.map((s,i)=>{
-    const x = pad + i*barW + 4;
-    const bh = Math.round(((Number(s.value)||0)/max) * (h - pad*2));
-    const y = h - pad - bh;
-    const title = s.label.replace(/"/g,'&quot;') + ' · ' + formatINR(s.value);
-    return `<rect x="${x}" y="${y}" width="${Math.max(4,barW-8)}" height="${bh}" rx="6" ry="6"><title>${title}</title></rect>`;
-  }).join('');
-  el.innerHTML = `<svg width="100%" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
-    <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#69b8ff"/><stop offset="100%" stop-color="#b384ff"/>
-    </linearGradient></defs>
-    ${bars.replaceAll("<rect", "<rect fill='url(#g)'")}
-  </svg>`;
-}
-
-// quick CSV download from array of objects
-export function downloadCSV(filename, rows) {
-  if (!rows?.length) return;
-  const headers = Object.keys(rows[0]);
-  const lines = [headers.join(',')].concat(
-    rows.map(r => headers.map(h => (r[h] ?? '')).join(','))
-  );
-  const blob = new Blob([lines.join('\n')], {type:'text/csv'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  a.click();
-  setTimeout(()=>URL.revokeObjectURL(a.href), 500);
-}
+// Simple UID
+ERP.uid = (prefix='ID') => `${prefix}-${Math.random().toString(36).slice(2,8)}`;
