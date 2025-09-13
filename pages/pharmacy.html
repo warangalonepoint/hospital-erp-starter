@@ -1,36 +1,392 @@
-<!-- FILE: /pages/pharmacy.html  (Inventory panel ONLY) -->
-<section class="panel">
-  <h2>Inventory</h2>
-  <div class="controls">
-    <input class="input" id="qi" placeholder="Search item / SKU / scan..." />
-    <select class="input" id="stockFilter">
-      <option value="">All</option>
-      <option value="low">Low Stock (&lt;=10)</option>
-      <option value="out">Out of Stock (=0)</option>
-    </select>
-    <button class="btn" id="scanBtn">📷 Scan</button>
-    <button class="btn" id="exportInvt">Export CSV</button>
-  </div>
+<!-- /pages/pharmacy.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pharmacy • Hospital ERP</title>
+  <link rel="stylesheet" href="../styles/styles.css" />
+  <link rel="manifest" href="../manifest.json" />
+  <script defer src="../scripts/utils.js"></script>
+  <script defer src="../scripts/scanner.js"></script>
+  <style>
+    /* Page-local helpers only. Keep minimal; main theme is in styles.css */
+    .tabs {display:flex; gap:.5rem; flex-wrap:wrap; margin:.5rem 0 1rem}
+    .tab {padding:.6rem .9rem; border-radius:999px; font-weight:600; background:var(--chip-bg,#f4f6ff); box-shadow: var(--soft-shadow);}
+    .tab.active {background:var(--brand-chip,#6f7dff); color:#fff}
+    .grid {display:grid; gap:1rem}
+    .grid-2 {grid-template-columns:1fr; }
+    @media (min-width: 800px){ .grid-2 {grid-template-columns:1fr 1fr;} }
+    .card {background:var(--card-bg); border-radius:18px; padding:1rem; box-shadow:var(--card-shadow);}
+    .muted {opacity:.75}
+    .kpis {display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.75rem}
+    @media (min-width: 800px){ .kpis {grid-template-columns:repeat(4,1fr);} }
+    .kpi {padding:1rem; border-radius:16px; background:var(--chip-bg); font-weight:700}
+    .actions {display:flex; gap:.5rem; flex-wrap:wrap}
+    .btn {padding:.7rem 1rem; border-radius:12px; font-weight:700; background:var(--btn-bg); color:var(--btn-fg); box-shadow:var(--soft-shadow); border:none}
+    .btn.secondary{background:var(--chip-bg); color:var(--fg)}
+    .btn.ghost{background:transparent; border:1px solid var(--border); color:var(--fg)}
+    .input, select {width:100%; padding:.7rem .9rem; border-radius:12px; border:1px solid var(--border); background:var(--input-bg); color:var(--fg)}
+    table {width:100%; border-collapse:separate; border-spacing:0 8px}
+    th, td {padding:.6rem .7rem; text-align:left}
+    tbody tr {background:var(--table-row-bg); border-radius:12px}
+    .right {text-align:right}
+    .mono {font-variant-numeric: tabular-nums}
+    .badge {padding:.25rem .5rem; border-radius:999px; background:var(--chip-bg); font-size:.8rem; font-weight:700}
+    .hide {display:none !important}
+  </style>
+</head>
 
-  <!-- Scanner modal -->
-  <div id="scanModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); backdrop-filter:blur(4px); z-index:50;">
-    <div style="max-width:720px;margin:6vh auto;background:var(--bg-soft);border:1px solid var(--ring);border-radius:18px;box-shadow:var(--shadow);padding:1rem;">
-      <div style="display:flex; align-items:center; gap:.5rem; margin-bottom:.5rem;">
-        <h3 style="flex:1;margin:0;">Scan barcode / QR</h3>
-        <button class="pill" id="switchCam">Switch Cam</button>
-        <button class="pill" id="closeScan">Close</button>
+<body>
+  <header class="container" style="padding: 1rem 1rem 0;">
+    <nav class="actions" style="justify-content:space-between; align-items:center;">
+      <div class="actions">
+        <a class="btn ghost" href="./dashboard.html">← Home</a>
+        <button class="btn ghost" id="btn-logout">Logout</button>
+        <button class="btn ghost" id="btn-clear">Clear Cache</button>
       </div>
-      <video id="scanVideo" style="width:100%;border-radius:14px; background:black;aspect-ratio:16/9;"></video>
-      <div style="margin-top:.6rem;color:var(--muted);font-size:.9rem;">Tip: aim at the barcode; ensure lighting. USB scanners also work—just focus the search box and scan.</div>
-    </div>
-  </div>
+      <div class="badge">Standard • Pharmacy</div>
+    </nav>
+    <h1 style="margin:.6rem 0 0">Pharmacy</h1>
+    <p class="muted">Sell • Purchase • Stock • Reports</p>
 
-  <div class="table-wrap">
-    <table id="invnTable">
-      <thead>
-        <tr><th>Item</th><th>SKU</th><th>MRP</th><th>Price</th><th>Qty</th><th>Reorder</th></tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
-</section>
+    <!-- Tabs -->
+    <div class="tabs" role="tablist" aria-label="Pharmacy tabs">
+      <button class="tab active" data-tab="sell" role="tab" aria-selected="true">Sell</button>
+      <button class="tab" data-tab="purchase" role="tab">Purchase</button>
+      <button class="tab" data-tab="stock" role="tab">Stock</button>
+      <button class="tab" data-tab="reports" role="tab">Reports</button>
+    </div>
+  </header>
+
+  <main class="container grid grid-1" style="padding:0 1rem 2rem">
+
+    <!-- SELL -->
+    <section id="tab-sell" class="grid grid-2">
+      <div class="card">
+        <h2>Quick POS</h2>
+        <p class="muted">Search or scan barcode to add to cart</p>
+
+        <div class="grid" style="grid-template-columns:1fr auto; align-items:center">
+          <input id="sell-search" class="input" placeholder="Search item name / SKU / barcode…" autofocus />
+          <div class="actions">
+            <button id="btn-scan" class="btn">Scan</button>
+            <button id="btn-load-demo" class="btn secondary">Load Demo</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:1rem">
+          <table>
+            <thead>
+              <tr>
+                <th>Item</th><th class="right">Batch</th><th class="right">Qty</th>
+                <th class="right">MRP</th><th class="right">GST%</th><th class="right">Line</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="sell-cart">
+              <!-- rows injected -->
+            </tbody>
+          </table>
+          <div class="actions" style="justify-content:flex-end; margin-top:.5rem">
+            <button id="btn-clear-cart" class="btn secondary">Clear</button>
+          </div>
+        </div>
+
+        <div class="grid grid-2">
+          <div class="card">
+            <h3>Customer</h3>
+            <input id="cust-name" class="input" placeholder="Patient / Customer name" />
+            <input id="cust-phone" class="input" placeholder="Phone (optional)" />
+          </div>
+          <div class="card">
+            <h3>Totals</h3>
+            <div class="grid" style="grid-template-columns:1fr 1fr">
+              <div><div class="muted">Subtotal</div><div id="t-sub" class="mono">0.00</div></div>
+              <div>
+                <label class="muted">Discount</label>
+                <div class="actions">
+                  <input id="discount-value" class="input" placeholder="0" style="max-width:120px">
+                  <select id="discount-type" class="input" style="max-width:120px">
+                    <option value="INR">₹</option>
+                    <option value="PCT">%</option>
+                  </select>
+                </div>
+              </div>
+              <div><div class="muted">GST</div><div id="t-gst" class="mono">0.00</div></div>
+              <div><div class="muted">Grand Total</div><div id="t-grand" class="mono" style="font-weight:800">0.00</div></div>
+            </div>
+            <div class="actions" style="margin-top:.75rem">
+              <select id="pay-mode" class="input" style="max-width:160px">
+                <option>Cash</option><option>Card</option><option>UPI</option>
+              </select>
+              <button id="btn-save" class="btn">Save Invoice</button>
+              <button id="btn-print" class="btn secondary">Print</button>
+              <button id="btn-export-bill" class="btn secondary">Export CSV</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Item Lookup</h2>
+        <p class="muted">Live results (placeholder)</p>
+        <table>
+          <thead><tr><th>Item</th><th class="right">Batch</th><th class="right">Expiry</th><th class="right">MRP</th><th class="right">Stock</th><th></th></tr></thead>
+          <tbody id="sell-results">
+            <tr><td class="muted" colspan="6">Start typing to see results…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- PURCHASE -->
+    <section id="tab-purchase" class="grid grid-2 hide">
+      <div class="card">
+        <h2>Purchase Bill</h2>
+        <div class="grid">
+          <input id="sup-name" class="input" placeholder="Supplier / Party" />
+          <div class="grid" style="grid-template-columns:1fr 1fr">
+            <input id="inv-no" class="input" placeholder="Invoice No." />
+            <input id="inv-date" class="input" type="date" />
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:1rem">
+          <h3>Add Line</h3>
+          <div class="grid" style="grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr">
+            <input id="p-item" class="input" placeholder="Item name" />
+            <input id="p-batch" class="input" placeholder="Batch" />
+            <input id="p-exp" class="input" type="month" placeholder="Expiry" />
+            <input id="p-qty" class="input" type="number" min="1" placeholder="Qty" />
+            <input id="p-mrp" class="input" type="number" step="0.01" placeholder="MRP" />
+            <input id="p-gst" class="input" type="number" step="0.1" placeholder="GST%" />
+          </div>
+          <div class="actions" style="margin-top:.6rem">
+            <button id="btn-add-purchase" class="btn">Add</button>
+            <button id="btn-clear-purchase" class="btn secondary">Clear</button>
+          </div>
+
+          <table style="margin-top:.6rem">
+            <thead><tr><th>Item</th><th class="right">Batch</th><th class="right">Expiry</th><th class="right">Qty</th><th class="right">MRP</th><th class="right">GST%</th><th></th></tr></thead>
+            <tbody id="purchase-lines"><tr><td class="muted" colspan="7">No lines yet</td></tr></tbody>
+          </table>
+
+          <div class="actions" style="justify-content:flex-end; margin-top:.5rem">
+            <button id="btn-save-purchase" class="btn">Save Purchase</button>
+            <button id="btn-export-purchase" class="btn secondary">Export CSV</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Recent Purchases</h2>
+        <p class="muted">Placeholder list</p>
+        <table>
+          <thead><tr><th>Date</th><th>Invoice</th><th>Supplier</th><th class="right">Items</th><th class="right">Amount</th></tr></thead>
+          <tbody id="purchase-recent">
+            <tr><td class="muted" colspan="5">No data yet</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- STOCK -->
+    <section id="tab-stock" class="grid hide">
+      <div class="kpis">
+        <div class="kpi">Current Stock <div class="muted mono" id="s-current">—</div></div>
+        <div class="kpi">Low Stock <div class="muted mono" id="s-low">—</div></div>
+        <div class="kpi">Near Expiry <div class="muted mono" id="s-near">—</div></div>
+        <div class="kpi">Expired <div class="muted mono" id="s-exp">—</div></div>
+      </div>
+
+      <div class="card">
+        <div class="actions" style="justify-content:space-between; align-items:center">
+          <h2>Inventory</h2>
+          <div class="actions">
+            <input id="stock-search" class="input" placeholder="Search items…" style="max-width:220px">
+            <button id="btn-export-stock" class="btn secondary">Export CSV</button>
+          </div>
+        </div>
+
+        <table>
+          <thead><tr><th>Item</th><th class="right">Batch</th><th class="right">Expiry</th><th class="right">MRP</th><th class="right">GST%</th><th class="right">Qty</th><th class="right">Min</th></tr></thead>
+          <tbody id="stock-table">
+            <tr><td class="muted" colspan="7">Inventory will appear here…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- REPORTS -->
+    <section id="tab-reports" class="grid hide">
+      <div class="card">
+        <div class="actions" style="justify-content:space-between; align-items:center">
+          <h2>Sales & Purchase Reports</h2>
+          <div class="actions">
+            <button class="tab active" data-range="today">Today</button>
+            <button class="tab" data-range="7d">7D</button>
+            <button class="tab" data-range="mtd">MTD</button>
+            <input id="r-from" class="input" type="date">
+            <input id="r-to" class="input" type="date">
+          </div>
+        </div>
+
+        <div class="kpis" style="margin:.6rem 0 1rem">
+          <div class="kpi">Sales <div class="muted mono" id="k-sales">—</div></div>
+          <div class="kpi">Purchases <div class="muted mono" id="k-purchases">—</div></div>
+          <div class="kpi">Gross Profit <div class="muted mono" id="k-gp">—</div></div>
+          <div class="kpi">Top Item <div class="muted mono" id="k-top">—</div></div>
+        </div>
+
+        <table>
+          <thead><tr><th>Date</th><th>Type</th><th>Ref</th><th>Party/Patient</th><th class="right">Items</th><th class="right">Amount</th></tr></thead>
+          <tbody id="reports-table">
+            <tr><td class="muted" colspan="6">Run a range to see rows…</td></tr>
+          </tbody>
+        </table>
+
+        <div class="actions" style="margin-top:.5rem; justify-content:flex-end">
+          <button id="btn-export-reports" class="btn secondary">Export CSV</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    // ---------- Nav / session hooks ----------
+    document.getElementById('btn-logout').onclick = () => {
+      localStorage.removeItem('erp_active_role');
+      location.href = './login.html';
+    };
+    document.getElementById('btn-clear').onclick = () => {
+      localStorage.clear();
+      alert('Cache cleared. Reloading…');
+      location.reload();
+    };
+
+    // ---------- Tabs ----------
+    const tabButtons = document.querySelectorAll('.tab[data-tab]');
+    const sections = {
+      sell: document.getElementById('tab-sell'),
+      purchase: document.getElementById('tab-purchase'),
+      stock: document.getElementById('tab-stock'),
+      reports: document.getElementById('tab-reports')
+    };
+    tabButtons.forEach(b=>{
+      b.addEventListener('click', ()=>{
+        tabButtons.forEach(x=>x.classList.remove('active'));
+        b.classList.add('active');
+        const t = b.dataset.tab;
+        Object.entries(sections).forEach(([k,el])=> el.classList.toggle('hide', k!==t));
+      });
+    });
+
+    // ---------- SELL (placeholders) ----------
+    const cartTbody = document.getElementById('sell-cart');
+    const resultsTbody = document.getElementById('sell-results');
+    const money = n=> (Number(n)||0).toFixed(2);
+
+    const state = { cart: [] };
+
+    function renderCart(){
+      if(state.cart.length===0){
+        cartTbody.innerHTML = `<tr><td class="muted" colspan="7">Cart is empty</td></tr>`;
+      }else{
+        cartTbody.innerHTML = state.cart.map((r,i)=>`
+          <tr>
+            <td>${r.name}</td>
+            <td class="right">${r.batch||'-'}</td>
+            <td class="right"><input type="number" min="1" value="${r.qty}" style="width:70px" 
+                 oninput="updateQty(${i}, this.value)" class="input"></td>
+            <td class="right mono">₹${money(r.mrp)}</td>
+            <td class="right mono">${r.gst||0}%</td>
+            <td class="right mono">₹${money(r.qty*r.mrp)}</td>
+            <td class="right"><button class="btn secondary" onclick="removeLine(${i})">✕</button></td>
+          </tr>
+        `).join('');
+      }
+      recomputeTotals();
+    }
+    window.updateQty=(i,v)=>{ state.cart[i].qty = Math.max(1, Number(v)||1); renderCart(); }
+    window.removeLine=i=>{ state.cart.splice(i,1); renderCart(); }
+
+    function recomputeTotals(){
+      const sub = state.cart.reduce((s,r)=> s + r.qty*r.mrp, 0);
+      const gst = state.cart.reduce((s,r)=> s + ((r.qty*r.mrp) - (r.qty*r.mrp/(1+(r.gst||0)/100))), 0);
+      const dVal = Number(document.getElementById('discount-value').value || 0);
+      const dType = document.getElementById('discount-type').value || 'INR';
+      const disc = dType==='PCT' ? (sub * (dVal/100)) : dVal;
+      const grand = Math.max(0, sub - disc);
+      document.getElementById('t-sub').textContent = money(sub);
+      document.getElementById('t-gst').textContent = money(gst);
+      document.getElementById('t-grand').textContent = money(grand);
+    }
+
+    document.getElementById('discount-value').addEventListener('input', recomputeTotals);
+    document.getElementById('discount-type').addEventListener('change', recomputeTotals);
+
+    document.getElementById('btn-load-demo').onclick = ()=>{
+      state.cart = [
+        {name:'PARACETAMOL 500MG TAB', batch:'B23', qty:1, mrp:28.00, gst:12},
+        {name:'CETIRIZINE 10MG TAB', batch:'C17', qty:2, mrp:22.50, gst:12},
+      ];
+      renderCart();
+      resultsTbody.innerHTML = `<tr><td class="muted" colspan="6">Demo loaded</td></tr>`;
+    };
+
+    document.getElementById('btn-clear-cart').onclick = ()=>{ state.cart = []; renderCart(); };
+
+    // Scan hook to existing scanner.js
+    document.getElementById('btn-scan').onclick = async ()=>{
+      if(typeof window.startScanner === 'function'){ window.startScanner(code=>{
+        // placeholder: add scanned item stub
+        state.cart.push({name:`Scanned ${code}`, batch:'—', qty:1, mrp:10.00, gst:12});
+        renderCart();
+      }); } else { alert('Scanner not available yet.'); }
+    };
+
+    document.getElementById('btn-save').onclick = ()=>{
+      alert('Save Invoice (placeholder). In MVP, this will write to invoices.csv & invoice_items.csv and persist to localStorage.');
+    };
+    document.getElementById('btn-print').onclick = ()=> window.print();
+    document.getElementById('btn-export-bill').onclick = ()=> alert('Exports the just-saved bill as CSV (placeholder).');
+
+    // ---------- PURCHASE (placeholders) ----------
+    const pLines = [];
+    const purchaseTbody = document.getElementById('purchase-lines');
+    function renderPurchase(){
+      if(pLines.length===0){ purchaseTbody.innerHTML = `<tr><td class="muted" colspan="7">No lines yet</td></tr>`; return; }
+      purchaseTbody.innerHTML = pLines.map((r,i)=>`
+        <tr>
+          <td>${r.name}</td><td class="right">${r.batch}</td><td class="right">${r.exp}</td>
+          <td class="right">${r.qty}</td><td class="right">₹${money(r.mrp)}</td>
+          <td class="right">${r.gst}%</td>
+          <td class="right"><button class="btn secondary" onclick="delP(${i})">✕</button></td>
+        </tr>
+      `).join('');
+    }
+    window.delP = i=>{ pLines.splice(i,1); renderPurchase(); };
+    document.getElementById('btn-add-purchase').onclick = ()=>{
+      const r = {
+        name: val('p-item'), batch: val('p-batch'), exp: val('p-exp'),
+        qty: Number(val('p-qty')||0), mrp: Number(val('p-mrp')||0), gst: Number(val('p-gst')||0)
+      };
+      if(!r.name || !r.qty){ alert('Item name and qty are required'); return; }
+      pLines.push(r); renderPurchase(); clearPInputs();
+    };
+    document.getElementById('btn-clear-purchase').onclick = ()=>{ pLines.length = 0; renderPurchase(); };
+    document.getElementById('btn-save-purchase').onclick = ()=> alert('Save Purchase (placeholder). This will update inventory.csv & localStorage.');
+
+    function val(id){ return document.getElementById(id).value.trim(); }
+    function clearPInputs(){ ['p-item','p-batch','p-exp','p-qty','p-mrp','p-gst'].forEach(id=> document.getElementById(id).value=''); }
+
+    // ---------- STOCK / REPORTS (placeholders) ----------
+    document.getElementById('btn-export-stock').onclick = ()=> alert('Export inventory.csv (placeholder).');
+    document.getElementById('btn-export-reports').onclick = ()=> alert('Export report rows (placeholder).');
+
+    // Initial render
+    renderCart(); renderPurchase();
+  </script>
+</body>
+</html>
