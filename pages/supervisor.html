@@ -1,67 +1,435 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Supervisor • Hospital ERP</title>
-  <link rel="stylesheet" href="../styles/styles.css"/>
-  <script defer src="../scripts/utils.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Supervisor • Abhaya Hospital ERP</title>
+
+  <link rel="stylesheet" href="../styles.css" />
+  <link rel="manifest" href="../manifest.json" />
+  <meta name="theme-color" content="#0b1220" />
+  <style>
+    /* Page-specific tiny tweaks (kept minimal; most styling comes from styles.css) */
+    .kpi .label { opacity:.85; font-weight:700; margin-bottom:6px; }
+    .tools-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;background:var(--card-bg);border:1px solid rgba(0,0,0,.06)}
+    html[data-theme="dark"] .pill{border-color:rgba(255,255,255,.12)}
+    .table{width:100%;border-collapse:separate;border-spacing:0 8px}
+    .table th{ text-align:left; font-weight:800; opacity:.95; padding:10px 12px;}
+    .table td{ padding:12px; background:var(--card-bg); border:1px solid rgba(0,0,0,.06); }
+    .table tr td:first-child{ border-top-left-radius:12px; border-bottom-left-radius:12px;}
+    .table tr td:last-child{ border-top-right-radius:12px; border-bottom-right-radius:12px;}
+    html[data-theme="dark"] .table td{ border-color:rgba(255,255,255,.10); }
+    canvas{width:100%;height:220px}
+  </style>
 </head>
 <body>
+  <!-- Banner (shared) -->
   <header class="banner">
-    <button class="toggle" id="themeToggle" title="Toggle theme">🌙</button>
+    <!-- If you prefer an <img>, keep it here; CSS will handle contain/cover per screen -->
+    <button id="themeToggle" class="floating-toggle" title="Toggle theme">🌙</button>
   </header>
 
-  <div class="toolbar">
-    <a class="chip" href="../index.html">← Dashboard</a>
-    <button class="chip" id="clearCacheBtn">Clear Cache</button>
+  <!-- Global quick actions -->
+  <div class="fixed-actions">
+    <a href="../index.html" class="chip">← Dashboard</a>
+    <button class="chip" id="btnLogout">Logout</button>
+    <button class="chip" id="btnClearCache">Clear Cache</button>
   </div>
 
+  <!-- Supervisor – Launcher panels (match dashboard style) -->
   <section class="section">
-    <div class="panel grad-lilac"><h2>Patients & Follow-ups</h2></div>
-
-    <div class="grid-2" style="margin-top:12px">
-      <div class="section">
-        <label>Search</label>
-        <input id="q" placeholder="Name or phone" style="margin:6px 0 14px"/>
-        <div class="row">
-          <select id="filter" style="max-width:220px">
-            <option value="today">Due today</option>
-            <option value="thisweek">This week</option>
-            <option value="overdue">Overdue</option>
-            <option value="all">All</option>
-          </select>
-          <input type="date" id="ondate" style="max-width:190px" placeholder="On (optional)"/>
-          <button class="chip chip--primary" id="run">Run</button>
-        </div>
-        <p class="muted" id="count" style="margin-top:8px">0 patients</p>
-      </div>
-
-      <div class="section">
-        <h3 style="margin:0 0 8px">Summary</h3>
-        <div class="kpi-grid">
-          <div class="kpi grad-sky"><div class="label">Total</div><div class="num" id="pTotal">0</div></div>
-          <div class="kpi grad-mint"><div class="label">Due Today</div><div class="num" id="pToday">0</div></div>
-          <div class="kpi grad-amber"><div class="label">Overdue</div><div class="num" id="pOverdue">0</div></div>
-          <div class="kpi grad-rose"><div class="label">Next 7 Days</div><div class="num" id="pNext">0</div></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="section" style="margin-top:12px">
-      <table class="table" id="pTable">
-        <thead>
-          <tr><th>Name</th><th>Phone</th><th>Last Visit</th><th>Next Visit</th><th>Status</th><th>Notes</th></tr>
-        </thead>
-        <tbody><tr><td class="muted" colspan="6">No patients</td></tr></tbody>
-      </table>
+    <div class="card-grid">
+      <a class="card panel--lilac" href="./booking-status.html">
+        <h3>Bookings</h3>
+        <p>Create tokens & manage appointments</p>
+      </a>
+      <a class="card panel--mint" href="./pharmacy.html?tab=sell">
+        <h3>Pharmacy – Billing</h3>
+        <p>Multi-item invoices, discounts, payments</p>
+      </a>
+      <a class="card panel--peach" href="./analytics.html">
+        <h3>Pharmacy – Reports</h3>
+        <p>Daily / Weekly / Monthly / Yearly sales & items</p>
+      </a>
+      <a class="card panel--rose" href="./staff.html">
+        <h3>Staff – Attendance & Roster</h3>
+        <p>Create day sheet, mark, edit, export</p>
+      </a>
     </div>
   </section>
 
+  <!-- Today Snapshot -->
+  <section class="section">
+    <h2>Today Snapshot</h2>
+    <div class="kpi-grid mt12">
+      <div class="kpi panel--blue">
+        <div class="label">Total (₹)</div>
+        <div id="kpiTotal" class="num">0.00</div>
+      </div>
+      <div class="kpi panel--lilac">
+        <div class="label">Invoices</div>
+        <div id="kpiInvoices" class="num">0</div>
+      </div>
+      <div class="kpi panel--mint">
+        <div class="label">Paid (₹)</div>
+        <div id="kpiPaid" class="num">0.00</div>
+      </div>
+      <div class="kpi panel--peach">
+        <div class="label">Balance (₹)</div>
+        <div id="kpiBalance" class="num">0.00</div>
+      </div>
+    </div>
+
+    <div class="chart-wrap mt16">
+      <div class="chart-title">Daily Revenue (Last 7 days)</div>
+      <canvas id="revChart" aria-label="Daily revenue chart"></canvas>
+    </div>
+  </section>
+
+  <!-- Supervisor tools -->
+  <section class="section">
+    <h2>Supervisor Tools</h2>
+    <div class="tools-grid mt12">
+      <div class="card panel--blue">
+        <h3>Invoice Search</h3>
+        <p class="muted">Find by number / patient / date range</p>
+        <div class="toolbar mt12">
+          <div class="left">
+            <input id="qInvoice" type="search" placeholder="Type to search…" class="input--sm" />
+            <input id="qFrom" type="date" class="input--sm" />
+            <input id="qTo" type="date" class="input--sm" />
+          </div>
+          <div class="right">
+            <button class="btn" id="btnSearch">Run</button>
+            <button class="btn btn--ghost" id="btnExport">↓ Export CSV</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card panel--mint">
+        <h3>Approvals</h3>
+        <p class="muted">Price/discount overrides pending review</p>
+        <div class="mt12">
+          <span class="pill"><strong id="cntApprovals">0</strong> pending</span>
+          <button class="btn btn--ghost" id="btnApproveAll">Approve All</button>
+        </div>
+      </div>
+
+      <div class="card panel--peach">
+        <h3>Day Close (Z-Report)</h3>
+        <p class="muted">Preview totals and lock day</p>
+        <div class="mt12">
+          <div class="pill"><span>Sales:</span><strong id="zSales">0.00</strong></div>
+          <div class="pill mt8"><span>Paid:</span><strong id="zPaid">0.00</strong></div>
+          <div class="pill mt8"><span>Balance:</span><strong id="zBal">0.00</strong></div>
+          <button class="btn mt12" id="btnCloseDay">Close Day</button>
+        </div>
+      </div>
+
+      <div class="card panel--rose">
+        <h3>Stock Alerts</h3>
+        <p class="muted">Near expiry & low stock</p>
+        <div class="chips mt12">
+          <button class="chip chip--peach" id="tabNear">Near Expiry</button>
+          <button class="chip chip--lilac" id="tabLow">Low Stock</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alerts tables -->
+    <div class="mt16">
+      <div id="alertsWrap" class="chart-wrap">
+        <div class="chart-title" id="alertsTitle">Near Expiry (next 60 days)</div>
+        <table class="table" id="alertsTable" aria-label="Stock alerts">
+          <thead>
+            <tr>
+              <th>Item</th><th>Batch</th><th>Expiry</th><th>Stock</th>
+            </tr>
+          </thead>
+          <tbody id="alertsBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Search results -->
+  <section class="section">
+    <h2>Results</h2>
+    <table class="table" id="tblResults">
+      <thead>
+        <tr>
+          <th>Date</th><th>Invoice #</th><th>Patient</th><th>Items</th><th>Total (₹)</th><th>Paid (₹)</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyResults"></tbody>
+    </table>
+  </section>
+
+  <script src="../utils.js"></script>
   <script>
-    const html=document.documentElement, t=document.getElementById('themeToggle');
-    function sync(){t.textContent=html.dataset.theme==='dark'?'🌙':'🌞'}; t.onclick=()=>{html.dataset.theme=html.dataset.theme==='dark'?'light':'dark'; localStorage.setItem('theme',html.dataset.theme); sync();}; html.dataset.theme=localStorage.getItem('theme')||'dark'; sync();
-    document.getElementById('clearCacheBtn')?.addEventListener('click',()=>{localStorage.clear(); alert('Cache cleared');});
+    // ---------- Theme toggle (shared) ----------
+    const htmlEl = document.documentElement;
+    const themeToggle = document.getElementById('themeToggle');
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) htmlEl.setAttribute('data-theme', savedTheme);
+    themeToggle.textContent = htmlEl.getAttribute('data-theme') === 'dark' ? '🌙' : '🌞';
+    themeToggle.onclick = () => {
+      const next = htmlEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      htmlEl.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+      themeToggle.textContent = next === 'dark' ? '🌙' : '🌞';
+    };
+
+    // ---------- Helpers / fallbacks ----------
+    const U = window.Utils || {};
+    const fmt = U.formatCurrency || (n => (Number(n||0)).toFixed(2));
+    const parseCSV = U.parseCSV || (text => {
+      const lines = text.trim().split(/\r?\n/);
+      const head = lines.shift().split(',').map(s=>s.trim());
+      return lines.map(row=>{
+        const cols = row.split(',').map(s=>s.trim());
+        const obj = {}; head.forEach((h,i)=>obj[h]=cols[i]); return obj;
+      });
+    });
+    async function loadCSV(url){
+      const r = await fetch(url, {cache: 'no-store'});
+      if(!r.ok) return [];
+      return parseCSV(await r.text());
+    }
+    const toISO = s => {
+      // supports dd/mm/yyyy in CSVs
+      if(!s) return '';
+      if (/\d{2}\/\d{2}\/\d{4}/.test(s)){
+        const [d,m,y]=s.split('/').map(Number);
+        return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      }
+      return s;
+    };
+
+    // ---------- Data load ----------
+    let invoices=[], items=[], invIndex={};
+    let stock=[];
+
+    async function initData(){
+      [invoices, items, stock] = await Promise.all([
+        loadCSV('../data/invoices.csv').catch(()=>loadCSV('../invoices.csv')),
+        loadCSV('../data/invoice_items.csv').catch(()=>loadCSV('../invoice_items.csv')),
+        loadCSV('../data/inventory.csv').catch(()=>loadCSV('../inventory.csv'))
+      ]);
+      invIndex = invoices.reduce((a,v)=> (a[v.invoice_id]=v,a), {});
+      computeToday();
+      drawRevenue();
+      setupAlerts('near');
+    }
+
+    // ---------- KPIs ----------
+    function isToday(iso){
+      const d = new Date(iso || '');
+      if (!iso || isNaN(d)) return false;
+      const t = new Date();
+      return d.getFullYear()===t.getFullYear() && d.getMonth()===t.getMonth() && d.getDate()===t.getDate();
+    }
+    function computeToday(){
+      let total=0, paid=0, cnt=0;
+      invoices.forEach(inv=>{
+        const dateISO = toISO(inv.invoice_date);
+        if (isToday(dateISO)){
+          cnt++;
+          total += Number(inv.total||0);
+          paid  += Number(inv.paid ||0);
+        }
+      });
+      const bal = total - paid;
+      document.getElementById('kpiTotal').textContent   = fmt(total);
+      document.getElementById('kpiInvoices').textContent= cnt;
+      document.getElementById('kpiPaid').textContent    = fmt(paid);
+      document.getElementById('kpiBalance').textContent = fmt(bal);
+      // Z report mirrors today
+      document.getElementById('zSales').textContent = fmt(total);
+      document.getElementById('zPaid').textContent  = fmt(paid);
+      document.getElementById('zBal').textContent   = fmt(bal);
+    }
+
+    // ---------- Chart (vanilla) ----------
+    function drawRevenue(){
+      // last 7 days buckets
+      const today = new Date(); today.setHours(0,0,0,0);
+      const buckets = Array.from({length:7},(_,i)=>{
+        const d = new Date(today); d.setDate(today.getDate()- (6-i));
+        return { key:d.toISOString().slice(0,10), label:`${d.getDate()}/${d.getMonth()+1}`, total:0 };
+      });
+      const map = buckets.reduce((a,b)=> (a[b.key]=b, a), {});
+      invoices.forEach(inv=>{
+        const iso = toISO(inv.invoice_date);
+        if (map[iso]) map[iso].total += Number(inv.total||0);
+      });
+      const ctx = document.getElementById('revChart').getContext('2d');
+      // Tiny, dependency-free bar chart
+      const W = ctx.canvas.clientWidth, H = ctx.canvas.clientHeight;
+      ctx.canvas.width = W * devicePixelRatio; ctx.canvas.height = H * devicePixelRatio;
+      ctx.scale(devicePixelRatio, devicePixelRatio);
+      ctx.clearRect(0,0,W,H);
+      const pad=24, bw=(W-pad*2)/buckets.length-10, max=Math.max(...buckets.map(b=>b.total), 1);
+      buckets.forEach((b, i)=>{
+        const x = pad + i*(bw+10);
+        const h = Math.round((b.total/max)*(H-70));
+        const y = H-40 - h;
+        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent') || '#2563eb';
+        ctx.fillRect(x, y, bw, h);
+        ctx.fillStyle = getComputedStyle(document.body).style.color || '#0f172a';
+        ctx.globalAlpha = .85; ctx.font = '12px Inter, sans-serif';
+        ctx.fillText(b.label, x, H-20);
+        ctx.globalAlpha = 1;
+      });
+    }
+
+    // ---------- Alerts ----------
+    function setupAlerts(mode){
+      const body = document.getElementById('alertsBody');
+      const title = document.getElementById('alertsTitle');
+      body.innerHTML='';
+      const now = new Date();
+      if(mode==='near'){
+        title.textContent='Near Expiry (next 60 days)';
+        const lim = new Date(); lim.setDate(now.getDate()+60);
+        stock
+          .filter(s => s.expiry && !isNaN(new Date(toISO(s.expiry))) )
+          .filter(s => {
+            const d=new Date(toISO(s.expiry));
+            return d>=now && d<=lim;
+          })
+          .slice(0,20)
+          .forEach(s=>{
+            body.insertAdjacentHTML('beforeend',
+              `<tr>
+                <td>${s.item_name||s.item||'-'}</td>
+                <td>${s.batch||'-'}</td>
+                <td>${toISO(s.expiry)}</td>
+                <td>${s.qty||s.stock||0}</td>
+              </tr>`);
+          });
+      } else {
+        title.textContent='Low Stock (below min level)';
+        stock
+          .filter(s => Number(s.qty||s.stock||0) <= Number(s.min_level||s.min||5))
+          .slice(0,20)
+          .forEach(s=>{
+            body.insertAdjacentHTML('beforeend',
+              `<tr>
+                <td>${s.item_name||s.item||'-'}</td>
+                <td>${s.batch||'-'}</td>
+                <td>${toISO(s.expiry)||'—'}</td>
+                <td>${s.qty||s.stock||0}</td>
+              </tr>`);
+          });
+      }
+      if(!body.children.length){
+        body.innerHTML = `<tr><td colspan="4" class="muted">No records</td></tr>`;
+      }
+    }
+    document.getElementById('tabNear').onclick = ()=>setupAlerts('near');
+    document.getElementById('tabLow').onclick  = ()=>setupAlerts('low');
+
+    // ---------- Invoice Search / Export ----------
+    function within(dateStr, fromStr, toStr){
+      const d = new Date(toISO(dateStr)||''); if(isNaN(d)) return false;
+      const from = fromStr ? new Date(fromStr) : null;
+      const to   = toStr   ? new Date(toStr)   : null;
+      if(from && d < from) return false;
+      if(to){ to.setHours(23,59,59,999); if(d > to) return false; }
+      return true;
+    }
+    function search(){
+      const q = (document.getElementById('qInvoice').value||'').toLowerCase();
+      const from = document.getElementById('qFrom').value;
+      const to   = document.getElementById('qTo').value;
+      const tbody = document.getElementById('tbodyResults');
+      tbody.innerHTML = '';
+      let rows=0, sum=0, paid=0;
+      invoices.forEach(inv=>{
+        const hit = (!q || (inv.invoice_id||'').toLowerCase().includes(q) || (inv.patient_name||'').toLowerCase().includes(q));
+        const inRange = within(inv.invoice_date, from, to);
+        if(hit && inRange){
+          const count = items.filter(it=>it.invoice_id===inv.invoice_id).length;
+          rows++; sum += Number(inv.total||0); paid += Number(inv.paid||0);
+          tbody.insertAdjacentHTML('beforeend', `
+            <tr>
+              <td>${toISO(inv.invoice_date)}</td>
+              <td>${inv.invoice_id}</td>
+              <td>${inv.patient_name||'-'}</td>
+              <td>${count}</td>
+              <td>${fmt(inv.total)}</td>
+              <td>${fmt(inv.paid||0)}</td>
+            </tr>`);
+        }
+      });
+      if(!rows) tbody.innerHTML=`<tr><td colspan="6" class="muted">No results</td></tr>`;
+      // surface to Z-report pills for quick review
+      document.getElementById('zSales').textContent = fmt(sum);
+      document.getElementById('zPaid').textContent  = fmt(paid);
+      document.getElementById('zBal').textContent   = fmt(sum-paid);
+    }
+    document.getElementById('btnSearch').onclick = search;
+
+    function exportCSV(){
+      const rows = [['date','invoice_id','patient','items','total','paid']];
+      const from = document.getElementById('qFrom').value;
+      const to   = document.getElementById('qTo').value;
+      invoices.forEach(inv=>{
+        if(!within(inv.invoice_date, from, to)) return;
+        const count = items.filter(it=>it.invoice_id===inv.invoice_id).length;
+        rows.push([toISO(inv.invoice_date), inv.invoice_id, inv.patient_name||'', count, inv.total||0, inv.paid||0]);
+      });
+      const csv = rows.map(r=>r.join(',')).join('\n');
+      const blob = new Blob([csv], {type:'text/csv'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'supervisor-export.csv';
+      a.click(); URL.revokeObjectURL(a.href);
+    }
+    document.getElementById('btnExport').onclick = exportCSV;
+
+    // ---------- Approvals demo counters ----------
+    // If you later store real approvals in localStorage or a CSV, wire here.
+    const approvalsKey = 'erp:approvals:count';
+    const getCnt = () => Number(localStorage.getItem(approvalsKey)||0);
+    const setCnt = n => localStorage.setItem(approvalsKey, String(n));
+    function refreshApprovals(){ document.getElementById('cntApprovals').textContent = getCnt(); }
+    document.getElementById('btnApproveAll').onclick = ()=>{ setCnt(0); refreshApprovals(); alert('All overrides approved.'); };
+
+    // ---------- Day close ----------
+    document.getElementById('btnCloseDay').onclick = ()=>{
+      alert('Day closed. Z-report totals locked for today.');
+      // place to persist a “closed” flag by date if you need hard locks
+    };
+
+    // ---------- Logout / Clear cache ----------
+    document.getElementById('btnLogout').onclick = ()=>{
+      localStorage.removeItem('erp:auth');
+      location.href = './login.html';
+    };
+    document.getElementById('btnClearCache').onclick = async ()=>{
+      try{
+        if('caches' in window){
+          const keys = await caches.keys();
+          await Promise.all(keys.map(k=>caches.delete(k)));
+        }
+        if('serviceWorker' in navigator){
+          const regs = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(regs.map(r=>r.unregister()));
+        }
+        // Keep theme, wipe the rest lightly
+        const theme = localStorage.getItem('theme');
+        localStorage.clear();
+        if(theme) localStorage.setItem('theme', theme);
+        alert('Cache cleared. Reloading…'); location.reload();
+      }catch(e){ alert('Could not clear cache: '+e.message); }
+    };
+
+    // Kickoff
+    refreshApprovals();
+    initData();
   </script>
 </body>
 </html>
