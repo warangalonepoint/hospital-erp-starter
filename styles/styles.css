@@ -214,32 +214,49 @@ body{
 /* ---------- Charts ---------- */
 .chart-block{ margin-top:14px }
 .chart-block h4{ margin:0 0 10px 2px; font-size:1rem; font-weight:900 }
+./* ---------- Charts (clean shimmer skeleton) ---------- */
+.chart-block{ margin-top:14px }
+.chart-block h4{ margin:0 0 10px 2px; font-size:1rem; font-weight:900 }
+
 .chart-placeholder{
   min-height: 190px;
-  border-radius:16px;
-  position:relative; overflow:hidden;
-  border:1px solid var(--ring);
-  background: repeating-linear-gradient(
-    -45deg,
-    rgba(0,0,0,.05),
-    rgba(0,0,0,.05) 10px,
-    transparent 10px,
-    transparent 20px
-  );
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid var(--ring);
+  background: color-mix(in srgb, var(--panel) 92%, var(--bg));
 }
-[data-theme="dark"] .chart-placeholder{
-  background: repeating-linear-gradient(
-    -45deg,
-    rgba(255,255,255,.06),
-    rgba(255,255,255,.06) 10px,
-    transparent 10px,
-    transparent 20px
-  );
+
+/* shimmer overlay when .loading is present */
+.chart-placeholder.loading::before{
+  content:"";
+  position:absolute; inset:0;
+  background:
+    linear-gradient(90deg,
+      transparent 0%,
+      rgba(255,255,255,0.6) 45%,
+      rgba(255,255,255,0.9) 50%,
+      rgba(255,255,255,0.6) 55%,
+      transparent 100%);
+  transform: translateX(-100%);
+  animation: shimmer 1.25s infinite;
+  mix-blend-mode: overlay;
+  pointer-events: none;
 }
-.chart-placeholder.loading::after{
-  content:"Loading…";
-  position:absolute; inset:auto 0 10px 0; text-align:center;
-  font-weight:800; opacity:.65;
+
+@keyframes shimmer{
+  100%{ transform: translateX(100%); }
+}
+
+/* Dark mode tune so shimmer isn’t harsh */
+[data-theme="dark"] .chart-placeholder.loading::before{
+  background:
+    linear-gradient(90deg,
+      transparent 0%,
+      rgba(255,255,255,0.10) 45%,
+      rgba(255,255,255,0.18) 50%,
+      rgba(255,255,255,0.10) 55%,
+      transparent 100%);
 }
 
 /* Make embedded SVGs fill nicely */
