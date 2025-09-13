@@ -4,106 +4,65 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Dashboard • Hospital ERP</title>
-  <!-- unified styles -->
   <link rel="stylesheet" href="../styles/styles.css" />
-  <!-- optional: if you’re also using ui.css -->
-  <!-- <link rel="stylesheet" href="../styles/ui.css" /> -->
   <link rel="icon" href="../public/manifest-icon-192.png">
   <script src="../scripts/utils.js"></script>
   <style>
-    /* small local helpers */
     .brand{display:flex;align-items:center;gap:8px;font-weight:900}
     .brand-title{font-size:1.1rem}
-    #who{margin-left:auto}
   </style>
 </head>
 <body>
-  <!-- Banner / Theme -->
+  <!-- Banner -->
   <header class="banner">
     <div class="brand">
       <span class="brand-mark">🏥</span>
       <span class="brand-title">Hospital ERP</span>
     </div>
-    <span id="who" class="muted"></span>
     <button id="themeToggle" class="toggle" title="Toggle theme">🌙</button>
   </header>
 
   <!-- Toolbar -->
   <nav class="toolbar">
-    <a class="chip" href="../index.html">← Home</a>
     <a class="chip" href="./analytics.html">Analytics</a>
     <a class="chip" href="./pharmacy.html">Pharmacy</a>
     <a class="chip" href="./settings.html">Settings</a>
     <span style="flex:1"></span>
-    <button id="btnLogout" class="chip">Logout</button>
+    <a class="chip" href="./login.html">Logout</a>
     <button id="btnClear" class="chip">Clear Cache</button>
   </nav>
 
-  <!-- Section: tiles -->
+  <!-- Panels -->
   <main class="section">
-    <!-- Analytics -->
     <a class="panel grad-lilac card" href="./analytics.html">
       <h2>Analytics</h2>
       <p class="muted">KPIs & weekly sales</p>
     </a>
 
-    <!-- Pharmacy -->
     <a class="panel card" style="background-image: var(--grad-blue); color:#eef2ff; border-color:#22324a" href="./pharmacy.html">
       <h2>Pharmacy</h2>
       <p class="muted" style="color:#e6ecff">
-        Today <b id="phToday">₹0.00</b> ·
-        MTD <b id="phMTD">₹0.00</b> ·
+        Today <b id="phToday">₹ 0.00</b> ·
+        MTD <b id="phMTD">₹ 0.00</b> ·
         Top: <b id="phTop">—</b>
       </p>
     </a>
 
-    <!-- Booking Status -->
     <a class="panel card" style="background-image: var(--grad-mint); color:#ecfffb; border-color:#1c3d34" href="./booking-status.html">
       <h2>Booking Status</h2>
-      <p class="muted" style="color:#d2fff5">Today / Week / Month counts</p>
+      <p class="muted" style="color:#c9fff3">Today / Week / Month counts</p>
     </a>
 
-    <!-- Patients -->
     <a class="panel card" style="background-image: var(--grad-rose); color:#ffeef2; border-color:#3a1e26" href="./admin.html#patients">
       <h2>Patients</h2>
-      <p class="muted" style="color:#ffe2ea">Reminders & history • <b id="dueToday">0 due today</b></p>
-    </a>
-
-    <!-- Staff -->
-    <a class="panel card" style="background-image: var(--grad-peach); color:#fff5ec; border-color:#3d291c" href="./staff.html">
-      <h2>Staff</h2>
-      <p class="muted" style="color:#ffead9">Roster & attendance (view-only)</p>
-    </a>
-
-    <!-- Settings -->
-    <a class="panel grad-lilac card" href="./settings.html">
-      <h2>Settings</h2>
-      <p class="muted">PINs, Staff, Patients</p>
+      <p class="muted" style="color:#ffe2ea">
+        Reminders & history • <b id="dueToday">0 due today</b>
+      </p>
     </a>
   </main>
 
   <script>
-    // ====== auth guard (any logged-in role) ======
-    (function guard(){
-      try {
-        if (window.ERP?.requireRole) {
-          ERP.requireRole('*', './login.html'); // redirects if not logged in
-          return;
-        }
-      } catch {}
-      // Fallback if utils.js failed to load
-      const role = localStorage.getItem('erp:role') || localStorage.getItem('role');
-      if (!role) location.replace('./login.html');
-    })();
-
-    // Show role badge
-    (function showRole(){
-      const role = localStorage.getItem('erp:role') || localStorage.getItem('role') || '';
-      const who = document.getElementById('who');
-      if (role && who) who.textContent = `Signed in as ${role}`;
-    })();
-
-    // ====== theme toggle ======
+    // Theme
     (function theme(){
       const root = document.documentElement;
       const btn  = document.getElementById('themeToggle');
@@ -118,65 +77,55 @@
       };
     })();
 
-    // ====== toolbar actions ======
-    document.getElementById('btnLogout').onclick = () => {
-      localStorage.removeItem('role');
-      localStorage.removeItem('erp:role');
-      localStorage.removeItem('erp:auth');
-      location.href = './login.html';
-    };
+    // Clear cache (keep theme)
     document.getElementById('btnClear').onclick = async () => {
-      // Keep theme + pins so you don't get locked out
-      const keep = new Set(['theme','pins','erp:pin_doctor','erp:pin_supervisor','erp:pin_admin']);
+      const keep = new Set(['theme']);
       for (const k of Object.keys(localStorage)) if (!keep.has(k)) localStorage.removeItem(k);
-      if ('caches' in window) {
-        const names = await caches.keys(); await Promise.all(names.map(n => caches.delete(n)));
-      }
-      alert('Cleared local data (kept theme & PINs).');
+      if ('caches' in window) { const names = await caches.keys(); await Promise.all(names.map(n => caches.delete(n))); }
+      alert('Cleared local data (kept theme).');
       location.reload();
     };
 
-    // ====== dashboard data (Pharmacy + Patients) ======
-    (function hydrate() {
-      const invoices = (window.ERP?.load?.('invoices', [])) || [];
-      const items    = (window.ERP?.load?.('invoice_items', [])) || [];
-      const patients = (window.ERP?.load?.('patients', [])) || [];
+    // Dashboard KPIs (safe even if utils.js missing)
+    (function hydrate(){
+      const ERPsafe = window.ERP || {};
+      const fm = (n)=> ERPsafe.formatMoney ? ERPsafe.formatMoney(n) : `₹ ${(Number(n)||0).toFixed(2)}`;
+      const ymd = (d)=> ERPsafe.ymd ? ERPsafe.ymd(d) : new Date(d).toISOString().slice(0,10);
+      const today = ERPsafe.todayISO ? ERPsafe.todayISO() : new Date().toISOString().slice(0,10);
 
-      // Pharmacy KPIs
-      const todayISO = window.ERP?.todayISO?.() || new Date().toISOString().slice(0,10);
-      const firstOfMTD = new Date(); firstOfMTD.setDate(1);
-
-      const invToday  = window.ERP?.filterInvoicesByDate ? ERP.filterInvoicesByDate(invoices, todayISO, todayISO) : [];
-      const invMTD    = window.ERP?.filterInvoicesByDate ? ERP.filterInvoicesByDate(invoices, firstOfMTD, new Date()) : [];
+      const invoices = ERPsafe.load ? ERPsafe.load('invoices', []) : [];
+      const items    = ERPsafe.load ? ERPsafe.load('invoice_items', []) : [];
+      const pats     = ERPsafe.load ? ERPsafe.load('patients', []) : [];
 
       const invById = new Map(invoices.map(i => [String(i.id || i.invoice_id), i]));
-
+      const invToday = invoices.filter(inv => ymd(inv.date || inv.invoice_date) === today);
       const itemsToday = items.filter(it => {
         const inv = invById.get(String(it.invoice_id));
-        const ymd = (d)=> (window.ERP?.ymd?.(d) || (new Date(d).toISOString().slice(0,10)));
-        return inv && ymd(inv.date || inv.invoice_date) === todayISO;
+        return inv && ymd(inv.date || inv.invoice_date) === today;
       });
 
-      const kpiToday = window.ERP?.buildSalesKPIs ? ERP.buildSalesKPIs(invToday, itemsToday) : {total:0};
-      const firstYMD = window.ERP?.ymd?.(firstOfMTD) || (firstOfMTD.toISOString().slice(0,10));
+      const kpiFn = ERPsafe.buildSalesKPIs || ((a,b)=>({ total:0, itemsSold:0 }));
+      const kpiToday = kpiFn(invToday, itemsToday);
+
+      const first = new Date(); first.setDate(1);
+      const firstYMD = ymd(first);
       const itemsMTD = items.filter(it => {
         const inv = invById.get(String(it.invoice_id));
-        const d = inv ? (window.ERP?.ymd?.(inv.date || inv.invoice_date) || (new Date(inv.date || inv.invoice_date).toISOString().slice(0,10))) : null;
-        return d && d >= firstYMD && d <= todayISO;
+        const d = inv ? ymd(inv.date || inv.invoice_date) : null;
+        return d && d >= firstYMD && d <= today;
       });
-      const kpiMTD = window.ERP?.buildSalesKPIs ? ERP.buildSalesKPIs(invMTD, itemsMTD) : {total:0};
+      const kpiMTD = kpiFn(invoices.filter(i=> ymd(i.date||i.invoice_date)>=firstYMD && ymd(i.date||i.invoice_date)<=today), itemsMTD);
 
-      const fm = (n)=> window.ERP?.formatMoney ? ERP.formatMoney(n) : `₹ ${(+n||0).toFixed(2)}`;
       document.getElementById('phToday').textContent = fm(kpiToday.total || 0);
       document.getElementById('phMTD').textContent   = fm(kpiMTD.total || 0);
 
-      const top = window.ERP?.topItems ? ERP.topItems(items, 1)[0] : null;
+      const topFn = ERPsafe.topItems || ((arr)=>[]);
+      const top = topFn(items, 1)[0];
       document.getElementById('phTop').textContent = top ? (top.name || '—') : '—';
 
-      const ymd = (d)=> window.ERP?.ymd?.(d) || (new Date(d).toISOString().slice(0,10));
-      const due = patients.filter(p => {
+      const due = pats.filter(p => {
         const d = p.next_followup || p.next_visit || p.followup || '';
-        return d && ymd(d) === todayISO;
+        return d && ymd(d) === today;
       }).length;
       document.getElementById('dueToday').textContent = `${due} due today`;
     })();
