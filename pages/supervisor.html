@@ -4,83 +4,75 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Supervisor • Hospital ERP</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="../styles/styles.css" />
+  <link rel="stylesheet" href="../styles/ui.css" />
 </head>
 <body>
   <!-- Banner -->
   <header class="banner">
     <div class="brand">
       <span class="brand-mark">🧑‍💼</span>
-      <span class="brand-title">Supervisor Dashboard</span>
+      <span class="brand-title">Supervisor</span>
     </div>
     <button id="themeToggle" class="toggle">🌙</button>
   </header>
 
   <!-- Toolbar -->
   <nav class="toolbar">
-    <a class="chip" href="dashboard.html">← Dashboard</a>
-    <button id="btnLogout" class="chip">Logout</button>
+    <a class="chip" href="./login.html">← Login</a>
     <button id="btnClear" class="chip">Clear Cache</button>
   </nav>
 
-  <!-- KPIs -->
-  <section class="section">
-    <h2>📊 Supervisor Overview</h2>
-    <div class="kpi-grid">
-      <div class="kpi"><h4>Sales</h4><div id="supSales">₹0</div></div>
-      <div class="kpi"><h4>Invoices</h4><div id="supInv">0</div></div>
-      <div class="kpi"><h4>Patients</h4><div id="supPat">0</div></div>
-      <div class="kpi"><h4>Staff</h4><div id="supStaff">0</div></div>
-    </div>
-  </section>
+  <main class="section">
+    <div class="card-grid">
+      <!-- Bookings (create/edit slots + unique patient id) -->
+      <a class="card grad-mint" href="./booking-status.html">
+        <h2>Bookings</h2>
+        <p>Book & edit slots / appointments • New booking creates Unique Patient ID</p>
+      </a>
 
-  <!-- Charts -->
-  <section class="section">
-    <h2>Revenue Trend</h2>
-    <canvas id="supChart" height="200"></canvas>
-  </section>
+      <!-- Pharmacy suite -->
+      <a class="card grad-sky" href="./pharmacy.html">
+        <h2>Pharmacy</h2>
+        <p>Sell • Purchase • Stock • Reports</p>
+      </a>
+
+      <!-- Patients quick link (optional) -->
+      <a class="card grad-rose" href="./patients.html">
+        <h2>Patients</h2>
+        <p>Find / verify patient by Unique ID</p>
+      </a>
+
+      <!-- Inventory quick tools in Admin -->
+      <a class="card grad-lavender" href="./admin.html">
+        <h2>Admin Tools</h2>
+        <p>Scan to upload stock • CSV import/export • Backups</p>
+      </a>
+    </div>
+  </main>
 
   <footer class="footer">Supervisor · Hospital ERP</footer>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="utils.js"></script>
   <script>
     (function(){
       const root=document.documentElement, btn=document.getElementById('themeToggle');
       const saved=localStorage.getItem('theme')||'light';
-      root.dataset.theme=saved;
-      btn.textContent=saved==='dark'?'🌙':'🌞';
-      btn.onclick=()=>{
-        const next=root.dataset.theme==='dark'?'light':'dark';
-        root.dataset.theme=next;
-        localStorage.setItem('theme',next);
+      root.dataset.theme=saved; btn.textContent=saved==='dark'?'🌙':'🌞';
+      btn.onclick=()=>{ const next=root.dataset.theme==='dark'?'light':'dark';
+        root.dataset.theme=next; localStorage.setItem('theme',next);
         btn.textContent=next==='dark'?'🌙':'🌞';
       };
     })();
 
-    btnLogout.onclick=()=>{localStorage.clear();location.href='login.html'};
-    btnClear.onclick=async()=>{await ERP.hardClear()};
-
-    (()=>{
-      const invoices=ERP.load('invoices',[]);
-      const items=ERP.load('invoice_items',[]);
-      const patients=ERP.load('patients',[]);
-      const staff=ERP.load('staff',[]);
-
-      const kpi=ERP.buildSalesKPIs(invoices,items);
-      document.getElementById('supSales').textContent=ERP.formatMoney(kpi.total);
-      document.getElementById('supInv').textContent=invoices.length;
-      document.getElementById('supPat').textContent=patients.length;
-      document.getElementById('supStaff').textContent=staff.length||0;
-
-      const invById=new Map(invoices.map(i=>[String(i.id||i.invoice_id),i]));
-      const daily=ERP.dailyRevenue(items,invById);
-      new Chart(document.getElementById('supChart'),{
-        type:'line',
-        data:{labels:daily.map(r=>r.date),datasets:[{label:'Revenue',data:daily.map(r=>r.amount),borderColor:'#2563eb',tension:.3}]},
-        options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'₹'+v}}}}
-      });
-    })();
+    document.getElementById('btnClear').onclick = async ()=>{
+      try{
+        if('caches' in window){ const ks=await caches.keys(); await Promise.all(ks.map(k=>caches.delete(k))); }
+      }catch{}
+      const keepTheme = localStorage.getItem('theme');
+      localStorage.clear();
+      if (keepTheme) localStorage.setItem('theme', keepTheme);
+      location.reload();
+    };
   </script>
 </body>
 </html>
