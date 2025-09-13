@@ -4,14 +4,11 @@
   "redirects": [
     { "source": "/", "destination": "/pages/login.html", "statusCode": 308 }
   ],
-  "headers": [
+  "builds": [
     {
-      "source": "/(.*)\\.css",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
-    },
-    {
-      "source": "/(.*)\\.js",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "dist" }
     }
   ]
 }
