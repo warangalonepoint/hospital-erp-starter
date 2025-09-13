@@ -1,249 +1,578 @@
-/* =========================================================
-   Hospital ERP — UNIVERSAL STYLES (all pages)
-   – Uses your color tokens + pastel tints
-   – Light/Dark via html[data-theme]
-   – One set of components for Dashboard/Analytics/Pharmacy
-   ========================================================= */
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pharmacy • Hospital ERP</title>
 
-/* ========== TOKENS (LIGHT) ========== */
-:root {
-  --bg: #f7f8fb;
-  --fg: #0f172a;
-  --card-bg: #ffffff;
-  --accent: #2563eb;        /* primary action / active tab */
-  --muted: #6b7280;
+  <!-- Unified styles + utilities -->
+  <link rel="stylesheet" href="../styles/styles.css?v=6" />
+  <script src="../scripts/utils.js?v=6" defer></script>
+  <script src="../scripts/scanner.js?v=6" defer></script>
 
-  --radius: 16px;
-  --shadow: 0 6px 18px rgba(0,0,0,0.10);
+  <style>
+    /* Tiny page-specific helpers (kept minimal) */
+    .right-actions{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+    .table { width:100%; border-collapse: collapse; }
+    .table th, .table td { padding:10px 12px; border-bottom:1px solid rgba(0,0,0,.06); }
+    html[data-theme="dark"] .table th, html[data-theme="dark"] .table td { border-bottom:1px solid rgba(255,255,255,.1); }
+    .num{text-align:right}
+    .muted-sm{font-size:.92rem; opacity:.85}
+    .pill{padding:6px 10px;border-radius:999px;background:var(--card-bg);border:1px solid rgba(0,0,0,.06)}
+    html[data-theme="dark"] .pill{border-color:rgba(255,255,255,.12)}
+    .hide{display:none!important}
+  </style>
+</head>
+<body>
 
-  /* Bold pastel tints */
-  --t-lilac: #e0d4ff;
-  --t-blue:  #d2e5ff;
-  --t-mint:  #c8f7e1;
-  --t-peach: #ffd7d2;
-  --t-rose:  #ffcfe0;
+  <!-- Banner (unified) -->
+  <header class="banner">
+    <img src="../public/assets/abhaya-logo-wide.png" alt="ABHAYA HOSPITAL" />
+    <button id="themeToggle" class="floating-toggle" aria-label="Toggle theme">🌙</button>
+  </header>
 
-  /* Paired text colors for tints */
-  --c-lilac: #4c1d95;
-  --c-blue:  #1e40af;
-  --c-mint:  #065f46;
-  --c-peach: #9a3412;
-  --c-rose:  #9d174d;
-}
+  <!-- Fixed actions (unified) -->
+  <nav class="fixed-actions">
+    <a class="chip" href="../index.html">← Dashboard</a>
+    <button class="chip" id="clearCacheBtn">Clear Cache</button>
+  </nav>
 
-/* ========== TOKENS (DARK) ========== */
-html[data-theme="dark"] {
-  --bg: #0b1220;
-  --fg: #e6edf7;
-  --card-bg: #111827;
-  --accent: #3b82f6;
-  --muted: #9ca3af;
+  <!-- Page header -->
+  <section class="section">
+    <h2>Pharmacy</h2>
+    <p class="muted mt8">Sell • Purchase • Stock • Reports</p>
+    <div class="chips mt12" id="phTabs">
+      <button class="chip active" data-tab="sell">Sell</button>
+      <button class="chip" data-tab="purchase">Purchase</button>
+      <button class="chip" data-tab="stock">Stock</button>
+      <button class="chip" data-tab="reports">Reports</button>
+    </div>
+  </section>
 
-  --t-lilac:#352359;
-  --t-blue:#1e2a48;
-  --t-mint:#123d2d;
-  --t-peach:#4a2a23;
-  --t-rose:#4a1e33;
+  <!-- SELL -->
+  <section class="section ph-tab" id="ph-sell">
+    <h3>Quick POS</h3>
+    <p class="muted-sm mt8">Search or scan barcode to add to cart</p>
 
-  --c-lilac:#c4b5fd;
-  --c-blue:#93c5fd;
-  --c-mint:#6ee7b7;
-  --c-peach:#fca5a5;
-  --c-rose:#f9a8d4;
-}
+    <div class="toolbar mt16">
+      <div class="left">
+        <span class="pill" id="patientStatus">No patient linked</span>
+      </div>
+      <div class="right">
+        <button class="chip action" id="scanPatient">📷 Scan Patient ID</button>
+        <button class="chip" id="newPatient">New Patient ID</button>
+      </div>
+    </div>
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme]) { color-scheme: dark; }
-}
+    <div class="toolbar mt16">
+      <div class="left">
+        <input class="input--sm" type="search" id="itemSearch" placeholder="Search item name or scan…" />
+        <button class="chip action" id="scanItem">📷 Scan Item</button>
+        <button class="chip" id="loadDemo">Load Demo</button>
+      </div>
+      <div class="right">
+        <span class="pill">Cart items: <b id="cartCount">0</b></span>
+        <span class="pill">Total: <b id="cartTotal">0.00</b></span>
+      </div>
+    </div>
 
-/* ========== BASE ========== */
-* { box-sizing: border-box; }
-html, body { height: 100%; }
-body {
-  margin: 0;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
-  background: var(--bg);
-  color: var(--fg);
-  line-height: 1.5;
-  -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
-  padding-bottom: env(safe-area-inset-bottom);
-}
-a { color: var(--fg); text-decoration: none; }
-a:hover { text-decoration: underline; }
+    <div class="chart-wrap mt16">
+      <div class="chart-title">Cart</div>
+      <div class="table-wrap">
+        <table class="table" id="cartTable">
+          <thead>
+            <tr>
+              <th style="width:28%">Item</th>
+              <th>Batch</th>
+              <th class="num">Qty</th>
+              <th class="num">MRP</th>
+              <th class="num">GST%</th>
+              <th class="num">Line</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="cartBody"><tr><td colspan="7" class="muted">Cart is empty</td></tr></tbody>
+        </table>
+      </div>
+    </div>
 
-/* ========== LAYOUT HELPERS ========== */
-.container { max-width: 1140px; margin: 0 auto; }
-.section   { background: var(--card-bg); margin: 12px; padding: 18px; border-radius: var(--radius); box-shadow: var(--shadow); }
-@media (min-width:768px){ .section{ margin:12px auto; } }
+    <div class="toolbar mt16">
+      <div class="left">
+        <button class="btn" id="checkoutBtn">Checkout</button>
+      </div>
+      <div class="right">
+        <button class="btn btn--ghost" id="clearCartBtn">Clear</button>
+      </div>
+    </div>
+  </section>
 
-.row   { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
-.grid  { display:grid; gap:18px; }
-.grid-2{ grid-template-columns: 1fr; }
-@media (min-width:860px){ .grid-2{ grid-template-columns: 1fr 1fr; } }
+  <!-- PURCHASE -->
+  <section class="section ph-tab" id="ph-purchase" hidden>
+    <h3>Purchase</h3>
+    <div class="toolbar mt12">
+      <input class="input--sm" id="pSupplier" type="text" placeholder="Supplier name" />
+      <input class="input--sm" id="pInvoiceNo" type="text" placeholder="Supplier invoice #" />
+      <input class="input--sm" id="pDate" type="date" />
+      <button class="chip action" id="scanBatch">📷 Scan Batch</button>
+      <button class="chip" id="pAdd">Add Row</button>
+      <button class="btn" id="pSave">Save</button>
+    </div>
+    <div class="chart-wrap mt16">
+      <div class="chart-title">Items</div>
+      <table class="table" id="purchaseTable">
+        <thead>
+          <tr>
+            <th style="width:28%">Item</th>
+            <th>Batch</th>
+            <th class="num">Qty</th>
+            <th class="num">Cost</th>
+            <th class="num">MRP</th>
+            <th class="num">GST%</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="purchaseBody"><tr><td colspan="7" class="muted">Add purchase items…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
 
-.right { text-align:right; }
-.muted { color: var(--muted); }
-.hide  { display:none !important; }
-.mono  { font-variant-numeric: tabular-nums; }
+  <!-- STOCK -->
+  <section class="section ph-tab" id="ph-stock" hidden>
+    <h3>Stock</h3>
+    <div class="toolbar mt12">
+      <input class="input--sm" id="sSearch" type="search" placeholder="Search item / batch / HSN…" />
+      <select class="select--sm" id="sFilter">
+        <option value="">All</option>
+        <option value="near">Near Expiry (≤60d)</option>
+        <option value="expired">Expired</option>
+        <option value="low">Low Stock</option>
+      </select>
+      <button class="chip" id="sExport">Export CSV</button>
+    </div>
+    <div class="chart-wrap mt16">
+      <div class="chart-title">Current Stock</div>
+      <table class="table" id="stockTable">
+        <thead>
+          <tr>
+            <th style="width:30%">Item</th>
+            <th>Batch</th>
+            <th>Expiry</th>
+            <th class="num">Qty</th>
+            <th class="num">MRP</th>
+            <th class="num">GST%</th>
+          </tr>
+        </thead>
+        <tbody id="stockBody"><tr><td colspan="6" class="muted">Loading inventory…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
 
-/* ========== BANNER (optional, shared) ========== */
-header.banner{
-  position:relative; height:148px; border-radius:18px; overflow:hidden;
-  margin:12px 12px 8px; box-shadow: var(--shadow);
-  background:#0c3a5c url('/hospital-erp-starter/public/assets/banner.png') center/cover no-repeat;
-}
-header.banner .floating-toggle{
-  position:absolute; top:12px; right:12px; width:44px; height:44px;
-  border-radius:50%; display:grid; place-items:center; font-size:18px;
-  background: rgba(255,255,255,0.92); border:1px solid rgba(0,0,0,.06); backdrop-filter: blur(6px); cursor:pointer;
-}
-@media (min-width:1024px){
-  header.banner{ height:180px; margin:16px auto 12px; max-width:1140px;
-    background:#0b2a44 url('/hospital-erp-starter/public/assets/banner.png') center/contain no-repeat; }
-}
+  <!-- REPORTS -->
+  <section class="section ph-tab" id="ph-reports" hidden>
+    <h3>Pharmacy Reports</h3>
+    <div class="chips range mt8" id="rRange">
+      <button class="chip active" data-range="today">Today</button>
+      <button class="chip" data-range="7d">7D</button>
+      <button class="chip" data-range="30d">30D</button>
+      <button class="chip" data-range="mtd">MTD</button>
+    </div>
 
-/* ========== FIXED/UTILITY ACTIONS ========== */
-.fixed-actions{
-  position: sticky; top: calc(6px + env(safe-area-inset-top)); z-index:10;
-  display:flex; gap:10px; flex-wrap:wrap; padding:6px 12px; margin:0 12px 12px;
-}
-.fixed-actions .chip{
-  font-size:14px; padding:10px 14px; border-radius:999px;
-  background: var(--card-bg); color: var(--fg);
-  border:1px solid rgba(0,0,0,.06); box-shadow: var(--shadow); cursor:pointer;
-}
-html[data-theme="dark"] .fixed-actions .chip{ border-color: rgba(255,255,255,.10); }
+    <div class="kpi-grid mt16">
+      <div class="kpi panel--blue">
+        <h4>Total (₹)</h4><div class="num" id="rTotal">0.00</div>
+      </div>
+      <div class="kpi panel--mint">
+        <h4>Invoices</h4><div class="num" id="rBills">0</div>
+      </div>
+      <div class="kpi panel--peach">
+        <h4>Items sold</h4><div class="num" id="rItems">0</div>
+      </div>
+      <div class="kpi panel--lilac">
+        <h4>Top item</h4><div class="num" id="rTop">—</div>
+      </div>
+    </div>
+  </section>
 
-/* ========== CARDS & PANELS ========== */
-.card-grid{ display:grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap:18px; }
-.card{
-  border-radius:18px; padding:20px; box-shadow: var(--shadow);
-  text-decoration:none; display:block; transition: transform .18s, box-shadow .18s;
-  border:1px solid rgba(0,0,0,.06); background: var(--card-bg); color: var(--fg);
-}
-.card:hover{ transform: translateY(-2px); box-shadow: 0 10px 24px rgba(0,0,0,.14); }
-.card h3{ font-size:22px; margin-bottom:8px; text-decoration: underline; text-underline-offset:3px; }
-.card p{ font-size:15px; opacity:.9; }
+  <script>
+  // ===== Helpers =====
+  const $ = (sel, root=document) => root.querySelector(sel);
+  const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
 
-/* colorful panels (dashboard shortcuts) */
-.panel--blue  { background: linear-gradient(135deg, var(--t-blue),  #bcdfff);  color: var(--c-blue); }
-.panel--mint  { background: linear-gradient(135deg, var(--t-mint),  #aaf5d0);  color: var(--c-mint); }
-.panel--peach { background: linear-gradient(135deg, var(--t-peach), #ffb9ad);  color: var(--c-peach); }
-.panel--lilac { background: linear-gradient(135deg, var(--t-lilac), #cab8ff);  color: var(--c-lilac); }
-.panel--rose  { background: linear-gradient(135deg, var(--t-rose),  #ffb6cc);  color: var(--c-rose); }
+  const CSV = {
+    parse(text){
+      // minimal CSV parser (handles commas inside quotes)
+      const lines = text.trim().split(/\r?\n/);
+      const head = lines.shift().split(',').map(h => h.trim());
+      const rows = [];
+      for (const line of lines){
+        const cells = [];
+        let cur = '', q = false;
+        for (let i=0;i<line.length;i++){
+          const c = line[i];
+          if (c === '"' ){ q = !q; continue; }
+          if (c === ',' && !q){ cells.push(cur); cur=''; continue; }
+          cur += c;
+        }
+        cells.push(cur);
+        const obj = {};
+        head.forEach((h, i) => obj[h] = (cells[i] ?? '').replace(/^"(.*)"$/,'$1'));
+        rows.push(obj);
+      }
+      return rows;
+    }
+  };
 
-/* ========== BUTTONS ========== */
-.btn{
-  background: var(--accent); color:#fff; border:0; padding:10px 14px;
-  border-radius:12px; font-weight:700; cursor:pointer;
-  box-shadow: 0 8px 18px color-mix(in srgb, var(--accent) 35%, transparent);
-  transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;
-}
-.btn:hover{ transform: translateY(-1px); box-shadow: 0 12px 24px color-mix(in srgb, var(--accent) 40%, transparent); }
-.btn:active{ transform: translateY(0);   box-shadow: 0 6px 16px  color-mix(in srgb, var(--accent) 30%, transparent); }
-.btn:disabled{ opacity:.6; cursor:not-allowed; }
-.btn--ghost{
-  background:transparent; color:var(--accent);
-  border:1px solid color-mix(in srgb, var(--accent) 35%, #fff 65%);
-}
-.btn.icon{ width:42px; height:42px; display:inline-grid; place-items:center; padding:0; border-radius:999px; }
+  const state = {
+    inventory: [],
+    cart: [],
+    patient: null,
+    purchases: [],
+    invoices: [],
+    invoiceItems: []
+  };
 
-/* keyboard focus */
-:where(a,button,.btn,.chip,.tab):focus-visible{
-  outline:2px solid color-mix(in srgb, var(--accent) 60%, #fff 40%);
-  outline-offset:2px; border-radius:10px;
-}
+  function money(n){ n = Number(n||0); return n.toFixed(2); }
+  function persist(){ localStorage.setItem('phCart', JSON.stringify(state.cart)); localStorage.setItem('phPatient', JSON.stringify(state.patient)); }
+  function restore(){
+    try{ state.cart = JSON.parse(localStorage.getItem('phCart')||'[]'); }catch{}
+    try{ state.patient = JSON.parse(localStorage.getItem('phPatient')||'null'); }catch{}
+    renderCart(); renderPatient();
+  }
 
-/* ========== CHIPS / TABS ========== */
-.chips{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
-.chip, .tab{
-  --ring: rgba(37,99,235,.35);
-  padding: 8px 14px; border-radius:999px;
-  border:1px solid rgba(0,0,0,.08); background: var(--card-bg); color: var(--fg);
-  font-weight:600; line-height:1;
-  transition: transform .12s, box-shadow .12s, border-color .12s, background .12s;
-}
-.chip:hover, .tab:hover{ transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0,0,0,.08); }
-.chip:active, .tab:active{ transform: translateY(0);   box-shadow: 0 2px 8px rgba(0,0,0,.06); }
-.chip.active, .tab.active{
-  background: var(--accent); color:#fff; border-color: transparent;
-  box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 35%, transparent);
-}
-.chip--sm{ padding:6px 10px; font-size:.9rem; }
+  // ===== Theme & Actions =====
+  window.addEventListener('DOMContentLoaded', async () => {
+    if (window.UI?.initTheme) UI.initTheme('#themeToggle');
 
-/* preset tinted chips (optional) */
-.chip--blue  { background: var(--t-blue);  color: var(--c-blue);  }
-.chip--mint  { background: var(--t-mint);  color: var(--c-mint);  }
-.chip--peach { background: var(--t-peach); color: var(--c-peach); }
-.chip--lilac { background: var(--t-lilac); color: var(--c-lilac); }
-.chip--rose  { background: var(--t-rose);  color: var(--c-rose);  }
+    // clear cache
+    $('#clearCacheBtn')?.addEventListener('click', () => {
+      caches?.keys?.().then(keys => keys.forEach(k => caches.delete(k)));
+      localStorage.clear();
+      alert('Cache cleared.');
+    });
 
-/* ========== INPUTS / FIELDS ========== */
-input[type="text"], input[type="search"], input[type="number"], input[type="date"],
-input[type="month"], input[type="tel"], select, textarea {
-  appearance:none; background: var(--card-bg); color: var(--fg);
-  border:1px solid rgba(0,0,0,.12); border-radius:12px; padding:10px 12px; line-height:1.2;
-  box-shadow: var(--shadow); transition: border-color .15s, box-shadow .15s, background .15s;
-}
-textarea { min-height: 92px; resize: vertical; }
-.input--sm, select.select--sm, input[type="date"].input--sm{
-  padding:8px 10px; border-radius:10px; box-shadow: 0 3px 10px rgba(0,0,0,.06); font-size:.95rem;
-}
-input:focus, select:focus, textarea:focus{
-  outline:none; border-color: rgba(37,99,235,.55);
-  box-shadow: 0 0 0 3px rgba(37,99,235,.10), 0 8px 20px rgba(37,99,235,.15);
-}
-::placeholder{ color: color-mix(in srgb, var(--muted) 80%, #fff 20%); }
-select{
-  background-image:
-    linear-gradient(45deg, transparent 50%, currentColor 50%),
-    linear-gradient(135deg, currentColor 50%, transparent 50%),
-    linear-gradient(to right, transparent, transparent);
-  background-position: calc(100% - 18px) 50%, calc(100% - 12px) 50%, 0 0;
-  background-size: 6px 6px, 6px 6px, 100% 100%;
-  background-repeat: no-repeat; padding-right: 28px;
-}
+    // tabs
+    $('#phTabs').addEventListener('click', (e)=>{
+      const b = e.target.closest('.chip'); if(!b) return;
+      $$('#phTabs .chip').forEach(c => c.classList.remove('active'));
+      b.classList.add('active');
+      const id = b.dataset.tab;
+      $$('.ph-tab').forEach(sec => sec.hidden = sec.id !== 'ph-' + id);
+    });
 
-/* dark-form contrast */
-html[data-theme="dark"] input, html[data-theme="dark"] select, html[data-theme="dark"] textarea{
-  background:#171b23; border-color:#273140; box-shadow: 0 6px 18px rgba(0,0,0,.35);
-}
-html[data-theme="dark"] .chip, html[data-theme="dark"] .tab{ border-color: rgba(255,255,255,.12); }
+    // load CSVs
+    await loadData();
 
-/* ========== TABLES ========== */
-table { width:100%; border-collapse: separate; border-spacing: 0 8px; }
-thead th { font-weight:700; opacity:.95; }
-th, td { padding:.6rem .7rem; border-bottom:1px solid rgba(0,0,0,.08); }
-tbody tr:last-child td { border-bottom:0; }
-.table-compact th, .table-compact td { padding:.45rem .55rem; }
+    // POS bindings
+    $('#scanItem').addEventListener('click', () => startScan('item'));
+    $('#itemSearch').addEventListener('input', onSearchItem);
+    $('#loadDemo').addEventListener('click', addDemoRow);
 
-/* ========== KPI / CHART WRAPPERS (Analytics) ========== */
-.kpi-grid{
-  display:grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr));
-  gap:12px; margin-top:12px;
-}
-.kpi{ border-radius:14px; padding:12px; text-align:center; box-shadow: var(--shadow);
-  border:1px solid rgba(0,0,0,.06); background: var(--card-bg); }
-.kpi h4{ font-size:.9rem; margin-bottom:6px; opacity:.9; }
-.kpi .num{ font-size:1.2rem; font-weight:600; }
-.chart-wrap{ border-radius:18px; background:var(--card-bg); padding:16px; box-shadow:var(--shadow); margin-top:16px; }
-.chart-title{ font-weight:800; margin-bottom:8px; }
+    // patient link
+    $('#scanPatient').addEventListener('click', () => startScan('patient'));
+    $('#newPatient').addEventListener('click', newPatientDialog);
 
-/* ========== TOOLBARS ========== */
-.toolbar{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; justify-content:space-between; }
-.toolbar .left, .toolbar .right{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    // cart actions
+    $('#checkoutBtn').addEventListener('click', checkout);
+    $('#clearCartBtn').addEventListener('click', () => { state.cart = []; renderCart(); persist(); });
 
-/* ========== MOTION & PRINT ========== */
-@media (prefers-reduced-motion: reduce){
-  *{ transition:none !important; animation:none !important; }
-}
-@media print{
-  header.banner, .fixed-actions{ display:none; }
-  .section{ box-shadow:none; }
-  body{ background:#fff; color:#000; }
-}
+    // purchase
+    $('#pAdd').addEventListener('click', () => addPurchaseRow());
+    $('#pSave').addEventListener('click', () => alert('Saved (stub)'));
 
-/* ========== THEME TOGGLE ICON VISIBILITY (if you show ☀️/🌙) ========== */
-.theme-toggle .sun, .theme-toggle .moon { display:none; }
-html[data-theme="light"] .theme-toggle .sun { display:block; }
-html[data-theme="dark"]  .theme-toggle .moon { display:block; }
+    // stock
+    $('#sSearch').addEventListener('input', renderStock);
+    $('#sFilter').addEventListener('change', renderStock);
+    $('#sExport').addEventListener('click', exportStock);
+
+    // reports
+    $('#rRange').addEventListener('click', (e)=>{
+      const b = e.target.closest('.chip'); if(!b) return;
+      $$('#rRange .chip').forEach(c => c.classList.remove('active')); b.classList.add('active');
+      renderReports();
+    });
+
+    restore();
+    renderStock();
+    renderReports();
+  });
+
+  async function loadData(){
+    const inv = await fetch('../data/inventory.csv').then(r=>r.text()).catch(()=> '');
+    if (inv) state.inventory = CSV.parse(inv);
+
+    // optional: invoices + items for reports
+    try{
+      const invoices = await fetch('../data/invoices.csv').then(r=>r.text());
+      const items = await fetch('../data/invoice_items.csv').then(r=>r.text());
+      state.invoices = CSV.parse(invoices);
+      state.invoiceItems = CSV.parse(items);
+    }catch{}
+  }
+
+  // ===== Sell / POS =====
+  function onSearchItem(e){
+    const q = e.target.value.trim().toLowerCase();
+    if (q.length < 2) return;
+    const item = state.inventory.find(i => (i.name||'').toLowerCase().includes(q));
+    if (item) addToCart(item);
+  }
+
+  function addDemoRow(){
+    const demo = state.inventory[0] || { name:'Paracetamol 500', batch:'P001', qty:100, mrp:25, gst:12 };
+    addToCart(demo);
+  }
+
+  function addToCart(item){
+    const row = {
+      name: item.name || item.Item || item.item || 'Item',
+      batch: item.batch || item.Batch || '',
+      qty: 1,
+      mrp: Number(item.mrp || item.MRP || 0),
+      gst: Number(item.gst || item.GST || 0)
+    };
+    state.cart.push(row);
+    renderCart(); persist();
+  }
+
+  function renderCart(){
+    const body = $('#cartBody');
+    body.innerHTML = '';
+    if (!state.cart.length){
+      body.innerHTML = '<tr><td colspan="7" class="muted">Cart is empty</td></tr>';
+      $('#cartCount').textContent = '0';
+      $('#cartTotal').textContent = '0.00';
+      return;
+    }
+    let total = 0;
+    state.cart.forEach((r, idx) => {
+      const line = r.qty * r.mrp;
+      total += line;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${r.name}</td>
+        <td>${r.batch||''}</td>
+        <td class="num">
+          <input type="number" min="1" value="${r.qty}" style="width:76px" class="input--sm qty" data-i="${idx}">
+        </td>
+        <td class="num">${money(r.mrp)}</td>
+        <td class="num">${r.gst||0}</td>
+        <td class="num">${money(line)}</td>
+        <td><button class="chip" data-del="${idx}">Remove</button></td>
+      `;
+      body.appendChild(tr);
+    });
+
+    body.addEventListener('input', e=>{
+      const q = e.target.closest('.qty'); if(!q) return;
+      const i = Number(q.dataset.i); const v = Math.max(1, Number(q.value||1));
+      state.cart[i].qty = v; renderCart(); persist();
+    }, { once:true });
+
+    body.addEventListener('click', e=>{
+      const b = e.target.closest('button[data-del]'); if(!b) return;
+      state.cart.splice(Number(b.dataset.del),1); renderCart(); persist();
+    }, { once:true });
+
+    $('#cartCount').textContent = String(state.cart.length);
+    $('#cartTotal').textContent = money(total);
+  }
+
+  function checkout(){
+    if (!state.cart.length) return alert('Cart is empty');
+    const pid = state.patient?.patient_id || state.patient?.id || 'WALKIN';
+    alert(`Invoice created for ${pid}\nItems: ${state.cart.length}\nTotal ₹${$('#cartTotal').textContent}`);
+    state.cart = []; renderCart(); persist();
+  }
+
+  // ===== Patient link =====
+  function renderPatient(){
+    const el = $('#patientStatus');
+    if (!state.patient){ el.textContent = 'No patient linked'; return; }
+    el.textContent = `Patient: ${state.patient.name || state.patient.patient_name || state.patient.id || state.patient.patient_id}`;
+  }
+
+  function newPatientDialog(){
+    const n = prompt('Enter patient name'); if(!n) return;
+    const id = 'PID' + Date.now().toString().slice(-6);
+    state.patient = { patient_id:id, name:n };
+    renderPatient(); persist();
+  }
+
+  async function startScan(kind){
+    try{
+      if (!window.Scanner || !Scanner.ensureLoaded){
+        return alert('Scanner library not loaded. Check network / script tag.');
+      }
+      await Scanner.ensureLoaded();
+      const code = await Scanner.startOnce({ facingMode:'environment' });
+      if (!code) return;
+
+      if (kind === 'patient'){
+        // Try to match with patients.csv (optional)
+        try{
+          const ptxt = await fetch('../data/patients.csv').then(r=>r.text());
+          const rows = CSV.parse(ptxt);
+          const found = rows.find(r => r.patient_id === code || r.barcode === code);
+          state.patient = found || { patient_id: code, name:'Unknown' };
+        }catch{
+          state.patient = { patient_id: code, name:'Unknown' };
+        }
+        renderPatient(); persist();
+      } else if (kind === 'item'){
+        const item = state.inventory.find(i =>
+          String(i.barcode||i.Barcode||'') === code ||
+          String(i.batch||i.Batch||'') === code
+        );
+        if (item) addToCart(item);
+        else alert('Item not found for code: ' + code);
+      }
+    }catch(err){
+      console.error(err);
+      alert('Camera/scan permission denied or not available.');
+    }
+  }
+
+  // ===== Purchase (minimal stub to match UI) =====
+  function addPurchaseRow(){
+    const body = $('#purchaseBody');
+    if (!state.inventory.length){
+      if (body.children.length===1) body.innerHTML='';
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td contenteditable="true">Item name</td>
+        <td contenteditable="true"></td>
+        <td class="num" contenteditable="true">1</td>
+        <td class="num" contenteditable="true">10.00</td>
+        <td class="num" contenteditable="true">15.00</td>
+        <td class="num" contenteditable="true">12</td>
+        <td><button class="chip">Remove</button></td>`;
+      body.appendChild(tr);
+      return;
+    }
+    // seed with first stock row
+    const s = state.inventory[0];
+    if (body.children.length===1 && body.children[0].querySelector('.muted')) body.innerHTML='';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td contenteditable="true">${s.name || s.Item || 'Item'}</td>
+      <td contenteditable="true">${s.batch||''}</td>
+      <td class="num" contenteditable="true">1</td>
+      <td class="num" contenteditable="true">${money(s.cost||s.cost_price||10)}</td>
+      <td class="num" contenteditable="true">${money(s.mrp||15)}</td>
+      <td class="num" contenteditable="true">${s.gst||12}</td>
+      <td><button class="chip">Remove</button></td>`;
+    body.appendChild(tr);
+    body.addEventListener('click', e=>{
+      const b = e.target.closest('button.chip'); if(!b) return;
+      b.closest('tr').remove();
+      if (!$('#purchaseBody').children.length){
+        $('#purchaseBody').innerHTML = '<tr><td colspan="7" class="muted">Add purchase items…</td></tr>';
+      }
+    }, { once:true });
+  }
+
+  // ===== Stock =====
+  function renderStock(){
+    const q = ($('#sSearch').value||'').toLowerCase();
+    const f = $('#sFilter').value;
+    const now = new Date();
+
+    let rows = state.inventory.slice();
+    if (q){
+      rows = rows.filter(r =>
+        (r.name||r.Item||'').toLowerCase().includes(q) ||
+        (r.batch||'').toLowerCase().includes(q) ||
+        (r.hsn||r.HSN||'').toLowerCase().includes(q)
+      );
+    }
+    if (f){
+      rows = rows.filter(r => {
+        const qty = Number(r.qty||r.quantity||0);
+        const exp = r.expiry || r.exp || '';
+        let daysTo = 9999;
+        if (exp){
+          const [mm,yy] = exp.split('/'); // MM/YY
+          const dt = new Date('20'+(yy||'99'), (mm?Number(mm)-1:0)+1, 0);
+          daysTo = (dt - now)/(1000*60*60*24);
+        }
+        if (f==='low') return qty <= Number(r.min_qty||5);
+        if (f==='expired') return daysTo < 0;
+        if (f==='near') return daysTo >= 0 && daysTo <= 60;
+        return true;
+      });
+    }
+
+    const body = $('#stockBody');
+    body.innerHTML = '';
+    if (!rows.length){ body.innerHTML = '<tr><td colspan="6" class="muted">No items</td></tr>'; return; }
+
+    for (const r of rows){
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${r.name||r.Item||'Item'}</td>
+        <td>${r.batch||''}</td>
+        <td>${r.expiry||r.exp||''}</td>
+        <td class="num">${r.qty||r.quantity||0}</td>
+        <td class="num">${money(r.mrp||0)}</td>
+        <td class="num">${r.gst||0}</td>
+      `;
+      body.appendChild(tr);
+    }
+  }
+
+  function exportStock(){
+    const head = ['name','batch','expiry','qty','mrp','gst'];
+    const rows = [head.join(',')].concat(
+      state.inventory.map(r =>
+        [r.name||r.Item||'', r.batch||'', r.expiry||r.exp||'', r.qty||r.quantity||0, r.mrp||0, r.gst||0].join(',')
+      )
+    ).join('\n');
+    const blob = new Blob([rows], {type:'text/csv'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'stock.csv';
+    a.click();
+  }
+
+  // ===== Reports =====
+  function renderReports(){
+    const range = $('#rRange .chip.active')?.dataset.range || 'today';
+    const today = new Date(); const start = new Date(today);
+
+    if (range==='today'){ /* start= today */ }
+    else if (range==='7d'){ start.setDate(today.getDate()-6); }
+    else if (range==='30d'){ start.setDate(today.getDate()-29); }
+    else if (range==='mtd'){ start.setDate(1); }
+
+    // filter invoices by date
+    const inRange = (dstr)=>{
+      if (!dstr) return false;
+      const [dd,mm,yy] = dstr.split(/[\/\-]/);
+      const d = new Date(Number(yy?.length===2?'20'+yy:yy||today.getFullYear()), Number(mm||1)-1, Number(dd||1));
+      return d >= start && d <= today;
+    };
+
+    const invs = state.invoices.filter(i => inRange(i.date||i.invoice_date||i.Date));
+    const ids = new Set(invs.map(i => i.invoice_id||i.id));
+    const items = state.invoiceItems.filter(it => ids.has(it.invoice_id||it.id));
+
+    // totals
+    const total = invs.reduce((s,i)=> s + Number(i.total||i.Total||0), 0);
+    const count = invs.length;
+    const itemsCount = items.reduce((s,i)=> s + Number(i.qty||i.quantity||0), 0);
+
+    // top item
+    const byItem = {};
+    for (const it of items){
+      const name = it.item_name || it.item || it.name || 'Item';
+      byItem[name] = (byItem[name]||0) + Number(it.qty||0);
+    }
+    const top = Object.entries(byItem).sort((a,b)=>b[1]-a[1])[0]?.[0] || '—';
+
+    // write
+    $('#rTotal').textContent = money(total);
+    $('#rBills').textContent = String(count);
+    $('#rItems').textContent = String(itemsCount);
+    $('#rTop').textContent = top;
+  }
+  </script>
+</body>
+</html>
