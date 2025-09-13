@@ -1,276 +1,184 @@
-/* =========================
-   Hospital ERP – styles.css
-   ========================= */
+/* ===========================
+   Hospital ERP – Universal UI
+   (light/dark via [data-theme])
+   =========================== */
 
-/* ---------- Base + Theme ---------- */
-:root{
-  --bg: #f6f8ff;
-  --card: #ffffff;
-  --panel: #ffffff;
-  --fg: #0e1320;
-  --fg-soft:#1b2338;
-  --fg-weak:#3b4766;
+/* ----- Color tokens (Light) ----- */
+:root {
+  /* surface */
+  --bg: #f7f7f8;
+  --card-bg: #ffffff;
 
-  --card-fg:#0b1222;
-  --card-fg-soft:#223059;
+  /* text */
+  --fg: #0b0c0f;
+  --muted: #6b7280;
 
-  --kpi-title:#0a0f1e;
-  --kpi-value:#0a0f1e;
+  /* borders / shadows */
+  --border: #e6e8ec;
+  --soft-shadow: 0 1px 0 rgba(0,0,0,.05);
+  --card-shadow: 0 1px 0 rgba(0,0,0,.06), 0 0 0 1px var(--border);
 
-  --ring: rgba(0,0,0,.08);
-  --shadow: 0 6px 20px rgba(20,25,40,.08);
-  --radius-lg: 18px;
-  --radius-md: 12px;
+  /* components */
+  --chip-bg: #f3f4f6;
+  --input-bg: transparent;
 
-  --pill-bg:#eef2ff;
-  --pill-fg:#0e1320;
-
-  --btn-bg:#0d63ff;
-  --btn-fg:#ffffff;
-
-  --input-bg:#ffffff;
-  --input-br:#d8def3;
-  --input-fg:#0e1320;
-
-  --link:#0d63ff;
+  /* brand accent (very subtle; used only when needed) */
+  --brand-chip: #3b82f6; /* button highlight; not used as background blocks */
 }
 
-html,body{ height:100% }
-html{ -webkit-text-size-adjust:100% }
-body{
-  margin:0;
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-  color:var(--fg);
-  background:var(--bg);
-  letter-spacing:.2px;
+/* ----- Color tokens (Dark) ----- */
+html[data-theme="dark"] {
+  --bg: #0b0c0f;
+  --card-bg: #111214;
+
+  --fg: #e6e7eb;
+  --muted: #9aa0a6;
+
+  --border: #21242a;
+  --soft-shadow: 0 1px 0 rgba(255,255,255,.04);
+  --card-shadow: 0 0 0 1px var(--border);
+
+  --chip-bg: #15171a;
+  --input-bg: transparent;
+
+  --brand-chip: #4f86ff;
 }
 
-[data-theme="dark"]{
-  --bg:#0b1020;
-  --card:#12172a;
-  --panel:#0f1528;
-  --fg:#e9f0ff;
-  --fg-soft:#cfd9ff;
-  --fg-weak:#a8b4dd;
-
-  --card-fg:#ffffff;
-  --card-fg-soft:#f6f8ff;
-
-  --kpi-title:#eef2ff;
-  --kpi-value:#ffffff;
-
-  --ring: rgba(255,255,255,.12);
-  --shadow: 0 10px 30px rgba(0,0,0,.45);
-
-  --pill-bg:#1b2338;
-  --pill-fg:#e9f0ff;
-
-  --btn-bg:#7b8cff;
-  --btn-fg:#0a0f1e;
-
-  --input-bg:#0f1528;
-  --input-br:#233055;
-  --input-fg:#e9f0ff;
-
-  --link:#9ab0ff;
+/* Respect system preference if app hasn't set anything yet */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) { color-scheme: dark; }
 }
 
-/* ---------- Layout ---------- */
-.app-topbar{
-  position: sticky; top:0; z-index:50;
-  backdrop-filter: saturate(140%) blur(8px);
-  background: color-mix(in srgb, var(--bg) 85%, transparent);
-  border-bottom: 1px solid var(--ring);
-}
-.nav{
-  max-width:1100px; margin:0 auto;
-  padding:12px 16px; display:flex; align-items:center; gap:10px;
-}
-.link-back{
-  color:var(--link); text-decoration:none; font-weight:800;
-}
-.spacer{ flex:1 }
-
-.container{
-  max-width:1100px;
-  margin:18px auto 64px;
-  padding: 0 16px;
+/* ----- Base ----- */
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  background: var(--bg);
+  color: var(--fg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* ---------- Buttons / Inputs ---------- */
-.pill, .btn{
-  border:0; cursor:pointer; font-weight:800;
-  border-radius:999px; padding:10px 14px;
-  box-shadow: var(--shadow);
-}
-.pill{
-  background:var(--pill-bg); color:var(--pill-fg);
-}
-.btn{
-  background:var(--btn-bg); color:var(--btn-fg);
-}
-.btn:active, .pill:active{ transform: translateY(1px) }
+/* ----- Layout helpers ----- */
+.container { max-width: 1100px; margin: 0 auto; }
+.section { padding: 8px 12px 32px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.right { text-align: right; }
+.mono { font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
 
-.input{
-  background:var(--input-bg); color:var(--input-fg);
-  border:1px solid var(--input-br); border-radius:10px;
-  padding:10px 12px; font-weight:700;
-  min-height:40px;
-}
-.controls{ display:flex; flex-wrap:wrap; gap:10px; align-items:center }
-
-/* ---------- Cards Grid ---------- */
-.grid-cards{
-  display:grid; gap:14px;
-  grid-template-columns: repeat(6,minmax(0,1fr));
-}
-@media (max-width:1024px){ .grid-cards{ grid-template-columns: repeat(3,1fr); } }
-@media (max-width:640px){ .grid-cards{ grid-template-columns: 1fr; } }
-
-.card{
-  grid-column: span 3;
-  border-radius: var(--radius-lg);
-  padding:20px; text-decoration:none;
-  box-shadow: var(--shadow); position:relative;
-  overflow:hidden;
-  transform: translateZ(0);
-}
-.card h3{
-  margin:0 0 6px 0; font-weight:900; font-size:1.2rem;
-  color:var(--card-fg);
-}
-.card p{
-  margin:0; font-weight:700; color:var(--card-fg-soft); opacity:.95
+/* ----- Cards ----- */
+.card {
+  background: var(--card-bg);
+  border-radius: 18px;
+  padding: 14px;
+  box-shadow: var(--card-shadow);
 }
 
-/* Legacy gradient names (kept for compatibility) */
-.gradient-purple{ background: linear-gradient(135deg,#c3a6ff 0%, #8a6eff 100%); color:var(--card-fg); }
-.gradient-sky{ background: linear-gradient(135deg,#9ed8ff 0%, #6fb1ff 100%); color:var(--card-fg); }
-.gradient-green{ background: linear-gradient(135deg,#aaf07a 0%, #49d48a 100%); color:var(--card-fg); }
-.gradient-pink{ background: linear-gradient(135deg,#ffb2d1 0%, #ff77b1 100%); color:var(--card-fg); }
-.gradient-amber{ background: linear-gradient(135deg,#ffd39a 0%, #ff9f59 100%); color:var(--card-fg); }
-.gradient-lavender{ background: linear-gradient(135deg,#c9b6ff 0%, #a08bff 100%); color:var(--card-fg); }
-.gradient-slate{ background: linear-gradient(135deg,#b7c2ff 0%, #7c9dff 100%); color:var(--card-fg); }
-
-/* New brighter variants used in supervisor */
-.grad-purple{ background: linear-gradient(135deg,#c9afff 0%, #7c6dff 100%); color:var(--card-fg); }
-.grad-mint{ background: linear-gradient(135deg,#9fffc8 0%, #2fd19a 100%); color:var(--card-fg); }
-.grad-amber{ background: linear-gradient(135deg,#ffd39a 0%, #ff9f59 100%); color:var(--card-fg); }
-.grad-pink{ background: linear-gradient(135deg,#ffb2d1 0%, #ff6aa8 100%); color:var(--card-fg); }
-
-.grad-sky{ background: linear-gradient(135deg,#81e0ff 0%, #5aa8ff 100%); color:var(--card-fg); }
-.grad-violet{ background: linear-gradient(135deg,#b48bff 0%, #7b6dff 100%); color:var(--card-fg); }
-.grad-green{ background: linear-gradient(135deg,#bafc83 0%, #3bd07f 100%); color:var(--card-fg); }
-.grad-slate{ background: linear-gradient(135deg,#bccbff 0%, #7aa0ff 100%); color:var(--card-fg); }
-.grad-lav{ background: linear-gradient(135deg,#cfbaff 0%, #9a86ff 100%); color:var(--card-fg); }
-
-/* ---------- Panels ---------- */
-.panel{
-  background:var(--panel);
-  border:1px solid var(--ring);
-  border-radius: var(--radius-lg);
-  padding:16px;
-  margin-top:18px;
-  box-shadow: var(--shadow);
+/* ----- Buttons ----- */
+.btn {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--chip-bg);
+  color: var(--fg);
+  border-radius: 12px;
+  padding: .55rem .85rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--soft-shadow);
 }
-.panel-head{
-  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+.btn:hover { filter: brightness(0.98); }
+.btn:active { transform: translateY(1px); }
+
+.btn.primary {
+  background: var(--brand-chip);
+  color: #fff;
+  border-color: transparent;
 }
-.panel-head h2{
-  margin:0; font-size:1.4rem; font-weight:900; letter-spacing:.2px;
+.btn.ghost {
+  background: transparent;
+  border-color: var(--border);
+}
+.btn.muted {
+  background: var(--chip-bg);
+  color: var(--fg);
 }
 
-/* ---------- Segmented Control ---------- */
-.segmented{
-  margin-left:auto;
-  background: color-mix(in srgb, var(--bg) 70%, transparent);
-  border:1px solid var(--ring);
-  border-radius:999px; padding:4px; display:flex; gap:4px;
-}
-.segmented .seg{
-  background:transparent; border:0; padding:8px 12px;
-  border-radius:999px; cursor:pointer; font-weight:800; color:var(--fg-weak);
-}
-.segmented .seg.active{
-  background:var(--btn-bg); color:var(--btn-fg); box-shadow: var(--shadow);
+/* Icon-only button (for theme toggle) */
+.btn.icon {
+  width: 42px; height: 42px; display: inline-grid; place-items: center;
+  padding: 0;
+  border-radius: 999px;
 }
 
-/* ---------- KPI Row ---------- */
-.kpi-row{
-  display:grid; gap:12px; margin-top:12px;
-  grid-template-columns: repeat(10,minmax(0,1fr));
+/* ----- Tabs (chips) ----- */
+.tabs { display: flex; gap: .45rem; }
+.tab {
+  padding: .45rem .8rem;
+  border-radius: 999px;
+  background: var(--chip-bg);
+  box-shadow: var(--soft-shadow);
+  font-weight: 700;
+  border: 1px solid var(--border);
+  color: var(--fg);
 }
-.kpi{ grid-column: span 2; border-radius:16px; padding:14px; box-shadow: var(--shadow); }
-@media (max-width:1024px){ .kpi{ grid-column: span 5 } }
-@media (max-width:640px){ .kpi{ grid-column: span 10 } }
-
-.kpi span{
-  display:block; font-size:.85rem; font-weight:800; color:var(--kpi-title);
-}
-.kpi strong{
-  display:block; margin-top:6px; font-size:1.4rem; font-weight:900; color:var(--kpi-value);
-}
-
-/* ---------- Charts ---------- */
-.chart-block{ margin-top:14px }
-.chart-block h4{ margin:0 0 10px 2px; font-size:1rem; font-weight:900 }
-./* ---------- Charts (clean shimmer skeleton) ---------- */
-.chart-block{ margin-top:14px }
-.chart-block h4{ margin:0 0 10px 2px; font-size:1rem; font-weight:900 }
-
-.chart-placeholder{
-  min-height: 190px;
-  position: relative;
-  overflow: hidden;
-  border-radius: 16px;
-  border: 1px solid var(--ring);
-  background: color-mix(in srgb, var(--panel) 92%, var(--bg));
+.tab.active {
+  background: var(--brand-chip);
+  color: #fff;
+  border-color: transparent;
 }
 
-/* shimmer overlay when .loading is present */
-.chart-placeholder.loading::before{
-  content:"";
-  position:absolute; inset:0;
-  background:
-    linear-gradient(90deg,
-      transparent 0%,
-      rgba(255,255,255,0.6) 45%,
-      rgba(255,255,255,0.9) 50%,
-      rgba(255,255,255,0.6) 55%,
-      transparent 100%);
-  transform: translateX(-100%);
-  animation: shimmer 1.25s infinite;
-  mix-blend-mode: overlay;
-  pointer-events: none;
+/* ----- Chips / badges ----- */
+.chip {
+  display: inline-block;
+  padding: .45rem .75rem;
+  border-radius: 14px;
+  background: var(--chip-bg);
+  box-shadow: var(--soft-shadow);
+  font-weight: 800;
+  border: 1px solid var(--border);
 }
 
-@keyframes shimmer{
-  100%{ transform: translateX(100%); }
+/* ----- Inputs ----- */
+.input, input[type="text"], input[type="number"], input[type="date"], input[type="month"], select, textarea {
+  width: 100%;
+  padding: .6rem .8rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  color: var(--fg);
+  outline: none;
+}
+.input:focus, input:focus, select:focus, textarea:focus {
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--brand-chip) 20%, transparent);
+  border-color: color-mix(in oklab, var(--brand-chip) 40%, var(--border));
 }
 
-/* Dark mode tune so shimmer isn’t harsh */
-[data-theme="dark"] .chart-placeholder.loading::before{
-  background:
-    linear-gradient(90deg,
-      transparent 0%,
-      rgba(255,255,255,0.10) 45%,
-      rgba(255,255,255,0.18) 50%,
-      rgba(255,255,255,0.10) 55%,
-      transparent 100%);
+/* ----- Tables ----- */
+table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
+thead th { font-weight: 700; color: var(--muted); }
+th, td { padding: .6rem .7rem; border-bottom: 1px solid var(--border); }
+tbody tr:last-child td { border-bottom: 0; }
+
+/* ----- Grids ----- */
+.grid { display: grid; gap: 12px; }
+.grid-2 { grid-template-columns: 1fr; }
+@media (min-width: 860px) {
+  .grid-2 { grid-template-columns: 1fr 1fr; }
 }
 
-/* Make embedded SVGs fill nicely */
-.chart-placeholder svg{ display:block }
-
-/* ---------- Footer ---------- */
-.footer{
-  max-width:1100px; margin:16px auto 40px; padding:0 16px;
-  opacity:.7; font-weight:700;
+/* ----- Header bar pattern (optional) ----- */
+.header {
+  padding: 14px 12px 0;
 }
+.header .title { font-size: 1.6rem; margin: 8px 0 0; font-weight: 900; }
 
-/* ---------- Links ---------- */
-a{ color:var(--link) }
-a.card{ color:inherit }
+/* ----- Theme toggle visual (uses .btn.icon) ----- */
+.theme-toggle .sun, .theme-toggle .moon { display: none; }
+html[data-theme="light"] .theme-toggle .sun { display: block; }
+html[data-theme="dark"]  .theme-toggle .moon { display: block; }
 
-/* ---------- Utility ---------- */
-.hidden{ display:none !important }
+/* Small utility hide */
+.hide { display: none !important; }
