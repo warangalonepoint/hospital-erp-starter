@@ -4,12 +4,15 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Dashboard • Hospital ERP</title>
+  <!-- unified styles -->
   <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="manifest-icon-192.png">
 </head>
 <body>
-  <!-- Banner -->
+  <!-- Banner / Theme -->
   <header class="banner">
     <div class="brand">
+      <!-- keep simple text brand to avoid logo mismatch -->
       <span class="brand-mark">🏥</span>
       <span class="brand-title">Hospital ERP</span>
     </div>
@@ -23,71 +26,120 @@
     <button id="btnClear" class="chip">Clear Cache</button>
   </nav>
 
-  <!-- Dashboard -->
+  <!-- Section: tiles -->
   <main class="section">
-    <div class="card-grid">
-      <!-- Analytics -->
-      <a class="card grad-purple" href="analytics.html">
-        <h2>Analytics</h2>
-        <p>Sales KPIs & Weekly Reports</p>
-      </a>
+    <!-- Analytics -->
+    <a class="panel grad-lilac card" href="analytics.html">
+      <h2>Analytics</h2>
+      <p class="muted">KPIs & weekly sales</p>
+    </a>
 
-      <!-- Bookings -->
-      <a class="card grad-mint" href="booking-status.html">
-        <h2>Bookings</h2>
-        <p>Today · Week · Month counts</p>
-      </a>
+    <!-- Pharmacy -->
+    <a class="panel grad-sky card" href="pharmacy.html">
+      <h2>Pharmacy</h2>
+      <p class="muted">
+        Today <b id="phToday">₹0.00</b> ·
+        MTD <b id="phMTD">₹0.00</b> ·
+        Top: <b id="phTop">—</b>
+      </p>
+    </a>
 
-      <!-- Pharmacy -->
-      <a class="card grad-sky" href="pharmacy.html">
-        <h2>Pharmacy</h2>
-        <p>Manage stock, sales & invoices</p>
-      </a>
+    <!-- Booking Status -->
+    <a class="panel grad-mint card" href="booking-status.html">
+      <h2>Booking Status</h2>
+      <p class="muted">Today / Week / Month counts</p>
+    </a>
 
-      <!-- Patients -->
-      <a class="card grad-rose" href="patients.html">
-        <h2>Patients</h2>
-        <p>Records, visits & follow-ups</p>
-      </a>
+    <!-- Patients -->
+    <a class="panel grad-rose card" href="admin.html#patients">
+      <h2>Patients</h2>
+      <p class="muted">Reminders & history • <b id="dueToday">0 due today</b></p>
+    </a>
 
-      <!-- Staff -->
-      <a class="card grad-peach" href="staff.html">
-        <h2>Staff</h2>
-        <p>Roster & Attendance</p>
-      </a>
+    <!-- Staff -->
+    <a class="panel grad-peach card" href="staff.html">
+      <h2>Staff</h2>
+      <p class="muted">Roster & attendance (view-only)</p>
+    </a>
 
-      <!-- Settings -->
-      <a class="card grad-lavender" href="settings.html">
-        <h2>Settings</h2>
-        <p>System & Admin Controls</p>
-      </a>
-    </div>
+    <!-- Settings -->
+    <a class="panel grad-lavender card" href="settings.html">
+      <h2>Settings</h2>
+      <p class="muted">PINs, Staff, Patients</p>
+    </a>
   </main>
 
   <script src="utils.js"></script>
   <script>
-    // Theme toggle
-    (function(){
-      const root=document.documentElement, btn=document.getElementById('themeToggle');
-      const saved=localStorage.getItem('theme')||'light';
-      root.dataset.theme=saved;
-      btn.textContent=saved==='dark'?'🌙':'🌞';
-      btn.onclick=()=>{
-        const next=root.dataset.theme==='dark'?'light':'dark';
-        root.dataset.theme=next;
-        localStorage.setItem('theme',next);
-        btn.textContent=next==='dark'?'🌙':'🌞';
+    // ====== auth guard (any logged-in role) ======
+    ERP.requireRole('*', 'login.html'); // redirects to login if not signed in
+
+    // ====== theme toggle ======
+    (function theme(){
+      const root = document.documentElement;
+      const btn  = document.getElementById('themeToggle');
+      const saved = localStorage.getItem('theme') || 'light';
+      root.dataset.theme = saved;
+      btn.textContent = saved === 'dark' ? '🌙' : '🌞';
+      btn.onclick = () => {
+        const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+        root.dataset.theme = next;
+        localStorage.setItem('theme', next);
+        btn.textContent = next === 'dark' ? '🌙' : '🌞';
       };
     })();
 
-    // Logout
-    document.getElementById('btnLogout').onclick=()=>{
-      localStorage.clear();
-      location.href='login.html';
+    // ====== toolbar actions ======
+    document.getElementById('btnLogout').onclick = () => {
+      localStorage.removeItem('role');
+      localStorage.removeItem('erp:auth');
+      localStorage.removeItem('erp:role');
+      location.href = 'login.html';
+    };
+    document.getElementById('btnClear').onclick = async () => {
+      await ERP.hardClear();
     };
 
-    // Clear Cache
-    document.getElementById('btnClear').onclick=async()=>{ await ERP.hardClear(); };
+    // ====== dashboard data (Pharmacy + Patients) ======
+    (async function hydrate() {
+      const invoices = ERP.load('invoices', []);
+      const items    = ERP.load('invoice_items', []);
+      const patients = ERP.load('patients', []);
+
+      const todayISO = ERP.todayISO();
+      const firstOfMTD = new Date(); firstOfMTD.setDate(1);
+
+      const invToday  = ERP.filterInvoicesByDate(invoices, todayISO, todayISO);
+      const invMTD    = ERP.filterInvoicesByDate(invoices, firstOfMTD, new Date());
+
+      const invById = new Map(invoices.map(i => [String(i.id || i.invoice_id), i]));
+
+      const itemsToday = items.filter(it => {
+        const inv = invById.get(String(it.invoice_id));
+        return inv && ERP.ymd(inv.date || inv.invoice_date) === todayISO;
+      });
+      const kpiToday = ERP.buildSalesKPIs(invToday, itemsToday);
+
+      const firstYMD = ERP.ymd(firstOfMTD);
+      const itemsMTD = items.filter(it => {
+        const inv = invById.get(String(it.invoice_id));
+        const d = inv ? ERP.ymd(inv.date || inv.invoice_date) : null;
+        return d && d >= firstYMD && d <= todayISO;
+      });
+      const kpiMTD = ERP.buildSalesKPIs(invMTD, itemsMTD);
+
+      document.getElementById('phToday').textContent = ERP.formatMoney(kpiToday.total);
+      document.getElementById('phMTD').textContent   = ERP.formatMoney(kpiMTD.total);
+
+      const top = ERP.topItems(items, 1)[0];
+      document.getElementById('phTop').textContent = top ? (top.name || '—') : '—';
+
+      const due = patients.filter(p => {
+        const d = p.next_followup || p.next_visit || p.followup || '';
+        return d && ERP.ymd(d) === todayISO;
+      }).length;
+      document.getElementById('dueToday').textContent = `${due} due today`;
+    })();
   </script>
 </body>
 </html>
