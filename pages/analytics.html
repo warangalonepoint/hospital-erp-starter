@@ -1,179 +1,317 @@
-<!doctype html>
-<html lang="en" data-theme="dark">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Hospital ERP · Analytics</title>
+  <title>Hospital ERP • Analytics</title>
+
   <link rel="stylesheet" href="../styles/styles.css" />
+  <link rel="manifest" href="../manifest.json" />
+
+  <script>
+    // Apply saved theme (or system) BEFORE paint to avoid flash
+    (function () {
+      const stored = localStorage.getItem('erp_theme');
+      const prefersDark = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches;
+      const theme = stored || (prefersDark ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+
   <style>
-    .kpi strong{ font-weight:900; letter-spacing:.2px }
-    .kpi span{ font-weight:800 }
-    .panel-head h2{ font-weight:900 }
+    /* Small page-local tweaks to align with dashboard look */
+    .container{max-width:1100px;margin:0 auto}
+    .row{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+    .btn{padding:.55rem .85rem;border-radius:12px;border:1px solid var(--border);background:var(--chip-bg);color:var(--fg);font-weight:700;box-shadow:var(--soft-shadow)}
+    .btn.primary{background:var(--brand-chip);color:#fff;border-color:transparent}
+    .btn.ghost{background:transparent}
+    .chip{padding:.5rem .8rem;border-radius:14px;background:var(--chip-bg);box-shadow:var(--soft-shadow);font-weight:800}
+    .card{background:var(--card-bg);border-radius:18px;padding:16px;box-shadow:var(--card-shadow)}
+    .kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.75rem}
+    .kpi{padding:14px;border-radius:16px;background:var(--chip-bg);box-shadow:var(--soft-shadow)}
+    .kpi .label{opacity:.75;font-size:.9rem}
+    .kpi .value{font-weight:900;font-variant-numeric:tabular-nums;font-size:1.25rem}
+    .tabs{display:flex;gap:.4rem}
+    .tab{padding:.45rem .8rem;border-radius:999px;background:var(--chip-bg);box-shadow:var(--soft-shadow);font-weight:700}
+    .tab.active{background:var(--brand-chip);color:#fff}
+    table{width:100%;border-collapse:separate;border-spacing:0 8px}
+    th,td{padding:.6rem .7rem;text-align:left}
+    thead th{opacity:.8}
+    .right{text-align:right}
+    .muted{opacity:.75}
+    canvas{width:100%;height:200px;display:block}
+    @media (max-width:900px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
   </style>
 </head>
+
 <body>
-  <header class="app-topbar">
-    <nav class="nav">
-      <a class="link-back" href="./dashboard.html">← Dashboard</a>
-      <div class="spacer"></div>
-      <button class="pill" id="themeToggle">🌗</button>
-    </nav>
+  <header class="container" style="padding:14px 12px 0">
+    <div class="row" style="justify-content:space-between">
+      <div class="row">
+        <a href="./dashboard.html" class="btn ghost">← Dashboard</a>
+        <button id="btn-logout" class="btn ghost">Logout</button>
+        <button id="btn-clear" class="btn ghost">Clear Cache</button>
+      </div>
+      <div class="chip">Analytics</div>
+    </div>
+    <h1 style="margin:8px 0 0">Sales Reports</h1>
   </header>
 
-  <main class="container">
-    <section class="panel">
-      <div class="panel-head">
-        <h2>Sales Reports</h2>
-        <div class="segmented" id="rangeCtl">
-          <button class="seg active" data-range="7d">Last 7D</button>
-          <button class="seg" data-range="30d">Last 30D</button>
-          <button class="seg" data-range="mtd">MTD</button>
-          <button class="seg" data-range="ytd">YTD</button>
+  <main class="container" style="padding:8px 12px 32px">
+    <!-- Range controls -->
+    <div class="card" style="margin-bottom:12px">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <div class="row">
+          <label class="muted" style="margin-right:.4rem">From</label>
+          <input id="from" type="date" class="input" style="max-width:160px">
+          <label class="muted" style="margin:.2rem .4rem 0">To</label>
+          <input id="to" type="date" class="input" style="max-width:160px">
+          <button id="apply" class="btn primary">Apply</button>
+        </div>
+        <div class="tabs">
+          <button class="tab active" data-range="7d">Last 7D</button>
+          <button class="tab" data-range="30d">Last 30D</button>
+          <button class="tab" data-range="mtd">MTD</button>
+          <button class="tab" data-range="ytd">YTD</button>
         </div>
       </div>
+    </div>
 
-      <div class="controls" style="margin-top:.6rem">
-        <label>From <input class="input" type="date" id="fromDate"></label>
-        <label>To <input class="input" type="date" id="toDate"></label>
-        <button class="btn" id="applyRange">Apply</button>
+    <!-- KPIs -->
+    <section class="kpis" style="margin-bottom:12px">
+      <div class="kpi">
+        <div class="label">Total (₹)</div>
+        <div id="kpi-total" class="value">0.00</div>
       </div>
-
-      <div class="kpi-row" style="margin-top:.6rem">
-        <div class="kpi gradient-sky"><span>Total (₹)</span><strong id="kpiTotal">0.00</strong></div>
-        <div class="kpi gradient-lavender"><span>Avg / Day (₹)</span><strong id="kpiAvg">0.00</strong></div>
-        <div class="kpi gradient-green"><span>Invoices</span><strong id="kpiInvoices">0</strong></div>
-        <div class="kpi gradient-slate"><span>Top item</span><strong id="kpiTop">—</strong></div>
-        <div class="kpi gradient-amber"><span>Items sold</span><strong id="kpiQty">0</strong></div>
+      <div class="kpi">
+        <div class="label">Avg / Day (₹)</div>
+        <div id="kpi-avg" class="value">0.00</div>
       </div>
-
-      <div class="chart-block"><h4>Revenue by Day</h4><div class="chart-placeholder loading" id="revChart" style="position:relative"></div></div>
-      <div class="chart-block"><h4>Top Items</h4><div class="chart-placeholder loading" id="topChart" style="position:relative"></div></div>
-
-      <div class="panel" style="margin-top:1rem">
-        <h3 style="margin:0 0 10px 0; font-weight:900">Download</h3>
-        <div class="controls">
-          <button class="btn" id="btnExportSales">Export Sales (CSV)</button>
-          <button class="btn" id="btnExportItems">Export Items (CSV)</button>
-        </div>
+      <div class="kpi">
+        <div class="label">Invoices</div>
+        <div id="kpi-bills" class="value">0</div>
       </div>
+      <div class="kpi">
+        <div class="label">Top Item</div>
+        <div id="kpi-top" class="value">—</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Items sold</div>
+        <div id="kpi-items" class="value">0</div>
+      </div>
+    </section>
+
+    <!-- Revenue by day -->
+    <section class="card" style="margin-bottom:12px">
+      <h3 style="margin:0 0 8px">Revenue by Day</h3>
+      <canvas id="rev-canvas" width="900" height="220"></canvas>
+      <table>
+        <thead><tr><th>Date</th><th class="right">Amount (₹)</th></tr></thead>
+        <tbody id="rev-by-day"><tr><td class="muted" colspan="2">—</td></tr></tbody>
+      </table>
+    </section>
+
+    <!-- Top items -->
+    <section class="card">
+      <h3 style="margin:0 0 8px">Top Items</h3>
+      <table>
+        <thead><tr><th>Item</th><th class="right">Qty</th></tr></thead>
+        <tbody id="top-items"><tr><td class="muted" colspan="2">—</td></tr></tbody>
+      </table>
     </section>
   </main>
 
-  <footer class="footer">Analytics · Hospital ERP</footer>
-
-  <script type="module">
-    import {fetchCSV, renderBars, sumBy, formatINR, downloadCSV} from '../scripts/utils.js';
-
-    // theme
-    const root = document.documentElement;
-    const saved = localStorage.getItem('theme');
-    if (saved) root.setAttribute('data-theme', saved);
-    else if (matchMedia('(prefers-color-scheme: light)').matches) root.setAttribute('data-theme','light');
-    themeToggle.onclick = () => {
-      const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-      root.setAttribute('data-theme', next); localStorage.setItem('theme', next);
+  <script>
+    // Session actions
+    document.getElementById('btn-logout').onclick = () => { localStorage.removeItem('erp_active_role'); location.href = './login.html'; };
+    document.getElementById('btn-clear').onclick = () => {
+      localStorage.clear();
+      if (window.caches?.keys) caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+      alert('Cache cleared. Reloading…'); location.reload();
     };
 
-    // elements
-    const fromEl = document.getElementById('fromDate');
-    const toEl   = document.getElementById('toDate');
-    const apply  = document.getElementById('applyRange');
-
-    // helpers
-    function parseD(s){ return new Date(s.replace(/-/g,'/')); }
-    function fmtDate(d){ const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
-    function clampDay(d){ const x=new Date(d); x.setHours(0,0,0,0); return x; }
-
-    // presets
-    document.querySelectorAll('#rangeCtl .seg').forEach(b=>{
-      b.addEventListener('click', ()=> {
-        document.querySelectorAll('#rangeCtl .seg').forEach(x=>x.classList.remove('active'));
-        b.classList.add('active');
-        setPreset(b.dataset.range);
+    // CSV loader (no external libs) — tolerant of quoted commas
+    async function loadCSV(path) {
+      const txt = await fetch(path, { cache: 'no-store' }).then(r => r.text());
+      const lines = txt.trim().split(/\r?\n/);
+      if (!lines.length) return [];
+      const headers = lines[0].split(',').map(h => h.trim());
+      return lines.slice(1).map(line => {
+        const cells = []; let cur = '', inQ = false;
+        for (let i = 0; i < line.length; i++) {
+          const ch = line[i];
+          if (ch === '"') { inQ = !inQ; continue; }
+          if (ch === ',' && !inQ) { cells.push(cur); cur = ''; continue; }
+          cur += ch;
+        }
+        cells.push(cur);
+        const row = {};
+        headers.forEach((h, i) => row[h] = (cells[i] ?? '').trim());
+        return row;
       });
-    });
+    }
 
-    // state for export
-    let lastSales = []; let lastItems = [];
+    // Date parsing across common header names
+    function parseDate(row) {
+      const cand = row.date || row.Date || row.txn_date || row.invoice_date || row.created_at || row.day;
+      if (!cand) return null;
+      const ymd = /^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/;
+      const dmy = /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/;
+      if (ymd.test(cand)) { const [,y,m,d]=cand.match(ymd); return new Date(+y, +m-1, +d); }
+      if (dmy.test(cand)) { const [,d,m,y]=cand.match(dmy); return new Date(+y, +m-1, +d); }
+      const t = Date.parse(cand); return Number.isNaN(t) ? null : new Date(t);
+    }
+    const num = v => Number(String(v ?? '').replace(/[₹,\s]/g,'')) || 0;
+    const money = n => (n||0).toLocaleString('en-IN',{minimumFractionDigits:2, maximumFractionDigits:2});
+    const $ = sel => document.querySelector(sel);
 
-    async function load(from, to) {
-      const revEl = document.getElementById('revChart');
-      const topEl = document.getElementById('topChart');
-      revEl.classList.add('loading'); topEl.classList.add('loading');
+    // Ranges
+    const ranges = {
+      '7d' () { const to = new Date(); to.setHours(23,59,59,999); const from = new Date(to); from.setDate(from.getDate()-6); from.setHours(0,0,0,0); return [from,to]; },
+      '30d'() { const to = new Date(); to.setHours(23,59,59,999); const from = new Date(to); from.setDate(from.getDate()-29); from.setHours(0,0,0,0); return [from,to]; },
+      'mtd' () { const now = new Date(); const from = new Date(now.getFullYear(), now.getMonth(), 1); const to = new Date(now.getFullYear(), now.getMonth()+1, 0, 23,59,59,999); return [from,to]; },
+      'ytd' () { const now = new Date(); const from = new Date(now.getFullYear(),0,1); const to = new Date(now.getFullYear(),11,31,23,59,59,999); return [from,to]; }
+    };
+    function toISODate(d){ return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10); }
 
-      const inv   = await fetchCSV('../data/invoices.csv');
-      const items = await fetchCSV('../data/invoice_items.csv');
+    // Simple chart
+    function drawChart(canvas, points, maxY) {
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width, h = canvas.height;
+      ctx.clearRect(0,0,w,h);
+      // grid
+      ctx.globalAlpha = 0.15;
+      ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--border') || '#ccc';
+      for (let i=0;i<5;i++){ const y = 10 + (h-30)*i/4; ctx.beginPath(); ctx.moveTo(40,y); ctx.lineTo(w-10,y); ctx.stroke(); }
+      ctx.globalAlpha = 1;
+      // axes
+      ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--fg') || '#000';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(40,10); ctx.lineTo(40,h-20); ctx.lineTo(w-10,h-20); ctx.stroke();
 
-      const sales = inv.filter(r=>{
-        const d = clampDay(parseD(r.date));
-        return d>=from && d<=to;
+      if (!points.length || maxY<=0) return;
+      const xStep = (w-60)/Math.max(1, points.length-1);
+      ctx.beginPath();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--fg') || '#000';
+      points.forEach((p,i)=>{
+        const x = 40 + i*xStep;
+        const y = h-20 - (p.value/maxY)*(h-30);
+        if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
       });
+      ctx.stroke();
+    }
 
-      const idSet = new Set(sales.map(r=>r.invoice_id));
-      const itemRows = items.filter(it=> idSet.has(it.invoice_id));
+    async function run(rangeFrom, rangeTo) {
+      // Load CSVs
+      const invoices = await loadCSV('../data/invoices.csv');
+      const items    = await loadCSV('../data/invoice_items.csv');
+
+      // Key detection
+      const invIdKey = ['invoice_id','invoiceId','bill_no','bill','id'].find(k => invoices[0]?.hasOwnProperty(k)) || 'invoice_id';
+      const partyKey = ['patient','patient_name','party','customer','name'].find(k => invoices[0]?.hasOwnProperty(k)) || 'patient';
+      const amountKey = ['grand_total','amount','total','value'].find(k => invoices[0]?.hasOwnProperty(k)) || 'grand_total';
+
+      const linkKey = ['invoice_id','invoiceId','bill_no','bill','id'].find(k => items[0]?.hasOwnProperty(k)) || invIdKey;
+      const qtyKey = ['qty','quantity','qnty'].find(k => items[0]?.hasOwnProperty(k)) || 'qty';
+      const itemNameKey = ['item','item_name','name','product'].find(k => items[0]?.hasOwnProperty(k)) || 'item';
+
+      // Filter by date
+      const inRange = (row) => {
+        const d = parseDate(row); return d && d >= rangeFrom && d <= rangeTo;
+      };
+      const inv = invoices.filter(inRange);
+
+      // Build indexes
+      const invSet = new Set(inv.map(r => r[invIdKey]));
+      const its = items.filter(r => invSet.has(r[linkKey]));
 
       // KPIs
-      const total = sales.reduce((a,b)=>a + Number(b.total||0), 0);
-      const days  = Math.max(1, Math.round((to-from)/86400000)+1);
-      kpiTotal.textContent    = formatINR(total);
-      kpiAvg.textContent      = formatINR(total/days);
-      kpiInvoices.textContent = String(sales.length);
-      kpiQty.textContent      = String(itemRows.reduce((a,b)=> a + Number(b.qty||0), 0));
+      const total = inv.reduce((s,r)=> s + num(r[amountKey]), 0);
+      const invoiceCount = inv.length;
+      const days = Math.max(1, Math.round((rangeTo - rangeFrom)/86400000) + 1);
+      const avgPerDay = total / days;
+      const itemsSold = its.reduce((s,r)=> s + num(r[qtyKey]), 0);
 
-      // top item
-      const byItem = sumBy(itemRows, it=>it.item, it=> Number(it.qty||0) * Number(it.price||0));
-      let top='—', topVal=0; for (const [k,v] of byItem.entries()) { if (v>topVal) { top=k; topVal=v; } }
-      kpiTop.textContent = top || '—';
+      // Top item (by qty)
+      const byItem = new Map();
+      its.forEach(r => {
+        const key = (r[itemNameKey] || '').toUpperCase().trim();
+        if (!key) return;
+        byItem.set(key, (byItem.get(key) || 0) + num(r[qtyKey]));
+      });
+      let topItem = '—', topQty = 0;
+      for (const [k,v] of byItem.entries()) if (v > topQty) { topItem = k; topQty = v; }
 
-      // charts
-      const map = sumBy(sales, r=>r.date, r=>r.total);
-      const series=[]; const cur = new Date(from);
-      while (cur <= to) { const key = fmtDate(cur); series.push({label:key, value:Number(map.get(key)||0)}); cur.setDate(cur.getDate()+1); }
-      renderBars(revEl, series, {});   revEl.classList.remove('loading');
+      // Write KPIs
+      document.getElementById('kpi-total').textContent = '₹' + money(total);
+      document.getElementById('kpi-avg').textContent   = '₹' + money(avgPerDay);
+      document.getElementById('kpi-bills').textContent = String(invoiceCount);
+      document.getElementById('kpi-top').textContent   = topItem;
+      document.getElementById('kpi-items').textContent = String(itemsSold);
 
-      const topSeries = Array.from(byItem.entries()).map(([label,value])=>({label,value}))
-                        .sort((a,b)=>b.value-a.value).slice(0,8);
-      renderBars(topEl, topSeries, {}); topEl.classList.remove('loading');
+      // Revenue by day
+      const byDay = new Map();
+      inv.forEach(r => {
+        const d = parseDate(r); if (!d) return;
+        const key = d.toISOString().slice(0,10);
+        byDay.set(key, (byDay.get(key)||0) + num(r[amountKey]));
+      });
+      const dayTbody = document.getElementById('rev-by-day');
+      const rows = Array.from(byDay.entries()).sort((a,b)=> a[0].localeCompare(b[0]));
+      dayTbody.innerHTML = rows.length
+        ? rows.map(([d,v])=> `<tr><td>${d}</td><td class="right">₹${money(v)}</td></tr>`).join('')
+        : `<tr><td class="muted" colspan="2">No data in selected range</td></tr>`;
 
-      // exports
-      lastSales = sales;
-      lastItems = itemRows.map(r=>({
-        invoice_id: r.invoice_id,
-        item: r.item,
-        qty: r.qty,
-        price: r.price,
-        total: (Number(r.qty||0)*Number(r.price||0)).toFixed(2)
-      }));
+      // Draw chart
+      const points = rows.map(([d,v]) => ({ date:d, value:v }));
+      const maxY = Math.max(0, ...points.map(p=>p.value));
+      drawChart(document.getElementById('rev-canvas'), points, maxY);
+
+      // Top Items table
+      const topTbody = document.getElementById('top-items');
+      const topRows = Array.from(byItem.entries()).sort((a,b)=> b[1]-a[1]).slice(0,10);
+      topTbody.innerHTML = topRows.length
+        ? topRows.map(([name,qty])=> `<tr><td>${name}</td><td class="right">${qty}</td></tr>`).join('')
+        : `<tr><td class="muted" colspan="2">No items</td></tr>`;
     }
 
-    // presets -> inputs -> load
-    function setPreset(preset){
-      const today = clampDay(new Date());
-      let from = new Date(today), to = new Date(today);
-      if (preset==='7d')  from.setDate(today.getDate()-6);
-      if (preset==='30d') from.setDate(today.getDate()-29);
-      if (preset==='mtd') from = new Date(today.getFullYear(), today.getMonth(), 1);
-      if (preset==='ytd') from = new Date(today.getFullYear(), 0, 1);
-      fromEl.value = fmtDate(from);
-      toEl.value   = fmtDate(to);
-      load(from, to);
-    }
+    // Wire range controls
+    (function initUI(){
+      const rFrom = document.getElementById('from');
+      const rTo   = document.getElementById('to');
+      const applyBtn = document.getElementById('apply');
 
-    apply.addEventListener('click', ()=>{
-      if (!fromEl.value || !toEl.value) return alert('Pick both From and To dates');
-      const from = clampDay(new Date(fromEl.value));
-      const to   = clampDay(new Date(toEl.value));
-      if (to < from) return alert('To date cannot be earlier than From date');
-      document.querySelectorAll('#rangeCtl .seg').forEach(x=>x.classList.remove('active'));
-      load(from, to);
-    });
+      function applyRange([from, to]) {
+        if (rFrom) rFrom.value = toISODate(from);
+        if (rTo)   rTo.value   = toISODate(to);
+        run(from, to);
+      }
 
-    // export buttons
-    btnExportSales.onclick = ()=> downloadCSV(`sales-${new Date().toISOString().slice(0,10)}.csv`, lastSales);
-    btnExportItems.onclick = ()=> downloadCSV(`items-${new Date().toISOString().slice(0,10)}.csv`, lastItems);
+      // quick ranges
+      document.querySelectorAll('[data-range]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          document.querySelectorAll('[data-range]').forEach(b=> b.classList.toggle('active', b===btn));
+          const val = btn.dataset.range;
+          const fn = ranges[val] || ranges['7d'];
+          applyRange(fn());
+        });
+      });
 
-    // init
-    setPreset('7d');
+      // manual apply
+      if (applyBtn) {
+        applyBtn.addEventListener('click', ()=>{
+          const from = new Date(rFrom.value + 'T00:00:00');
+          const to = new Date(rTo.value + 'T23:59:59');
+          run(from, to);
+        });
+      }
+
+      // Initial: last 7D
+      const to = new Date(); to.setHours(23,59,59,999);
+      const from = new Date(to); from.setDate(from.getDate()-6); from.setHours(0,0,0,0);
+      applyRange([from,to]);
+    })();
   </script>
 </body>
 </html>
