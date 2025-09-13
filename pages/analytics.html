@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Analytics</title>
+  <title>Analytics · Reports</title>
   <link rel="stylesheet" href="../styles/styles.css" />
 </head>
 <body>
@@ -14,14 +14,46 @@
       <button class="pill" id="themeToggle">🌗</button>
     </nav>
   </header>
+
   <main class="container">
     <section class="panel">
-      <h2 style="margin-bottom:.25rem">Analytics</h2>
-      <p>Stub page. Wire your data/API next.</p>
-      <div class="chart-block" style="margin-top:1rem"><h4>Placeholder</h4><div class="chart-placeholder"></div></div>
+      <div class="panel-head">
+        <h2>Sales Reports</h2>
+        <div class="segmented" id="rangeCtl">
+          <button class="seg active" data-range="7d">Last 7D</button>
+          <button class="seg" data-range="30d">Last 30D</button>
+          <button class="seg" data-range="mtd">MTD</button>
+          <button class="seg" data-range="ytd">YTD</button>
+        </div>
+      </div>
+
+      <div class="kpi-row">
+        <div class="kpi gradient-sky"><span>Total (₹)</span><strong id="kpiTotal">0.00</strong></div>
+        <div class="kpi gradient-purple"><span>Avg / Day (₹)</span><strong id="kpiAvg">0.00</strong></div>
+        <div class="kpi gradient-green"><span>Invoices</span><strong id="kpiInvoices">0</strong></div>
+        <div class="kpi gradient-slate"><span>Top Item</span><strong id="kpiTop">—</strong></div>
+        <div class="kpi gradient-lavender"><span>Items Sold</span><strong id="kpiQty">0</strong></div>
+      </div>
+
+      <div class="chart-block"><h4>Revenue by Day</h4><div class="chart-placeholder" id="revChart"></div></div>
+      <div class="chart-block"><h4>Top Items</h4><div class="chart-placeholder" id="topChart"></div></div>
+
+      <div class="panel" style="margin-top:1rem">
+        <h3>Download</h3>
+        <div class="controls">
+          <button class="btn" id="btnExportSales">Export Sales (CSV)</button>
+          <button class="btn" id="btnExportItems">Export Items (CSV)</button>
+        </div>
+      </div>
     </section>
   </main>
-  <script>
+
+  <footer class="footer">Analytics · Hospital ERP</footer>
+
+  <script type="module">
+    import {fetchCSV, renderBars, sumBy, formatINR, downloadCSV} from '../scripts/utils.js';
+
+    // theme
     const root = document.documentElement;
     const saved = localStorage.getItem('theme');
     if (saved) root.setAttribute('data-theme', saved);
@@ -30,6 +62,84 @@
       const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
       root.setAttribute('data-theme', next); localStorage.setItem('theme', next);
     };
+
+    document.querySelectorAll('#rangeCtl .seg').forEach(b=>{
+      b.addEventListener('click', ()=> {
+        document.querySelectorAll('#rangeCtl .seg').forEach(x=>x.classList.remove('active'));
+        b.classList.add('active');
+        load(b.dataset.range);
+      });
+    });
+
+    function parseD(s){ return new Date(s.replace(/-/g,'/')); }
+    function fmtDate(d){ const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
+
+    let lastSales = []; let lastItems = [];
+
+    async function load(range='7d') {
+      const inv   = await fetchCSV('../data/invoices.csv');
+      const items = await fetchCSV('../data/invoice_items.csv');
+
+      const today = new Date(); const end = new Date(today); const start = new Date(today);
+      if (range==='7d')  start.setDate(today.getDate()-6);
+      if (range==='30d') start.setDate(today.getDate()-29);
+      if (range==='mtd') { start.setDate(1); }
+      if (range==='ytd') { start.setMonth(0,1); }
+
+      // sales rows (date-range filtered)
+      const sales = inv.filter(r=>{
+        const d = parseD(r.date);
+        return d>=start && d<=end;
+      });
+
+      // items connected to those invoices
+      const idSet = new Set(sales.map(r=>r.invoice_id));
+      const itemRows = items.filter(it=> idSet.has(it.invoice_id));
+
+      // KPIs
+      const total = sales.reduce((a,b)=>a + Number(b.total||0), 0);
+      const days  = Math.max(1, Math.round((end-start)/86400000)+1);
+      document.getElementById('kpiTotal').textContent    = formatINR(total);
+      document.getElementById('kpiAvg').textContent      = formatINR(total/days);
+      document.getElementById('kpiInvoices').textContent = String(sales.length);
+
+      // qty sold
+      const qty = itemRows.reduce((a,b)=> a + Number(b.qty||0), 0);
+      document.getElementById('kpiQty').textContent = String(qty);
+
+      // top item
+      const byItem = sumBy(itemRows, it=>it.item, it=> Number(it.qty||0) * Number(it.price||0));
+      let top='—', topVal=0; for (const [k,v] of byItem.entries()) { if (v>topVal) { top=k; topVal=v; } }
+      document.getElementById('kpiTop').textContent = top || '—';
+
+      // charts
+      const map = sumBy(sales, r=>r.date, r=>r.total);
+      const series=[]; const cur = new Date(start);
+      while (cur <= end) {
+        const key = fmtDate(cur);
+        series.push({label:key, value:Number(map.get(key)||0)});
+        cur.setDate(cur.getDate()+1);
+      }
+      renderBars(document.getElementById('revChart'), series, {});
+      const topSeries = Array.from(byItem.entries()).map(([label,value])=>({label,value})).sort((a,b)=>b.value-a.value).slice(0,8);
+      renderBars(document.getElementById('topChart'), topSeries, {});
+
+      // keep for export
+      lastSales = sales;
+      lastItems = itemRows.map(r=>({
+        invoice_id: r.invoice_id,
+        item: r.item,
+        qty: r.qty,
+        price: r.price,
+        total: (Number(r.qty||0)*Number(r.price||0)).toFixed(2)
+      }));
+    }
+
+    // export buttons
+    document.getElementById('btnExportSales').onclick = ()=> downloadCSV(`sales-${new Date().toISOString().slice(0,10)}.csv`, lastSales);
+    document.getElementById('btnExportItems').onclick = ()=> downloadCSV(`items-${new Date().toISOString().slice(0,10)}.csv`, lastItems);
+
+    load('7d');
   </script>
 </body>
 </html>
