@@ -276,18 +276,3 @@ input:focus, select:focus, textarea:focus {
   color: #fff;
 }
 
-/* Common card text polish */
-.card h3, .card p {
-  margin: 0;
-  color: inherit;
-}
-.card {
-  border: none;
-  box-shadow: var(--shadow-soft);
-  border-radius: 18px;
-  padding: 1rem;
-  transition: transform 0.2s;
-}
-.card:hover {
-  transform: translateY(-4px);
-}
