@@ -3,8 +3,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Supervisor · Dashboard</title>
+  <title>Supervisor · Snapshot</title>
   <link rel="stylesheet" href="../styles/styles.css" />
+  <style>
+    /* page-specific polish */
+    .kpi strong{ font-weight:800; letter-spacing:.2px }
+    .kpi span{ font-weight:700; opacity:.9 }
+    .panel-head h2{ font-weight:900 }
+    .chart-placeholder.loading::after{
+      content:"Loading…"; position:absolute; inset:auto 0 10px 0; text-align:center; font-weight:700; opacity:.6;
+    }
+  </style>
 </head>
 <body>
   <header class="app-topbar">
@@ -20,17 +29,17 @@
   <main class="container">
     <!-- Feature cards -->
     <section class="grid-cards">
-      <a class="card gradient-green" href="./pharmacy.html">
+      <a class="card grad-purple" href="./booking-status.html">
+        <h3>Tokens & appointments</h3><p>Queue, time slots</p>
+      </a>
+      <a class="card grad-mint" href="./pharmacy.html">
         <h3>Pharmacy – Billing</h3><p>Invoices, discounts, payments</p>
       </a>
-      <a class="card gradient-amber" href="./analytics.html">
-        <h3>Pharmacy – Reports</h3><p>Daily / Weekly / Monthly / Yearly</p>
+      <a class="card grad-amber" href="./analytics.html">
+        <h3>Reports</h3><p>Daily / Weekly / Monthly / Yearly</p>
       </a>
-      <a class="card gradient-pink" href="./staff.html">
+      <a class="card grad-pink" href="./staff.html">
         <h3>Staff – Attendance & Roster</h3><p>Day sheet, mark, export</p>
-      </a>
-      <a class="card gradient-purple" href="./booking-status.html">
-        <h3>Bookings</h3><p>Tokens & appointments</p>
       </a>
     </section>
 
@@ -43,18 +52,50 @@
           <button class="seg" data-range="7d">7D</button>
           <button class="seg" data-range="30d">30D</button>
         </div>
+        <button class="pill" id="btnExport" style="margin-left:.5rem">Export (CSV)</button>
       </div>
 
+      <!-- Filters -->
+      <div class="controls" style="margin:.5rem 0 .75rem">
+        <label>From <input class="input" type="date" id="fromDate"></label>
+        <label>To <input class="input" type="date" id="toDate"></label>
+        <button class="btn" id="applyRange">Apply</button>
+      </div>
+
+      <!-- KPIs -->
       <div class="kpi-row">
-        <div class="kpi gradient-sky"><span>Total (₹)</span><strong id="kpiTotal">0.00</strong></div>
-        <div class="kpi gradient-purple"><span>Avg / Day (₹)</span><strong id="kpiAvg">0.00</strong></div>
-        <div class="kpi gradient-green"><span>Invoices</span><strong id="kpiInv">0</strong></div>
-        <div class="kpi gradient-slate"><span>Top Item</span><strong id="kpiTop">—</strong></div>
-        <div class="kpi gradient-lavender"><span>Appointments</span><strong id="kpiAppt">0</strong></div>
+        <div class="kpi grad-sky">
+          <span>Total (₹)</span>
+          <strong id="kpiTotal">0.00</strong>
+        </div>
+        <div class="kpi grad-violet">
+          <span>Avg / Day (₹)</span>
+          <strong id="kpiAvg">0.00</strong>
+        </div>
+        <div class="kpi grad-green">
+          <span>Invoices</span>
+          <strong id="kpiInv">0</strong>
+        </div>
+        <div class="kpi grad-slate">
+          <span>Top item</span>
+          <strong id="kpiTop">—</strong>
+        </div>
+        <div class="kpi grad-lav">
+          <span>Appointments</span>
+          <strong id="kpiAppt">0</strong>
+        </div>
       </div>
 
-      <div class="chart-block"><h4>Revenue by Day</h4><div class="chart-placeholder" id="supRev"></div></div>
-      <div class="chart-block"><h4>Top Items (Share)</h4><div class="chart-placeholder" id="supTop"></div></div>
+      <!-- Charts -->
+      <div class="chart-block">
+        <h4>Revenue by Day</h4>
+        <div class="chart-placeholder loading" id="supRev" style="position:relative"></div>
+      </div>
+
+      <div class="chart-block">
+        <h4>Top Items (Share)</h4>
+        <div class="chart-placeholder loading" id="supTop" style="position:relative"></div>
+      </div>
     </section>
   </main>
 
@@ -63,7 +104,7 @@
   <script type="module">
     import {fetchCSV, renderBars, sumBy, formatINR, downloadCSV} from '../scripts/utils.js';
 
-    // guard: only allow supervisor role
+    // role guard
     const role = sessionStorage.getItem('role');
     if (role !== 'supervisor') location.replace('./login.html');
 
@@ -71,88 +112,99 @@
     const root = document.documentElement;
     const saved = localStorage.getItem('theme');
     if (saved) root.setAttribute('data-theme', saved);
-    else if (window.matchMedia('(prefers-color-scheme: light)').matches) root.setAttribute('data-theme','light');
-    document.getElementById('themeToggle').onclick = () => {
+    else if (matchMedia('(prefers-color-scheme: light)').matches) root.setAttribute('data-theme','light');
+    themeToggle.onclick = () => {
       const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
       root.setAttribute('data-theme', next); localStorage.setItem('theme', next);
     };
-    document.getElementById('btnLogout').onclick = () => { sessionStorage.clear(); location.href='./login.html'; };
-    document.getElementById('btnClearCache').onclick = () => {
+    btnLogout.onclick = () => { sessionStorage.clear(); location.href='./login.html'; };
+    btnClearCache.onclick = () => {
       localStorage.clear(); sessionStorage.clear();
       if ('caches' in window) caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
       location.reload();
     };
 
-    // add Export button
-    const head = document.querySelector('.panel-head');
-    const exp = document.createElement('button');
-    exp.className = 'pill'; exp.textContent = 'Export (CSV)'; exp.style.marginLeft = '8px';
-    head.appendChild(exp);
-    let lastRows = [];
-    exp.onclick = ()=> downloadCSV(`supervisor-sales-${new Date().toISOString().slice(0,10)}.csv`, lastRows);
-
-    // range toggle
-    document.querySelectorAll('#supRange .seg').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        document.querySelectorAll('#supRange .seg').forEach(x=>x.classList.remove('active'));
-        btn.classList.add('active');
-        load(btn.dataset.range);
-      });
-    });
+    // helpers
+    const fromEl = document.getElementById('fromDate');
+    const toEl   = document.getElementById('toDate');
+    const apply  = document.getElementById('applyRange');
+    const btnExport = document.getElementById('btnExport');
+    const revEl = document.getElementById('supRev');
+    const topEl = document.getElementById('supTop');
 
     function parseD(s){ return new Date(s.replace(/-/g,'/')); }
     function fmtDate(d){ const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
+    function clampDay(d){ const x=new Date(d); x.setHours(0,0,0,0); return x; }
 
-    async function load(range='today') {
+    // presets
+    document.querySelectorAll('#supRange .seg').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        document.querySelectorAll('#supRange .seg').forEach(x=>x.classList.remove('active'));
+        btn.classList.add('active'); setPreset(btn.dataset.range);
+      });
+    });
+
+    // apply custom range
+    apply.addEventListener('click', ()=>{
+      const f=fromEl.value, t=toEl.value;
+      if(!f||!t) return alert('Pick From and To dates');
+      const from=clampDay(new Date(f)), to=clampDay(new Date(t));
+      if(to<from) return alert('To date cannot be earlier than From date');
+      document.querySelectorAll('#supRange .seg').forEach(x=>x.classList.remove('active'));
+      load(from,to);
+    });
+
+    // export
+    let lastRows = [];
+    btnExport.onclick = ()=> downloadCSV(`supervisor-sales-${new Date().toISOString().slice(0,10)}.csv`, lastRows);
+
+    function setPreset(preset){
+      const today = clampDay(new Date());
+      let from = new Date(today), to = new Date(today);
+      if (preset==='7d')  from.setDate(today.getDate()-6);
+      if (preset==='30d') from.setDate(today.getDate()-29);
+      fromEl.value = fmtDate(from);
+      toEl.value   = fmtDate(to);
+      load(from,to);
+    }
+
+    async function load(from, to){
+      revEl.classList.add('loading'); topEl.classList.add('loading');
+
       const inv   = await fetchCSV('../data/invoices.csv');
       const items = await fetchCSV('../data/invoice_items.csv');
 
-      const today = new Date(); const end = new Date(today); const start = new Date(today);
-      if (range==='7d')  start.setDate(today.getDate()-6);
-      if (range==='30d') start.setDate(today.getDate()-29);
-
       const rows = inv.filter(r=>{
-        const d = parseD(r.date);
-        if (range==='today') return d.toDateString()===today.toDateString();
-        return d>=start && d<=end;
+        const d = clampDay(parseD(r.date));
+        return d>=from && d<=to;
       });
       lastRows = rows;
 
-      // KPIs
       const total = rows.reduce((a,b)=>a+Number(b.total||0),0);
-      const days  = (range==='today') ? 1 : Math.max(1, Math.round((end-start)/86400000)+1);
-      document.getElementById('kpiTotal').textContent = formatINR(total);
-      document.getElementById('kpiAvg').textContent   = formatINR(total/days);
-      document.getElementById('kpiInv').textContent   = String(rows.length);
+      const days  = Math.max(1, Math.round((to-from)/86400000)+1);
+      kpiTotal.textContent = formatINR(total);
+      kpiAvg.textContent   = formatINR(total/days);
+      kpiInv.textContent   = String(rows.length);
 
-      // top item
       const idSet = new Set(rows.map(r=>r.invoice_id));
       const filteredItems = items.filter(it=> idSet.has(it.invoice_id));
-      const byItem = sumBy(filteredItems, it=>it.item, it=> Number(it.qty||0) * Number(it.price||0));
+      const byItem = sumBy(filteredItems, it=>it.item, it=> Number(it.qty||0)*Number(it.price||0));
       let top='—', topVal=0; for (const [k,v] of byItem.entries()) { if (v>topVal) { top=k; topVal=v; } }
-      document.getElementById('kpiTop').textContent = top || '—';
-
-      // appointments (stub until we add appointments.csv)
-      document.getElementById('kpiAppt').textContent = '0';
+      kpiTop.textContent = top||'—';
+      kpiAppt.textContent = '0'; // TODO: wire appointments.csv
 
       // charts
       const map = sumBy(rows, r=>r.date, r=>r.total);
-      const series=[]; const cur = new Date(start);
-      while (cur <= end) {
-        const key = fmtDate(cur);
-        series.push({label:key, value:Number(map.get(key)||0)});
-        cur.setDate(cur.getDate()+1);
-      }
-      renderBars(document.getElementById('supRev'), series, {});
+      const series=[]; const cur = new Date(from);
+      while (cur <= to) { const key = fmtDate(cur); series.push({label:key, value:Number(map.get(key)||0)}); cur.setDate(cur.getDate()+1); }
+      renderBars(revEl, series, {});   revEl.classList.remove('loading');
 
-      const topSeries = Array.from(byItem.entries())
-        .map(([label,value])=>({label,value}))
-        .sort((a,b)=> b.value - a.value)
-        .slice(0,8);
-      renderBars(document.getElementById('supTop'), topSeries, {});
+      const topSeries = Array.from(byItem.entries()).map(([label,value])=>({label,value})).sort((a,b)=>b.value-a.value).slice(0,8);
+      renderBars(topEl, topSeries, {}); topEl.classList.remove('loading');
     }
 
-    load('today');
+    // init
+    setPreset('today');
   </script>
 </body>
 </html>
