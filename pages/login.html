@@ -100,17 +100,17 @@
 
   <script>
     const roles = {
-      "4321": "doctor",
-      "1111": "supervisor",
-      "9999": "admin"
+      "4321": { role: "doctor", page: "analytics.html" },
+      "1111": { role: "supervisor", page: "supervisor.html" },
+      "9999": { role: "admin", page: "admin.html" }
     };
 
     function handleLogin() {
       const pin = document.getElementById("pinInput").value.trim();
       if (roles[pin]) {
-        localStorage.setItem("role", roles[pin]);
-        alert("Login successful as " + roles[pin]);
-        window.location.href = "dashboard.html"; 
+        localStorage.setItem("role", roles[pin].role);
+        alert("Login successful as " + roles[pin].role);
+        window.location.href = roles[pin].page; 
       } else {
         alert("Invalid PIN. Please try again.");
       }
