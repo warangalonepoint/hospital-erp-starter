@@ -1,252 +1,262 @@
 <!doctype html>
 <html lang="en" data-theme="light">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Supervisor • Hospital ERP</title>
-  <link rel="stylesheet" href="../styles/styles.css"/>
-  <link rel="icon" href="../public/assets/icon-192.png"/>
+  <link rel="stylesheet" href="../styles/styles.css" />
+  <!-- optional: if you also use ui.css -->
+  <!-- <link rel="stylesheet" href="../styles/ui.css" /> -->
+  <link rel="icon" href="../public/manifest-icon-192.png" />
+  <script src="../scripts/utils.js"></script>
+  <style>
+    /* local helpers */
+    .brand{display:flex;align-items:center;gap:8px;font-weight:900}
+    .brand-title{font-size:1.1rem}
+    #who{margin-left:auto}
+    .grid{display:grid;gap:16px}
+    @media (min-width: 980px){ .grid.cols-2{ grid-template-columns: 1.1fr .9fr } }
+    .cards-3{display:grid;gap:16px;grid-template-columns:1fr}
+    @media (min-width: 860px){ .cards-3{grid-template-columns:repeat(3,1fr)} }
+    .table { width:100%; border-collapse:separate; border-spacing:0; background:var(--paper); border:1px solid var(--line); border-radius:14px; overflow:hidden; box-shadow:var(--shadow-sm) }
+    .table th,.table td{ padding:10px 12px; border-bottom:1px solid var(--line); text-align:left }
+    .table th{ background:color-mix(in srgb, var(--paper) 80%, var(--bg)); color:var(--ink-muted); font-weight:700 }
+    .table tr:last-child td{ border-bottom:none }
+    .nowrap{white-space:nowrap}
+  </style>
 </head>
 <body>
   <!-- Banner -->
   <header class="banner">
+    <div class="brand">
+      <span class="brand-mark">🗂️</span>
+      <span class="brand-title">Supervisor</span>
+    </div>
+    <span id="who" class="muted"></span>
     <button id="themeToggle" class="toggle" title="Toggle theme">🌙</button>
   </header>
 
-  <!-- Top actions -->
-  <div class="toolbar">
+  <!-- Toolbar -->
+  <nav class="toolbar">
     <a class="chip" href="./dashboard.html">← Dashboard</a>
-    <button class="chip" id="btnClear">Clear Cache</button>
-    <div style="flex:1"></div>
-    <a class="chip admin-only" href="./admin.html">Admin</a>
-  </div>
+    <a class="chip" href="./analytics.html">Analytics</a>
+    <a class="chip" href="./pharmacy.html">Pharmacy</a>
+    <span style="flex:1"></span>
+    <button id="btnLogout" class="chip">Logout</button>
+    <button id="btnClear" class="chip">Clear Cache</button>
+  </nav>
 
-  <!-- Header -->
-  <section class="section">
-    <div class="panel grad-lilac">
-      <h2>Supervisor Snapshot</h2>
-      <p class="muted">Daily performance, quick exports, and team view.</p>
+  <!-- Hero panels -->
+  <main class="section">
+    <div class="cards-3">
+      <a class="card panel--lilac card panel grad-lilac" href="./analytics.html">
+        <h3>Today KPIs</h3>
+        <p class="muted">Pharmacy sales, items sold, patients due</p>
+      </a>
+
+      <a class="card" style="background-image:var(--grad-blue); color:#eef2ff; border-color:#22324a" href="./pharmacy.html">
+        <h3>Quick Actions</h3>
+        <p class="muted" style="color:#e6ecff">Sell, stock, and returns</p>
+      </a>
+
+      <a class="card" style="background-image:var(--grad-mint); color:#ecfffb; border-color:#1c3d34" href="#today">
+        <h3>Today’s List</h3>
+        <p class="muted" style="color:#c9fff3">Appointments & reminders</p>
+      </a>
+    </div>
+  </main>
+
+  <!-- Content: KPIs + Lists -->
+  <section class="section grid cols-2">
+    <!-- Left: KPIs + Today -->
+    <div class="grid" style="gap:16px">
+      <div class="card">
+        <h3>Today’s KPIs</h3>
+        <div class="kpi-grid mt12">
+          <div class="kpi">
+            <div class="label">Sales (Today)</div>
+            <div id="kpiSalesToday" class="value money">₹ 0.00</div>
+          </div>
+          <div class="kpi">
+            <div class="label">Items Sold</div>
+            <div id="kpiItemsToday" class="value">0</div>
+          </div>
+          <div class="kpi">
+            <div class="label">Invoices Today</div>
+            <div id="kpiInvToday" class="value">0</div>
+          </div>
+          <div class="kpi">
+            <div class="label">Patients Due</div>
+            <div id="kpiDueToday" class="value">0</div>
+          </div>
+          <div class="kpi">
+            <div class="label">Top Item (MTD)</div>
+            <div id="kpiTopItem" class="value nowrap">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="today" class="card">
+        <h3>Today’s Appointments / Follow-ups</h3>
+        <table class="table" id="tblToday">
+          <thead>
+            <tr>
+              <th>Patient</th>
+              <th>ID</th>
+              <th>Reason</th>
+              <th>Date</th>
+              <th class="right">Action</th>
+            </tr>
+          </thead>
+          <tbody><!-- filled by JS --></tbody>
+        </table>
+      </div>
     </div>
 
-    <div class="row mt12">
-      <input type="date" id="from" style="max-width:180px">
-      <input type="date" id="to" style="max-width:180px">
-      <button id="btnRun" class="chip chip--primary">Run</button>
-      <button class="chip" data-q="today">Today</button>
-      <button class="chip" data-q="7d">Last 7D</button>
-      <button class="chip" data-q="30d">Last 30D</button>
-      <button class="chip" data-q="mtd">MTD</button>
-      <div style="flex:1"></div>
-      <button id="btnExportInvoices" class="chip">↓ Invoices CSV</button>
-      <button id="btnExportItems" class="chip">↓ Items CSV</button>
-    </div>
-  </section>
-
-  <!-- KPIs -->
-  <section class="section">
-    <div class="kpi-grid">
-      <div class="kpi" style="background:var(--t-blue);color:var(--c-blue)">
-        <h4>Total (₹)</h4><div class="num" id="kTotal">0.00</div>
-      </div>
-      <div class="kpi" style="background:var(--t-mint);color:var(--c-mint)">
-        <h4>Paid (₹)</h4><div class="num" id="kPaid">0.00</div>
-      </div>
-      <div class="kpi" style="background:var(--t-peach);color:var(--c-peach)">
-        <h4>Invoices</h4><div class="num" id="kInv">0</div>
-      </div>
-      <div class="kpi" style="background:var(--t-rose);color:var(--c-rose)">
-        <h4>Avg/Day (₹)</h4><div class="num" id="kAvg">0.00</div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Charts -->
-  <section class="section">
-    <div class="grid-2">
-      <div class="chart-wrap">
-        <div class="chart-title">Revenue by Day</div>
-        <canvas id="revChart" aria-label="Revenue line" style="width:100%;height:260px"></canvas>
-      </div>
-      <div class="chart-wrap">
-        <div class="chart-title">Top 10 Items (₹)</div>
-        <canvas id="topChart" aria-label="Top items bar" style="width:100%;height:260px"></canvas>
-      </div>
-    </div>
-  </section>
-
-  <!-- Tables -->
-  <section class="section">
-    <h3 style="margin:0 0 8px">Top Items</h3>
-    <div style="overflow:auto">
-      <table class="table">
-        <thead><tr><th>#</th><th>Item</th><th>Qty</th><th>Amount (₹)</th></tr></thead>
-        <tbody id="topBody"><tr><td class="muted" colspan="4">—</td></tr></tbody>
+    <!-- Right: Recent sales -->
+    <div class="card">
+      <h3>Recent Pharmacy Sales</h3>
+      <table class="table" id="tblSales">
+        <thead>
+          <tr>
+            <th># Invoice</th>
+            <th>Date</th>
+            <th>Items</th>
+            <th class="right">Total</th>
+          </tr>
+        </thead>
+        <tbody><!-- filled by JS --></tbody>
       </table>
     </div>
   </section>
 
-  <section class="section">
-    <h3 style="margin:0 0 8px">Recent Invoices</h3>
-    <div style="overflow:auto">
-      <table class="table">
-        <thead><tr><th>Date</th><th>Invoice #</th><th>Patient</th><th>Total</th><th>Paid</th></tr></thead>
-        <tbody id="invBody"><tr><td class="muted" colspan="5">—</td></tr></tbody>
-      </table>
-    </div>
-  </section>
+  <footer class="section center muted">Supervisor · Hospital ERP</footer>
 
-  <script src="../scripts/utils.js"></script>
   <script>
-    // ================= Theme toggle =================
-    (function(){
-      const key='theme', root=document.documentElement, btn=document.getElementById('themeToggle');
-      const saved=localStorage.getItem(key)||'light'; root.dataset.theme=saved; btn.textContent=saved==='dark'?'🌙':'🌞';
-      btn.onclick=()=>{ const next=root.dataset.theme==='dark'?'light':'dark'; root.dataset.theme=next; localStorage.setItem(key,next); btn.textContent=next==='dark'?'🌙':'🌞'; };
-    })();
-
-    // ================= Role-based visibility =================
+    /* ===== Guard: supervisor only ===== */
     (function guard(){
-      const role = localStorage.getItem('erp:role') || sessionStorage.getItem('role');
-      // Allow supervisor and admin; hide admin-only links if not admin
-      if (role !== 'supervisor' && role !== 'admin') {
-        // If they came here directly, bounce to login
-        location.replace('./login.html');
-        return;
-      }
-      if (role !== 'admin') document.querySelectorAll('.admin-only').forEach(el => el.remove());
+      try {
+        if (window.ERP?.requireRole) { ERP.requireRole('supervisor', './login.html'); return; }
+      } catch {}
+      const role = localStorage.getItem('erp:role') || localStorage.getItem('role');
+      if (role !== 'supervisor') location.replace('./login.html');
     })();
 
-    // ================= Clear cache =================
-    document.getElementById('btnClear').onclick = async ()=>{
-      const keep=['theme','erp:pin_doctor','erp:pin_supervisor','erp:pin_admin','erp:startup','erp:fmt','erp:auth','erp:role'];
-      Object.keys(localStorage).forEach(k=>{ if(!keep.includes(k)) localStorage.removeItem(k); });
-      if('caches' in window){ const keys=await caches.keys(); await Promise.all(keys.map(k=>caches.delete(k))); }
-      alert('Cache cleared (PINs/preferences preserved).');
+    /* ===== Theme toggle (unified) ===== */
+    (function theme(){
+      const root = document.documentElement;
+      const btn  = document.getElementById('themeToggle');
+      const saved = localStorage.getItem('theme') || 'light';
+      root.dataset.theme = saved;
+      btn.textContent = saved === 'dark' ? '🌙' : '🌞';
+      btn.onclick = () => {
+        const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+        root.dataset.theme = next;
+        localStorage.setItem('theme', next);
+        btn.textContent = next === 'dark' ? '🌙' : '🌞';
+      };
+    })();
+
+    /* ===== Toolbar actions ===== */
+    document.getElementById('btnLogout').onclick = () => {
+      localStorage.removeItem('role');
+      localStorage.removeItem('erp:role');
+      localStorage.removeItem('erp:auth');
+      location.href = './login.html';
     };
-
-    // ================= Date helpers =================
-    const $ = (id)=> document.getElementById(id);
-    const fromEl=$('from'), toEl=$('to');
-    function setRange(days){
-      const to = new Date(); to.setHours(0,0,0,0);
-      const from = new Date(to); from.setDate(to.getDate()-days+1);
-      fromEl.value = from.toISOString().slice(0,10);
-      toEl.value   = to.toISOString().slice(0,10);
-    }
-    function setMTD(){
-      const d=new Date(); fromEl.value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`; toEl.value=new Date().toISOString().slice(0,10);
-    }
-    document.querySelectorAll('[data-q]').forEach(b => b.onclick = ()=>{
-      const q=b.dataset.q; if(q==='today') setRange(1); if(q==='7d') setRange(7); if(q==='30d') setRange(30); if(q==='mtd') setMTD();
-      run();
-    });
-
-    // ================= Charts (lightweight canvas) =================
-    function drawBars(canvasId, labels, values){
-      const cvs = document.getElementById(canvasId), ctx=cvs.getContext('2d');
-      const W = cvs.clientWidth || 540, H = 260; cvs.width=W*devicePixelRatio; cvs.height=H*devicePixelRatio; ctx.scale(devicePixelRatio,devicePixelRatio);
-      ctx.clearRect(0,0,W,H);
-      const pad=28, gap=10, n=values.length||1, bw=(W-pad*2-gap*(n-1))/n;
-      const max=Math.max(1, ...values.map(v=>+v||0));
-      const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent') || '#2563eb';
-      ctx.font='12px Inter, system-ui, sans-serif'; ctx.fillStyle='currentColor';
-      values.forEach((v,i)=>{
-        const h=Math.round((v/max)*(H-70)), x=pad+i*(bw+gap), y=H-40-h;
-        ctx.fillStyle=accent; ctx.fillRect(x,y,bw,h);
-        ctx.globalAlpha=.85; ctx.fillStyle='currentColor'; ctx.fillText(labels[i]||'', x, H-20); ctx.globalAlpha=1;
-      });
-    }
-    function drawLine(canvasId, labels, values){
-      const cvs = document.getElementById(canvasId), ctx=cvs.getContext('2d');
-      const W = cvs.clientWidth || 540, H = 260; cvs.width=W*devicePixelRatio; cvs.height=H*devicePixelRatio; ctx.scale(devicePixelRatio,devicePixelRatio);
-      ctx.clearRect(0,0,W,H);
-      const pad=28, n=values.length||1;
-      const max=Math.max(1, ...values.map(v=>+v||0));
-      const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent') || '#2563eb';
-      const innerW = W - pad*2, step = innerW / Math.max(1,n-1);
-      ctx.strokeStyle = accent; ctx.lineWidth = 2;
-      ctx.beginPath();
-      values.forEach((v,i)=>{
-        const x = pad + i*step;
-        const y = (H-40) - (v/max)*(H-70);
-        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-      });
-      ctx.stroke();
-      // labels
-      ctx.font='12px Inter, system-ui, sans-serif'; ctx.fillStyle='currentColor'; ctx.globalAlpha=.85;
-      labels.forEach((t,i)=>{ const x=pad + i*step; ctx.fillText(t, x-8, H-20); });
-      ctx.globalAlpha=1;
-    }
-
-    // ================= Data & rendering =================
-    function run(){
-      const invsAll = ERP.load('invoices', []);
-      const itemsAll = ERP.load('invoice_items', []);
-      const invs = ERP.filterInvoicesByDate(invsAll, fromEl.value, toEl.value);
-      const ids = new Set(invs.map(i => i.id || i.invoice_id));
-      const items = itemsAll.filter(x => ids.has(x.invoice_id));
-
-      // KPIs
-      const k = ERP.buildSalesKPIs(invs, items);
-      $('kTotal').textContent = k.total.toFixed(2);
-      $('kPaid').textContent  = k.paid.toFixed(2);
-      $('kInv').textContent   = String(k.invoices);
-      const days = Math.max(1, Math.ceil((new Date(toEl.value) - new Date(fromEl.value))/86400000) + 1);
-      $('kAvg').textContent   = (k.total/days).toFixed(2);
-
-      // Revenue series (line)
-      const byId = new Map(invs.map(i => [(i.id||i.invoice_id), i]));
-      const series = ERP.dailyRevenue(items, byId); // [{date, amount}]
-      // Fill missing dates within range
-      const dFrom = new Date(fromEl.value), dTo = new Date(toEl.value);
-      const labels=[], values=[];
-      for(let d=new Date(dFrom); d<=dTo; d.setDate(d.getDate()+1)){
-        const key = d.toISOString().slice(0,10);
-        const found = series.find(s => s.date === key)?.amount || 0;
-        labels.push(`${key.slice(8,10)}/${key.slice(5,7)}`);
-        values.push(+found.toFixed(2));
+    document.getElementById('btnClear').onclick = async () => {
+      const keep = new Set(['theme','pins','erp:pin_doctor','erp:pin_supervisor','erp:pin_admin']);
+      for (const k of Object.keys(localStorage)) if (!keep.has(k)) localStorage.removeItem(k);
+      if ('caches' in window) {
+        const names = await caches.keys(); await Promise.all(names.map(n => caches.delete(n)));
       }
-      drawLine('revChart', labels, values);
-
-      // Top items (table + bars)
-      const top = ERP.topItems(items, 10);
-      const body = $('topBody');
-      body.innerHTML = top.length
-        ? top.map((r,i)=> `<tr><td>${i+1}</td><td>${r.name}</td><td>${r.qty}</td><td>₹ ${r.amount.toFixed(2)}</td></tr>`).join('')
-        : '<tr><td class="muted" colspan="4">—</td></tr>';
-      drawBars('topChart', top.map(t=>t.name.slice(0,8)), top.map(t=>t.amount));
-
-      // Recent invoices (latest 12)
-      const invBody = $('invBody');
-      const recent = [...invs].sort((a,b)=> new Date(b.date||b.invoice_date) - new Date(a.date||a.invoice_date)).slice(0,12);
-      invBody.innerHTML = recent.length
-        ? recent.map(r => `<tr>
-            <td>${(r.date||r.invoice_date)||''}</td>
-            <td>${r.id||r.invoice_id||''}</td>
-            <td>${(r.patient_name||'')}${r.patient_id?` (${r.patient_id})`:''}</td>
-            <td>₹ ${(Number(r.total||0)).toFixed(2)}</td>
-            <td>₹ ${(Number(r.paid||0)).toFixed(2)}</td>
-          </tr>`).join('')
-        : '<tr><td class="muted" colspan="5">—</td></tr>';
-    }
-
-    // Export buttons
-    $('btnExportInvoices').onclick = ()=> ERP.downloadCSV('invoices_filtered.csv', ERP.filterInvoicesByDate(ERP.load('invoices', []), fromEl.value, toEl.value));
-    $('btnExportItems').onclick = ()=>{
-      const invs = ERP.filterInvoicesByDate(ERP.load('invoices', []), fromEl.value, toEl.value);
-      const ids = new Set(invs.map(i=> i.id||i.invoice_id));
-      const items = ERP.load('invoice_items', []).filter(x=> ids.has(x.invoice_id));
-      ERP.downloadCSV('invoice_items_filtered.csv', items);
+      alert('Cleared local data (kept theme & PINs).');
+      location.reload();
     };
 
-    // Init
-    (async function init(){
-      // Load CSVs to LS on first run (best-effort)
-      if(!ERP.load('invoices').length){ try{ await ERP.loadAllCSVs(); }catch(e){} }
-      // default range = last 7 days
-      setRange(7);
-      $('btnRun').onclick = run;
-      run();
+    /* ===== Page data ===== */
+    (function hydrate(){
+      const fm = (n)=> window.ERP?.formatMoney ? ERP.formatMoney(n) : `₹ ${(n||0).toFixed(2)}`;
+      const ymd = (d)=> window.ERP?.ymd?.(d) || (new Date(d).toISOString().slice(0,10));
+      const today = window.ERP?.todayISO?.() || new Date().toISOString().slice(0,10);
+
+      const invoices = window.ERP?.load?.('invoices', []) || [];
+      const items    = window.ERP?.load?.('invoice_items', []) || [];
+      const pats     = window.ERP?.load?.('patients', []) || [];
+
+      // --- KPIs (today) ---
+      const invById = new Map(invoices.map(i => [String(i.id || i.invoice_id), i]));
+
+      const invToday = invoices.filter(inv => ymd(inv.date || inv.invoice_date) === today);
+      const itemsToday = items.filter(it => {
+        const inv = invById.get(String(it.invoice_id));
+        return inv && ymd(inv.date || inv.invoice_date) === today;
+      });
+
+      const kpi = window.ERP?.buildSalesKPIs ? ERP.buildSalesKPIs(invToday, itemsToday) : {total:0, itemsSold:0};
+      document.getElementById('kpiSalesToday').textContent = fm(kpi.total || 0);
+      document.getElementById('kpiItemsToday').textContent = kpi.itemsSold || 0;
+      document.getElementById('kpiInvToday').textContent   = invToday.length || 0;
+
+      // Patients due today (uses next_followup/next_visit/followup)
+      const due = pats.filter(p => {
+        const d = p.next_followup || p.next_visit || p.followup || '';
+        return d && ymd(d) === today;
+      });
+      document.getElementById('kpiDueToday').textContent = due.length;
+
+      // Top item MTD
+      const first = new Date(); first.setDate(1);
+      const firstYMD = ymd(first);
+      const itemsMTD = items.filter(it => {
+        const inv = invById.get(String(it.invoice_id));
+        const d = inv ? ymd(inv.date || inv.invoice_date) : null;
+        return d && d >= firstYMD && d <= today;
+      });
+      const top = window.ERP?.topItems ? ERP.topItems(itemsMTD, 1)[0] : null;
+      document.getElementById('kpiTopItem').textContent = top ? (top.name || '—') : '—';
+
+      // --- Today’s list (appointments/follow-ups) ---
+      const tbodyToday = document.querySelector('#tblToday tbody');
+      tbodyToday.innerHTML = due.slice(0, 10).map(p => `
+        <tr>
+          <td>${p.name || p.full_name || '—'}</td>
+          <td class="nowrap">${p.patient_id || p.id || '—'}</td>
+          <td>${p.reason || p.visit_reason || p.dept || '—'}</td>
+          <td class="nowrap">${ymd(p.next_followup || p.next_visit || p.followup)}</td>
+          <td class="right"><a class="chip" href="./admin.html#patients">Open</a></td>
+        </tr>
+      `).join('') || `<tr><td colspan="5" class="muted">No follow-ups due today.</td></tr>`;
+
+      // --- Recent sales (last 8 invoices) ---
+      const tbodySales = document.querySelector('#tblSales tbody');
+      const recents = [...invoices]
+        .sort((a,b)=> (new Date(b.date||b.invoice_date)) - (new Date(a.date||a.invoice_date)))
+        .slice(0, 8);
+
+      // Pre-count items per invoice
+      const countItems = (invId) => items.reduce((n,it)=> n + (String(it.invoice_id)===String(invId)? (Number(it.qty)||0):0), 0);
+
+      tbodySales.innerHTML = recents.map(inv => {
+        const id = inv.id || inv.invoice_id || '—';
+        const total = inv.total ?? inv.grand_total;
+        const cnt = countItems(id);
+        return `
+          <tr>
+            <td>${id}</td>
+            <td class="nowrap">${ymd(inv.date || inv.invoice_date)}</td>
+            <td>${cnt}</td>
+            <td class="right">${fm(total || 0)}</td>
+          </tr>
+        `;
+      }).join('') || `<tr><td colspan="4" class="muted">No recent sales.</td></tr>`;
+    })();
+
+    // Show signed-in role
+    (function showRole(){
+      const role = localStorage.getItem('erp:role') || localStorage.getItem('role') || '';
+      const who = document.getElementById('who');
+      if (role && who) who.textContent = `Signed in as ${role}`;
     })();
   </script>
 </body>
