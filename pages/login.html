@@ -1,144 +1,143 @@
 <!doctype html>
 <html lang="en" data-theme="light">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Login • Hospital ERP</title>
-  <link rel="stylesheet" href="../styles/styles.css"/>
-  <link rel="icon" href="../public/assets/icon-192.png"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PIN Login • Hospital ERP</title>
+  <link rel="stylesheet" href="../styles.css?v=4" />
+  <link rel="icon" href="../assets/icon.png" />
+  <style>
+    /* keep this tiny page self-contained */
+    .wrap{max-width:980px;margin:0 auto;padding:12px}
+    .card{background:var(--card-bg);box-shadow:var(--shadow);border-radius:18px;padding:20px;margin-top:12px}
+    .title{font-size:28px;font-weight:800;margin:6px 0 14px}
+    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+    .field{flex:1;min-width:240px}
+    .muted{color:var(--muted)}
+    .pill{padding:10px 16px;border-radius:999px;border:1px solid rgba(0,0,0,.08);background:var(--card-bg)}
+    .btn-primary{background:var(--accent);color:#fff;border:0}
+    .err{color:#b91c1c;margin-top:6px;font-weight:600;display:none}
+    header.banner{height:128px}
+  </style>
 </head>
 <body>
-  <!-- Banner -->
+  <!-- Brand banner + theme toggle (same look as other pages) -->
   <header class="banner">
-    <button id="themeToggle" class="toggle" title="Toggle theme">🌙</button>
+    <button id="themeToggle" class="floating-toggle" title="Toggle theme">🌙</button>
+    <!-- background image is handled in CSS; keeps layout uniform -->
   </header>
 
-  <div class="toolbar">
-    <a class="chip" href="./dashboard.html">← Dashboard</a>
-    <button class="chip" id="clearCacheBtn">Clear Cache</button>
+  <div class="wrap">
+    <nav class="fixed-actions">
+      <a class="chip" href="../index.html">← Dashboard</a>
+      <button id="clearCache" class="chip">Clear Cache</button>
+    </nav>
+
+    <section class="card">
+      <div class="title">PIN Login</div>
+      <p class="muted">Enter your 4–6 digit PIN to continue.</p>
+
+      <div class="row mt12">
+        <input id="pin" class="pill field" inputmode="numeric" autocomplete="one-time-code"
+               placeholder="🔒 4–6 digits" maxlength="6" />
+        <button id="loginBtn" class="pill btn-primary">Login</button>
+      </div>
+      <div id="err" class="err">Invalid PIN. Please try again.</div>
+
+      <div class="card mt16" style="background:var(--t-blue);color:var(--c-blue)">
+        <div style="font-weight:700;margin-bottom:6px">Demo PINs</div>
+        <div>Doctor: <b>4321</b> &nbsp;•&nbsp; Supervisor: <b>1111</b> &nbsp;•&nbsp; Admin: <b>9999</b></div>
+      </div>
+    </section>
+
+    <section class="card" style="margin-bottom:28px">
+      <div style="font-weight:700;margin-bottom:8px">Having trouble?</div>
+      <ol class="muted" style="padding-left:18px">
+        <li>Tap <b>Clear Cache</b> to reset saved PINs and role.</li>
+        <li>Reload the page and use one of the demo PINs above.</li>
+      </ol>
+    </section>
   </div>
 
-  <section class="section" style="max-width:720px">
-    <div class="panel grad-sky">
-      <h2>Sign in</h2>
-      <p class="muted">Enter your role PIN. You can change PINs later in Admin &rarr; Security.</p>
-    </div>
-
-    <div class="section" style="margin-top:12px">
-      <label class="muted">PIN</label>
-      <div class="row" style="margin-top:6px">
-        <input id="pin" inputmode="numeric" type="password" maxlength="6" placeholder="4–6 digits" style="max-width:240px">
-        <label class="chip" style="user-select:none">
-          <input id="showPin" type="checkbox" style="margin-right:8px">Show
-        </label>
-      </div>
-
-      <div class="chips mt12">
-        <span class="chip">Demo Admin: <strong id="dAdmin">0000</strong></span>
-        <span class="chip">Doctor: <strong id="dDoc">4321</strong></span>
-        <span class="chip">Supervisor: <strong id="dSup">1111</strong></span>
-      </div>
-
-      <div class="row" style="margin-top:12px">
-        <button id="btnLogin" class="btn">Login</button>
-        <button id="btnLogout" class="chip">Logout</button>
-      </div>
-      <p id="msg" class="muted" style="margin-top:10px">—</p>
-    </div>
-  </section>
-
   <script>
-    // ================= Theme toggle (unified) =================
-    (function(){
-      const key='theme';
-      const root=document.documentElement;
-      const btn=document.getElementById('themeToggle');
-      const saved=localStorage.getItem(key) || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
-      root.dataset.theme=saved;
-      btn.textContent=saved==='dark'?'🌙':'🌞';
-      btn.onclick=()=>{
-        const next=root.dataset.theme==='dark'?'light':'dark';
-        root.dataset.theme=next; localStorage.setItem(key,next);
-        btn.textContent=next==='dark'?'🌙':'🌞';
-      };
-    })();
+    // --- tiny helpers (no external deps required) ---
+    const $ = (id) => document.getElementById(id);
+    const save = (k,v)=>localStorage.setItem(k,JSON.stringify(v));
+    const load = (k,f)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):f}catch{return f}}
 
-    // ================= Seed default PINs (first run) =================
-    (function seedPins(){
-      if(!localStorage.getItem('erp:pin_admin'))      localStorage.setItem('erp:pin_admin','0000');   // Admin
-      if(!localStorage.getItem('erp:pin_doctor'))     localStorage.setItem('erp:pin_doctor','4321');  // Doctor
-      if(!localStorage.getItem('erp:pin_supervisor')) localStorage.setItem('erp:pin_supervisor','1111'); // Supervisor
-      // reflect on UI chips
-      document.getElementById('dAdmin').textContent = localStorage.getItem('erp:pin_admin');
-      document.getElementById('dDoc').textContent   = localStorage.getItem('erp:pin_doctor');
-      document.getElementById('dSup').textContent   = localStorage.getItem('erp:pin_supervisor');
-    })();
-
-    // ================= Helpers =================
-    const $ = (id)=> document.getElementById(id);
-    function setMsg(t){ $('msg').textContent = t; }
-
-    // Show/Hide PIN
-    $('showPin').addEventListener('change', (e)=>{
-      $('pin').type = e.target.checked ? 'text' : 'password';
-    });
-
-    // ================= Login flow =================
-    function routeAfterLogin(role){
-      // Admin always goes to Admin
-      if(role === 'admin') return './admin.html';
-      // Others follow Settings' Startup page (default dashboard)
-      const startup = localStorage.getItem('erp:startup') || './dashboard.html';
-      return startup;
-    }
-
-    function doLogin(){
-      const v = ($('pin').value||'').trim();
-      if(!v){ setMsg('Please enter a PIN'); return; }
-
-      const pinAdmin = localStorage.getItem('erp:pin_admin') || '0000';
-      const pinDoc   = localStorage.getItem('erp:pin_doctor') || '4321';
-      const pinSup   = localStorage.getItem('erp:pin_supervisor') || '1111';
-
-      let role = null;
-      if(v === pinAdmin) role = 'admin';
-      else if(v === pinSup) role = 'supervisor';
-      else if(v === pinDoc) role = 'doctor';
-
-      if(!role){ setMsg('Invalid PIN'); return; }
-
-      localStorage.setItem('erp:auth','true');
-      localStorage.setItem('erp:role',role);
-      // also mirror to session for pages that check sessionStorage
-      sessionStorage.setItem('role', role);
-
-      const target = routeAfterLogin(role);
-      setMsg(`Logged in as ${role}. Redirecting…`);
-      location.href = target;
-    }
-
-    $('btnLogin').onclick = doLogin;
-    $('pin').addEventListener('keydown', (e)=>{ if(e.key==='Enter') doLogin(); });
-
-    // Logout
-    $('btnLogout').onclick = ()=>{
-      localStorage.removeItem('erp:auth');
-      localStorage.removeItem('erp:role');
-      sessionStorage.clear();
-      setMsg('Logged out.');
+    // Theme toggle (same as other pages)
+    const html = document.documentElement;
+    const storedTheme = load('erp_theme','light');
+    html.setAttribute('data-theme', storedTheme);
+    $('themeToggle').textContent = storedTheme==='dark' ? '☀️' : '🌙';
+    $('themeToggle').onclick = () => {
+      const next = html.getAttribute('data-theme')==='dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      save('erp_theme', next);
+      $('themeToggle').textContent = next==='dark' ? '☀️' : '🌙';
     };
 
-    // ================= Clear Cache (preserve theme + PINs + prefs) =================
-    $('clearCacheBtn')?.addEventListener('click', async ()=>{
-      const keep = ['theme','erp:pin_admin','erp:pin_doctor','erp:pin_supervisor','erp:startup','erp:fmt'];
-      Object.keys(localStorage).forEach(k=>{ if(!keep.includes(k)) localStorage.removeItem(k); });
-      if('caches' in window){
-        try{
-          const keys = await caches.keys();
-          await Promise.all(keys.map(k => caches.delete(k)));
-        }catch{}
+    // Default demo PINs (only set if missing)
+    function ensureDefaultPins(){
+      const pins = load('erp_pins', null);
+      if (!pins) {
+        save('erp_pins', { doctor:'4321', supervisor:'1111', admin:'9999' });
       }
-      setMsg('Cache cleared (PINs & prefs preserved).');
+    }
+
+    // Resolve dashboard URL (edit here if yours differs)
+    function gotoDashboard(role){
+      // Save role and timestamp
+      save('erp_role', role);
+      save('erp_last_login', { role, at: new Date().toISOString() });
+
+      // If your main page is /index.html keep this. If it's /dashboard.html, change below.
+      const target = '../index.html';   // <— change to '../dashboard.html' if needed
+      window.location.href = target;
+    }
+
+    // Validate entered PIN
+    function login(){
+      const pin = ($('pin').value || '').trim();
+      if (!pin) { $('err').textContent='Enter your PIN'; $('err').style.display='block'; return; }
+
+      const pins = load('erp_pins', { doctor:'4321', supervisor:'1111', admin:'9999' });
+
+      let role = null;
+      if (pin === pins.doctor) role = 'doctor';
+      else if (pin === pins.supervisor) role = 'supervisor';
+      else if (pin === pins.admin) role = 'admin';
+
+      if (role) {
+        $('err').style.display='none';
+        gotoDashboard(role);
+      } else {
+        $('err').textContent='Invalid PIN. Please try again.';
+        $('err').style.display='block';
+      }
+    }
+
+    // Clear cache quickly
+    function clearAll(){
+      localStorage.removeItem('erp_role');
+      localStorage.removeItem('erp_last_login');
+      localStorage.removeItem('erp_pins');
+      localStorage.removeItem('inventory');
+      localStorage.removeItem('invoices');
+      localStorage.removeItem('invoice_items');
+      localStorage.removeItem('patients');
+      alert('Cache cleared. Default demo PINs will be restored.');
+      ensureDefaultPins();
+      $('pin').value='';
+      $('err').style.display='none';
+    }
+
+    // Wire events
+    document.addEventListener('DOMContentLoaded', () => {
+      ensureDefaultPins();
+      $('loginBtn').addEventListener('click', login);
+      $('pin').addEventListener('keydown', e => (e.key==='Enter') && login());
+      $('clearCache').addEventListener('click', clearAll);
     });
   </script>
 </body>
