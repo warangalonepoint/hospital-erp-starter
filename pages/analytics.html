@@ -27,7 +27,14 @@
         </div>
       </div>
 
-      <div class="kpi-row">
+      <!-- NEW: date range filters -->
+      <div class="controls" style="margin-top:.6rem">
+        <label>From&nbsp;<input class="input" type="date" id="fromDate"></label>
+        <label>To&nbsp;<input class="input" type="date" id="toDate"></label>
+        <button class="btn" id="applyRange">Apply</button>
+      </div>
+
+      <div class="kpi-row" style="margin-top:.6rem">
         <div class="kpi gradient-sky"><span>Total (₹)</span><strong id="kpiTotal">0.00</strong></div>
         <div class="kpi gradient-purple"><span>Avg / Day (₹)</span><strong id="kpiAvg">0.00</strong></div>
         <div class="kpi gradient-green"><span>Invoices</span><strong id="kpiInvoices">0</strong></div>
@@ -63,68 +70,85 @@
       root.setAttribute('data-theme', next); localStorage.setItem('theme', next);
     };
 
+    // elements
+    const fromEl = document.getElementById('fromDate');
+    const toEl   = document.getElementById('toDate');
+    const apply  = document.getElementById('applyRange');
+
+    // helper dates
+    function parseD(s){ return new Date(s.replace(/-/g,'/')); }
+    function fmtDate(d){ const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
+    function clampDay(d){ const x=new Date(d); x.setHours(0,0,0,0); return x; }
+
+    // preset buttons
     document.querySelectorAll('#rangeCtl .seg').forEach(b=>{
       b.addEventListener('click', ()=> {
         document.querySelectorAll('#rangeCtl .seg').forEach(x=>x.classList.remove('active'));
         b.classList.add('active');
-        load(b.dataset.range);
+        setPreset(b.dataset.range);
       });
     });
 
-    function parseD(s){ return new Date(s.replace(/-/g,'/')); }
-    function fmtDate(d){ const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
+    // init default (last 7 days)
+    setPreset('7d');
 
+    // Apply custom date range
+    apply.addEventListener('click', ()=>{
+      const f = fromEl.value, t = toEl.value;
+      if (!f || !t) return alert('Pick both From and To dates');
+      const from = clampDay(new Date(f));
+      const to   = clampDay(new Date(t));
+      if (to < from) return alert('To date cannot be earlier than From date');
+      // clear preset highlight
+      document.querySelectorAll('#rangeCtl .seg').forEach(x=>x.classList.remove('active'));
+      load(from, to);
+    });
+
+    // state for export
     let lastSales = []; let lastItems = [];
 
-    async function load(range='7d') {
+    async function load(from, to) {
       const inv   = await fetchCSV('../data/invoices.csv');
       const items = await fetchCSV('../data/invoice_items.csv');
 
-      const today = new Date(); const end = new Date(today); const start = new Date(today);
-      if (range==='7d')  start.setDate(today.getDate()-6);
-      if (range==='30d') start.setDate(today.getDate()-29);
-      if (range==='mtd') { start.setDate(1); }
-      if (range==='ytd') { start.setMonth(0,1); }
-
-      // sales rows (date-range filtered)
+      // filter rows by date range (inclusive)
       const sales = inv.filter(r=>{
-        const d = parseD(r.date);
-        return d>=start && d<=end;
+        const d = clampDay(parseD(r.date));
+        return d >= from && d <= to;
       });
 
-      // items connected to those invoices
+      // items under those invoices
       const idSet = new Set(sales.map(r=>r.invoice_id));
       const itemRows = items.filter(it=> idSet.has(it.invoice_id));
 
       // KPIs
-      const total = sales.reduce((a,b)=>a + Number(b.total||0), 0);
-      const days  = Math.max(1, Math.round((end-start)/86400000)+1);
+      const total = sales.reduce((a,b)=> a + Number(b.total||0), 0);
+      const days  = Math.max(1, Math.round((to - from)/86400000) + 1);
       document.getElementById('kpiTotal').textContent    = formatINR(total);
       document.getElementById('kpiAvg').textContent      = formatINR(total/days);
       document.getElementById('kpiInvoices').textContent = String(sales.length);
-
-      // qty sold
       const qty = itemRows.reduce((a,b)=> a + Number(b.qty||0), 0);
       document.getElementById('kpiQty').textContent = String(qty);
 
-      // top item
+      // top item by value
       const byItem = sumBy(itemRows, it=>it.item, it=> Number(it.qty||0) * Number(it.price||0));
-      let top='—', topVal=0; for (const [k,v] of byItem.entries()) { if (v>topVal) { top=k; topVal=v; } }
+      let top='—', topVal=0; for (const [k,v] of byItem.entries()) if (v>topVal){ top=k; topVal=v; }
       document.getElementById('kpiTop').textContent = top || '—';
 
       // charts
       const map = sumBy(sales, r=>r.date, r=>r.total);
-      const series=[]; const cur = new Date(start);
-      while (cur <= end) {
+      const series=[]; const cur = new Date(from);
+      while (cur <= to) {
         const key = fmtDate(cur);
         series.push({label:key, value:Number(map.get(key)||0)});
         cur.setDate(cur.getDate()+1);
       }
       renderBars(document.getElementById('revChart'), series, {});
-      const topSeries = Array.from(byItem.entries()).map(([label,value])=>({label,value})).sort((a,b)=>b.value-a.value).slice(0,8);
+      const topSeries = Array.from(byItem.entries()).map(([label,value])=>({label,value}))
+                        .sort((a,b)=>b.value-a.value).slice(0,8);
       renderBars(document.getElementById('topChart'), topSeries, {});
 
-      // keep for export
+      // exports
       lastSales = sales;
       lastItems = itemRows.map(r=>({
         invoice_id: r.invoice_id,
@@ -135,11 +159,22 @@
       }));
     }
 
+    // presets set the date inputs + call load()
+    function setPreset(preset){
+      const today = clampDay(new Date());
+      let from = new Date(today), to = new Date(today);
+      if (preset==='7d')  from.setDate(today.getDate()-6);
+      if (preset==='30d') from.setDate(today.getDate()-29);
+      if (preset==='mtd') from = new Date(today.getFullYear(), today.getMonth(), 1);
+      if (preset==='ytd') from = new Date(today.getFullYear(), 0, 1);
+      fromEl.value = fmtDate(from);
+      toEl.value   = fmtDate(to);
+      load(from, to);
+    }
+
     // export buttons
     document.getElementById('btnExportSales').onclick = ()=> downloadCSV(`sales-${new Date().toISOString().slice(0,10)}.csv`, lastSales);
     document.getElementById('btnExportItems').onclick = ()=> downloadCSV(`items-${new Date().toISOString().slice(0,10)}.csv`, lastItems);
-
-    load('7d');
   </script>
 </body>
 </html>
