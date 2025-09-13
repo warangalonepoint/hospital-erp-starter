@@ -1,50 +1,145 @@
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Hospital ERP · Login</title>
-  <link rel="stylesheet" href="../styles/styles.css" />
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Login • Hospital ERP</title>
+  <link rel="stylesheet" href="../styles/styles.css"/>
+  <link rel="icon" href="../public/assets/icon-192.png"/>
 </head>
 <body>
-  <main class="container" style="max-width:420px;padding:2rem 1rem">
-    <h1 style="text-align:center;margin-bottom:1rem">Hospital ERP</h1>
-    <p class="muted" style="text-align:center;margin-bottom:2rem">Login with your role PIN</p>
-    <section class="panel">
-      <label for="pin" class="muted">Enter PIN</label>
-      <input id="pin" class="input" type="password" placeholder="••••" style="margin:.6rem 0 1rem" />
-      <button class="btn" id="btnLogin" style="width:100%">Login</button>
-    </section>
-  </main>
+  <!-- Banner -->
+  <header class="banner">
+    <button id="themeToggle" class="toggle" title="Toggle theme">🌙</button>
+  </header>
 
-  <footer class="footer">© Hospital ERP</footer>
+  <div class="toolbar">
+    <a class="chip" href="./dashboard.html">← Dashboard</a>
+    <button class="chip" id="clearCacheBtn">Clear Cache</button>
+  </div>
+
+  <section class="section" style="max-width:720px">
+    <div class="panel grad-sky">
+      <h2>Sign in</h2>
+      <p class="muted">Enter your role PIN. You can change PINs later in Admin &rarr; Security.</p>
+    </div>
+
+    <div class="section" style="margin-top:12px">
+      <label class="muted">PIN</label>
+      <div class="row" style="margin-top:6px">
+        <input id="pin" inputmode="numeric" type="password" maxlength="6" placeholder="4–6 digits" style="max-width:240px">
+        <label class="chip" style="user-select:none">
+          <input id="showPin" type="checkbox" style="margin-right:8px">Show
+        </label>
+      </div>
+
+      <div class="chips mt12">
+        <span class="chip">Demo Admin: <strong id="dAdmin">0000</strong></span>
+        <span class="chip">Doctor: <strong id="dDoc">4321</strong></span>
+        <span class="chip">Supervisor: <strong id="dSup">1111</strong></span>
+      </div>
+
+      <div class="row" style="margin-top:12px">
+        <button id="btnLogin" class="btn">Login</button>
+        <button id="btnLogout" class="chip">Logout</button>
+      </div>
+      <p id="msg" class="muted" style="margin-top:10px">—</p>
+    </div>
+  </section>
 
   <script>
-    const root = document.documentElement;
-    const saved = localStorage.getItem('theme');
-    if (saved) root.setAttribute('data-theme', saved);
-    else if (matchMedia('(prefers-color-scheme: light)').matches) root.setAttribute('data-theme','light');
+    // ================= Theme toggle (unified) =================
+    (function(){
+      const key='theme';
+      const root=document.documentElement;
+      const btn=document.getElementById('themeToggle');
+      const saved=localStorage.getItem(key) || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+      root.dataset.theme=saved;
+      btn.textContent=saved==='dark'?'🌙':'🌞';
+      btn.onclick=()=>{
+        const next=root.dataset.theme==='dark'?'light':'dark';
+        root.dataset.theme=next; localStorage.setItem(key,next);
+        btn.textContent=next==='dark'?'🌙':'🌞';
+      };
+    })();
 
-    const pins = {
-      doctor: "1111",
-      supervisor: "2222",
-      admin: "9999"
-    };
+    // ================= Seed default PINs (first run) =================
+    (function seedPins(){
+      if(!localStorage.getItem('erp:pin_admin'))      localStorage.setItem('erp:pin_admin','0000');   // Admin
+      if(!localStorage.getItem('erp:pin_doctor'))     localStorage.setItem('erp:pin_doctor','4321');  // Doctor
+      if(!localStorage.getItem('erp:pin_supervisor')) localStorage.setItem('erp:pin_supervisor','1111'); // Supervisor
+      // reflect on UI chips
+      document.getElementById('dAdmin').textContent = localStorage.getItem('erp:pin_admin');
+      document.getElementById('dDoc').textContent   = localStorage.getItem('erp:pin_doctor');
+      document.getElementById('dSup').textContent   = localStorage.getItem('erp:pin_supervisor');
+    })();
 
-    document.getElementById("btnLogin").onclick = () => {
-      const val = document.getElementById("pin").value.trim();
+    // ================= Helpers =================
+    const $ = (id)=> document.getElementById(id);
+    function setMsg(t){ $('msg').textContent = t; }
+
+    // Show/Hide PIN
+    $('showPin').addEventListener('change', (e)=>{
+      $('pin').type = e.target.checked ? 'text' : 'password';
+    });
+
+    // ================= Login flow =================
+    function routeAfterLogin(role){
+      // Admin always goes to Admin
+      if(role === 'admin') return './admin.html';
+      // Others follow Settings' Startup page (default dashboard)
+      const startup = localStorage.getItem('erp:startup') || './dashboard.html';
+      return startup;
+    }
+
+    function doLogin(){
+      const v = ($('pin').value||'').trim();
+      if(!v){ setMsg('Please enter a PIN'); return; }
+
+      const pinAdmin = localStorage.getItem('erp:pin_admin') || '0000';
+      const pinDoc   = localStorage.getItem('erp:pin_doctor') || '4321';
+      const pinSup   = localStorage.getItem('erp:pin_supervisor') || '1111';
+
       let role = null;
-      if (val === pins.doctor) role = "doctor";
-      if (val === pins.supervisor) role = "supervisor";
-      if (val === pins.admin) role = "admin";
+      if(v === pinAdmin) role = 'admin';
+      else if(v === pinSup) role = 'supervisor';
+      else if(v === pinDoc) role = 'doctor';
 
-      if (!role) return alert("Invalid PIN");
-      sessionStorage.setItem("role", role);
+      if(!role){ setMsg('Invalid PIN'); return; }
 
-      if (role === "doctor") location.href = "./dashboard.html";
-      if (role === "supervisor") location.href = "./supervisor.html";
-      if (role === "admin") location.href = "./admin.html";
+      localStorage.setItem('erp:auth','true');
+      localStorage.setItem('erp:role',role);
+      // also mirror to session for pages that check sessionStorage
+      sessionStorage.setItem('role', role);
+
+      const target = routeAfterLogin(role);
+      setMsg(`Logged in as ${role}. Redirecting…`);
+      location.href = target;
+    }
+
+    $('btnLogin').onclick = doLogin;
+    $('pin').addEventListener('keydown', (e)=>{ if(e.key==='Enter') doLogin(); });
+
+    // Logout
+    $('btnLogout').onclick = ()=>{
+      localStorage.removeItem('erp:auth');
+      localStorage.removeItem('erp:role');
+      sessionStorage.clear();
+      setMsg('Logged out.');
     };
+
+    // ================= Clear Cache (preserve theme + PINs + prefs) =================
+    $('clearCacheBtn')?.addEventListener('click', async ()=>{
+      const keep = ['theme','erp:pin_admin','erp:pin_doctor','erp:pin_supervisor','erp:startup','erp:fmt'];
+      Object.keys(localStorage).forEach(k=>{ if(!keep.includes(k)) localStorage.removeItem(k); });
+      if('caches' in window){
+        try{
+          const keys = await caches.keys();
+          await Promise.all(keys.map(k => caches.delete(k)));
+        }catch{}
+      }
+      setMsg('Cache cleared (PINs & prefs preserved).');
+    });
   </script>
 </body>
 </html>
