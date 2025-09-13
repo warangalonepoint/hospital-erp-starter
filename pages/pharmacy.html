@@ -5,96 +5,106 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Pharmacy • Hospital ERP</title>
 
-  <!-- Global styles/manifest -->
   <link rel="stylesheet" href="../styles/styles.css" />
   <link rel="manifest" href="../manifest.json" />
 
-  <!-- Barcode + Camera (UMD, reliable on GitHub Pages) -->
-  <!-- library UMD ensures core ZXing primitives; browser UMD provides BrowserMultiFormatReader -->
+  <!-- ZXing UMD (guarantees ZXingBrowser on window) -->
   <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/index.min.js"></script>
 
-  <!-- Project scripts -->
   <script defer src="../scripts/utils.js"></script>
   <script defer src="../scripts/scanner.js"></script>
 
-  <!-- Page-local micro styles (page still follows styles.css theme) -->
+  <!-- Page-local neutral styling (no colors) -->
   <style>
-    .tabs{display:flex;gap:.5rem;flex-wrap:wrap;margin:.5rem 0 1rem}
-    .tab{padding:.6rem .9rem;border-radius:999px;font-weight:600;background:var(--chip-bg,#f4f6ff);box-shadow:var(--soft-shadow)}
-    .tab.active{background:var(--brand-chip,#6f7dff);color:#fff}
-    .grid{display:grid;gap:1rem}
+    :root{
+      --bg:#fff; --fg:#111; --muted:#6b7280; --line:#e5e7eb;
+      --card:#ffffff; --chip:#f5f5f5; --btn:#111; --btn-fg:#fff; --shadow:0 0 0 1px var(--line);
+    }
+    [data-theme="dark"] :root, html[data-theme="dark"] {
+      --bg:#0b0b0b; --fg:#e5e7eb; --muted:#9ca3af; --line:#1f2937;
+      --card:#111213; --chip:#151617; --btn:#e5e7eb; --btn-fg:#0b0b0b; --shadow:0 0 0 1px var(--line);
+    }
+    body{background:var(--bg);color:var(--fg)}
+    .container{max-width:1100px;margin:0 auto}
+    .row{display:flex;gap:12px;flex-wrap:wrap}
+    .btn{border:none;background:var(--btn);color:var(--btn-fg);border-radius:10px;padding:.6rem .9rem;font-weight:700;cursor:pointer}
+    .btn.ghost{background:transparent;color:var(--fg);border:1px solid var(--line)}
+    .btn.muted{background:var(--chip);color:var(--fg);border:1px solid var(--line)}
+    .tabs{display:flex;gap:.5rem;margin:8px 0 16px}
+    .tab{background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:.5rem .9rem;font-weight:600}
+    .tab.active{background:transparent;border:2px solid var(--fg)}
+    .card{background:var(--card);border-radius:14px;padding:14px;box-shadow:var(--shadow)}
+    .grid{display:grid;gap:12px}
     .grid-2{grid-template-columns:1fr}
-    @media (min-width:800px){.grid-2{grid-template-columns:1fr 1fr}}
-    .card{background:var(--card-bg);border-radius:18px;padding:1rem;box-shadow:var(--card-shadow)}
-    .muted{opacity:.75}
-    .kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem}
-    @media (min-width:800px){.kpis{grid-template-columns:repeat(4,1fr)}}
-    .kpi{padding:1rem;border-radius:16px;background:var(--chip-bg);font-weight:700}
-    .actions{display:flex;gap:.5rem;flex-wrap:wrap}
-    .btn{padding:.7rem 1rem;border-radius:12px;font-weight:700;background:var(--btn-bg);color:var(--btn-fg);box-shadow:var(--soft-shadow);border:none;cursor:pointer}
-    .btn.secondary{background:var(--chip-bg);color:var(--fg)}
-    .btn.ghost{background:transparent;border:1px solid var(--border);color:var(--fg)}
-    .input, select{width:100%;padding:.7rem .9rem;border-radius:12px;border:1px solid var(--border);background:var(--input-bg);color:var(--fg)}
+    @media (min-width:860px){.grid-2{grid-template-columns:1fr 1fr}}
+    .muted{color:var(--muted)}
+    .input, select{width:100%;padding:.6rem .8rem;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--fg)}
     table{width:100%;border-collapse:separate;border-spacing:0 8px}
-    th,td{padding:.6rem .7rem;text-align:left}
-    tbody tr{background:var(--table-row-bg);border-radius:12px}
+    th,td{padding:.55rem .7rem;border-bottom:1px solid var(--line)}
+    thead th{font-weight:700;border-bottom:2px solid var(--line)}
     .right{text-align:right}.mono{font-variant-numeric:tabular-nums}
-    .badge{padding:.25rem .5rem;border-radius:999px;background:var(--chip-bg);font-size:.8rem;font-weight:700}
-    .hide{display:none !important}
+    .hide{display:none!important}
+    .chip{display:inline-block;padding:.35rem .6rem;border-radius:999px;background:var(--chip);border:1px solid var(--line)}
   </style>
+
+  <script>
+    // Apply saved theme early (prevents flash)
+    (function () {
+      const stored = localStorage.getItem('erp_theme');
+      const prefersDark = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches;
+      const theme = stored || (prefersDark ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
 </head>
 
 <body>
-  <header class="container" style="padding:1rem 1rem 0">
-    <nav class="actions" style="justify-content:space-between;align-items:center">
-      <div class="actions">
+  <header class="container" style="padding:16px 12px 0">
+    <div class="row" style="justify-content:space-between;align-items:center">
+      <div class="row">
         <a class="btn ghost" href="./dashboard.html">← Home</a>
-        <button class="btn ghost" id="btn-logout">Logout</button>
-        <button class="btn ghost" id="btn-clear">Clear Cache</button>
+        <button id="btn-logout" class="btn ghost">Logout</button>
+        <button id="btn-clear" class="btn ghost">Clear Cache</button>
       </div>
-      <div class="badge">Standard • Pharmacy</div>
-    </nav>
-    <h1 style="margin:.6rem 0 0">Pharmacy</h1>
-    <p class="muted">Sell • Purchase • Stock • Reports</p>
-
-    <!-- Tabs -->
-    <div class="tabs" role="tablist" aria-label="Pharmacy tabs">
-      <button class="tab active" data-tab="sell" role="tab" aria-selected="true">Sell</button>
-      <button class="tab" data-tab="purchase" role="tab">Purchase</button>
-      <button class="tab" data-tab="stock" role="tab">Stock</button>
-      <button class="tab" data-tab="reports" role="tab">Reports</button>
+      <span class="muted">Pharmacy</span>
+    </div>
+    <h1 style="margin:8px 0 2px">Pharmacy</h1>
+    <div class="muted" style="margin-bottom:8px">Sell • Purchase • Stock • Reports</div>
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-tab="sell" aria-selected="true">Sell</button>
+      <button class="tab" data-tab="purchase">Purchase</button>
+      <button class="tab" data-tab="stock">Stock</button>
+      <button class="tab" data-tab="reports">Reports</button>
     </div>
   </header>
 
-  <main class="container grid grid-1" style="padding:0 1rem 2rem">
-
+  <main class="container" style="padding:0 12px 32px">
     <!-- SELL -->
     <section id="tab-sell" class="grid grid-2">
       <div class="card">
         <h2>Quick POS</h2>
         <p class="muted">Search or scan barcode to add to cart</p>
 
-        <!-- Patient Link -->
         <div class="card" style="margin:.5rem 0 1rem">
-          <h3>Patient Link</h3>
-          <div class="actions">
+          <div class="row" style="justify-content:space-between;align-items:center">
+            <h3 style="margin:0">Patient Link</h3>
+            <span id="patient-chip" class="chip">No patient linked</span>
+          </div>
+          <div class="row" style="margin-top:8px">
             <button id="btn-scan-patient" class="btn">📷 Scan Patient ID</button>
-            <button id="btn-new-patient" class="btn secondary">New Patient ID</button>
+            <button id="btn-new-patient" class="btn muted">New Patient ID</button>
           </div>
-          <div id="patient-chip" class="badge" style="margin-top:.6rem">No patient linked</div>
-          <div style="margin-top:.6rem"><svg id="patient-barcode"></svg></div>
+          <div style="margin-top:8px"><svg id="patient-barcode"></svg></div>
         </div>
 
-        <div class="grid" style="grid-template-columns:1fr auto;align-items:center">
+        <div class="row" style="align-items:center">
           <input id="sell-search" class="input" placeholder="Search item name / SKU / barcode…" />
-          <div class="actions">
-            <button id="btn-scan" class="btn">📷 Scan Item</button>
-            <button id="btn-load-demo" class="btn secondary">Load Demo</button>
-          </div>
+          <button id="btn-scan" class="btn">📷 Scan Item</button>
+          <button id="btn-load-demo" class="btn muted">Load Demo</button>
         </div>
 
-        <div class="card" style="margin-top:1rem">
+        <div class="card" style="margin-top:12px">
           <table>
             <thead>
               <tr>
@@ -104,12 +114,12 @@
             </thead>
             <tbody id="sell-cart"><tr><td class="muted" colspan="7">Cart is empty</td></tr></tbody>
           </table>
-          <div class="actions" style="justify-content:flex-end;margin-top:.5rem">
-            <button id="btn-clear-cart" class="btn secondary">Clear</button>
+          <div class="row" style="justify-content:flex-end;margin-top:.5rem">
+            <button id="btn-clear-cart" class="btn muted">Clear</button>
           </div>
         </div>
 
-        <div class="grid grid-2">
+        <div class="grid grid-2" style="margin-top:12px">
           <div class="card">
             <h3>Customer</h3>
             <input id="cust-name" class="input" placeholder="Patient / Customer name" />
@@ -121,7 +131,7 @@
               <div><div class="muted">Subtotal</div><div id="t-sub" class="mono">0.00</div></div>
               <div>
                 <label class="muted">Discount</label>
-                <div class="actions">
+                <div class="row">
                   <input id="discount-value" class="input" placeholder="0" style="max-width:120px">
                   <select id="discount-type" class="input" style="max-width:120px">
                     <option value="INR">₹</option><option value="PCT">%</option>
@@ -131,11 +141,11 @@
               <div><div class="muted">GST</div><div id="t-gst" class="mono">0.00</div></div>
               <div><div class="muted">Grand Total</div><div id="t-grand" class="mono" style="font-weight:800">0.00</div></div>
             </div>
-            <div class="actions" style="margin-top:.75rem">
+            <div class="row" style="margin-top:.75rem">
               <select id="pay-mode" class="input" style="max-width:160px"><option>Cash</option><option>Card</option><option>UPI</option></select>
               <button id="btn-save" class="btn">Save Invoice</button>
-              <button id="btn-print" class="btn secondary">Print</button>
-              <button id="btn-export-bill" class="btn secondary">Export CSV</button>
+              <button id="btn-export-bill" class="btn muted">Export CSV</button>
+              <button id="btn-print" class="btn muted">Print</button>
             </div>
           </div>
         </div>
@@ -146,7 +156,7 @@
         <p class="muted">Live results (placeholder)</p>
         <table>
           <thead><tr><th>Item</th><th class="right">Batch</th><th class="right">Expiry</th><th class="right">MRP</th><th class="right">Stock</th><th></th></tr></thead>
-          <tbody id="sell-results"><tr><td class="muted" colspan="6">Start typing to see results…</td></tr></tbody>
+        <tbody id="sell-results"><tr><td class="muted" colspan="6">Start typing to see results…</td></tr></tbody>
         </table>
       </div>
     </section>
@@ -163,9 +173,9 @@
           </div>
         </div>
 
-        <div class="card" style="margin-top:1rem">
+        <div class="card" style="margin-top:12px">
           <h3>Add Line</h3>
-          <div class="actions"><button id="btn-scan-purchase" class="btn">📷 Scan to Add</button></div>
+          <div class="row"><button id="btn-scan-purchase" class="btn">📷 Scan to Add</button></div>
           <div class="grid" style="grid-template-columns:repeat(6,1fr)">
             <input id="p-item" class="input" placeholder="Item name" />
             <input id="p-batch" class="input" placeholder="Batch" />
@@ -174,9 +184,9 @@
             <input id="p-mrp" class="input" type="number" step="0.01" placeholder="MRP" />
             <input id="p-gst" class="input" type="number" step="0.1" placeholder="GST%" />
           </div>
-          <div class="actions" style="margin-top:.6rem">
+          <div class="row" style="margin-top:.6rem">
             <button id="btn-add-purchase" class="btn">Add</button>
-            <button id="btn-clear-purchase" class="btn secondary">Clear</button>
+            <button id="btn-clear-purchase" class="btn muted">Clear</button>
           </div>
 
           <table style="margin-top:.6rem">
@@ -184,9 +194,9 @@
             <tbody id="purchase-lines"><tr><td class="muted" colspan="7">No lines yet</td></tr></tbody>
           </table>
 
-          <div class="actions" style="justify-content:flex-end;margin-top:.5rem">
+          <div class="row" style="justify-content:flex-end;margin-top:.5rem">
             <button id="btn-save-purchase" class="btn">Save Purchase</button>
-            <button id="btn-export-purchase" class="btn secondary">Export CSV</button>
+            <button id="btn-export-purchase" class="btn muted">Export CSV</button>
           </div>
         </div>
       </div>
@@ -203,23 +213,16 @@
 
     <!-- STOCK -->
     <section id="tab-stock" class="grid hide">
-      <div class="kpis">
-        <div class="kpi">Current Stock <div class="muted mono" id="s-current">—</div></div>
-        <div class="kpi">Low Stock <div class="muted mono" id="s-low">—</div></div>
-        <div class="kpi">Near Expiry <div class="muted mono" id="s-near">—</div></div>
-        <div class="kpi">Expired <div class="muted mono" id="s-exp">—</div></div>
+      <div class="row card" style="justify-content:space-between;align-items:center">
+        <h2 style="margin:0">Inventory</h2>
+        <div class="row">
+          <button id="btn-scan-stock" class="btn">📷 Scan Stock</button>
+          <input id="stock-search" class="input" placeholder="Search items…" style="max-width:220px">
+          <button id="btn-export-stock" class="btn muted">Export CSV</button>
+        </div>
       </div>
 
       <div class="card">
-        <div class="actions" style="justify-content:space-between;align-items:center">
-          <h2>Inventory</h2>
-          <div class="actions">
-            <button id="btn-scan-stock" class="btn">📷 Scan Stock</button>
-            <input id="stock-search" class="input" placeholder="Search items…" style="max-width:220px">
-            <button id="btn-export-stock" class="btn secondary">Export CSV</button>
-          </div>
-        </div>
-
         <table>
           <thead><tr><th>Item</th><th class="right">Batch</th><th class="right">Expiry</th><th class="right">MRP</th><th class="right">GST%</th><th class="right">Qty</th><th class="right">Min</th></tr></thead>
           <tbody id="stock-table"><tr><td class="muted" colspan="7">Inventory will appear here…</td></tr></tbody>
@@ -230,9 +233,9 @@
     <!-- REPORTS -->
     <section id="tab-reports" class="grid hide">
       <div class="card">
-        <div class="actions" style="justify-content:space-between;align-items:center">
-          <h2>Sales & Purchase Reports</h2>
-          <div class="actions">
+        <div class="row" style="justify-content:space-between;align-items:center">
+          <h2 style="margin:0">Sales & Purchase Reports</h2>
+          <div class="row">
             <button class="tab active" data-range="today">Today</button>
             <button class="tab" data-range="7d">7D</button>
             <button class="tab" data-range="mtd">MTD</button>
@@ -240,29 +243,19 @@
             <input id="r-to" class="input" type="date">
           </div>
         </div>
-
-        <div class="kpis" style="margin:.6rem 0 1rem">
-          <div class="kpi">Sales <div class="muted mono" id="k-sales">—</div></div>
-          <div class="kpi">Purchases <div class="muted mono" id="k-purchases">—</div></div>
-          <div class="kpi">Gross Profit <div class="muted mono" id="k-gp">—</div></div>
-          <div class="kpi">Top Item <div class="muted mono" id="k-top">—</div></div>
-        </div>
-
-        <table>
+        <table style="margin-top:10px">
           <thead><tr><th>Date</th><th>Type</th><th>Ref</th><th>Party/Patient</th><th class="right">Items</th><th class="right">Amount</th></tr></thead>
           <tbody id="reports-table"><tr><td class="muted" colspan="6">Run a range to see rows…</td></tr></tbody>
         </table>
-
-        <div class="actions" style="margin-top:.5rem;justify-content:flex-end">
-          <button id="btn-export-reports" class="btn secondary">Export CSV</button>
+        <div class="row" style="margin-top:.5rem;justify-content:flex-end">
+          <button id="btn-export-reports" class="btn muted">Export CSV</button>
         </div>
       </div>
     </section>
-
   </main>
 
   <script>
-    // ---- Session actions ----
+    // --- Session ---
     document.getElementById('btn-logout').onclick = () => { localStorage.removeItem('erp_active_role'); location.href = './login.html'; };
     document.getElementById('btn-clear').onclick = () => {
       localStorage.clear();
@@ -270,7 +263,7 @@
       alert('Cache cleared. Reloading…'); location.reload();
     };
 
-    // ---- Tabs (robust) ----
+    // --- Tabs ---
     (function(){
       const btns = Array.from(document.querySelectorAll('.tab[data-tab]'));
       const sections = {
@@ -279,15 +272,15 @@
         stock: document.getElementById('tab-stock'),
         reports: document.getElementById('tab-reports'),
       };
-      function show(t){
+      const show = t => {
         Object.entries(sections).forEach(([k,el])=> el.classList.toggle('hide', k!==t));
         btns.forEach(b=> b.classList.toggle('active', b.dataset.tab===t));
-      }
+      };
       btns.forEach(b => b.addEventListener('click', () => show(b.dataset.tab)));
       show('sell');
     })();
 
-    // ---- Patient link ----
+    // --- Patient link ---
     (function(){
       const ERP = window.ERP;
       const chip = document.getElementById('patient-chip');
@@ -310,11 +303,10 @@
       window._getLinkedPatient = () => pid || '';
     })();
 
-    // ---- POS demo cart (kept simple; CSV persistence comes next) ----
+    // --- POS (demo logic + CSV export with patient_id) ---
     (function(){
       const ERP = window.ERP, money = ERP.money;
       const cartTbody = document.getElementById('sell-cart');
-      const resultsTbody = document.getElementById('sell-results');
       const state = { cart: [] };
 
       function renderCart(){
@@ -329,7 +321,7 @@
               <td class="right mono">₹${money(r.mrp)}</td>
               <td class="right mono">${r.gst||0}%</td>
               <td class="right mono">₹${money(r.qty*r.mrp)}</td>
-              <td class="right"><button class="btn secondary" onclick="removeLine(${i})">✕</button></td>
+              <td class="right"><button class="btn muted" onclick="removeLine(${i})">✕</button></td>
             </tr>`).join('');
         }
         recomputeTotals();
@@ -356,7 +348,7 @@
           {name:'PARACETAMOL 500MG TAB', batch:'B23', qty:1, mrp:28.00, gst:12},
           {name:'CETIRIZINE 10MG TAB', batch:'C17', qty:2, mrp:22.50, gst:12},
         ];
-        renderCart(); resultsTbody.innerHTML = `<tr><td class="muted" colspan="6">Demo loaded</td></tr>`;
+        renderCart();
       };
       document.getElementById('btn-clear-cart').onclick = ()=>{ state.cart = []; renderCart(); };
 
@@ -369,58 +361,58 @@
         } else alert('Scanner not available');
       };
 
-      document.getElementById('btn-save').onclick = ()=>{
-        const pid = (window._getLinkedPatient && window._getLinkedPatient()) || '';
-        alert(`Save Invoice (placeholder) with patient_id: ${pid}\nNext: write to invoices.csv & invoice_items.csv.`);
-      };
-      document.getElementById('btn-print').onclick = ()=> window.print();
-      document.getElementById('btn-export-bill').onclick = ()=> alert('Export current bill as CSV (placeholder).');
-
-      // Purchase quick hooks
-      const pLines = []; const purchaseTbody = document.getElementById('purchase-lines');
-      function renderPurchase(){
-        if(pLines.length===0){ purchaseTbody.innerHTML = `<tr><td class="muted" colspan="7">No lines yet</td></tr>`; return; }
-        purchaseTbody.innerHTML = pLines.map((r,i)=>`
-          <tr>
-            <td>${r.name}</td><td class="right">${r.batch}</td><td class="right">${r.exp||'-'}</td>
-            <td class="right">${r.qty}</td><td class="right">₹${money(r.mrp)}</td>
-            <td class="right">${r.gst}%</td>
-            <td class="right"><button class="btn secondary" onclick="delP(${i})">✕</button></td>
-          </tr>`).join('');
+      // Save -> download two CSV rows (invoices + items) including patient_id
+      function toCSVRow(arr){ return arr.map(v=> `"${String(v).replace(/"/g,'""')}"`).join(','); }
+      function downloadCSV(filename, header, rows){
+        const csv = [header.join(','), ...rows.map(toCSVRow)].join('\n');
+        const blob = new Blob([csv], {type:'text/csv'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click();
+        setTimeout(()=>URL.revokeObjectURL(a.href), 1500);
       }
-      window.delP=i=>{ pLines.splice(i,1); renderPurchase(); };
-      document.getElementById('btn-add-purchase').onclick = ()=>{
-        const r = {
-          name: g('p-item'), batch: g('p-batch'), exp: g('p-exp'),
-          qty: Number(g('p-qty')||0), mrp: Number(g('p-mrp')||0), gst: Number(g('p-gst')||0)
-        };
-        if(!r.name || !r.qty){ alert('Item name and qty are required'); return; }
-        pLines.push(r); renderPurchase(); ['p-item','p-batch','p-exp','p-qty','p-mrp','p-gst'].forEach(id=> s(id,''));
-      };
-      document.getElementById('btn-clear-purchase').onclick = ()=>{ pLines.length=0; renderPurchase(); };
-      document.getElementById('btn-save-purchase').onclick = ()=> alert('Save Purchase (placeholder). Next: update inventory.csv.');
-      document.getElementById('btn-export-purchase').onclick = ()=> alert('Export purchase lines as CSV (placeholder).');
 
-      document.getElementById('btn-scan-purchase').onclick = ()=>{
-        if(typeof window.startScanner === 'function'){
-          startScanner(code=>{
-            s('p-item',`Item ${code}`); s('p-batch','B'+Math.floor(Math.random()*100));
-            s('p-qty','1'); s('p-mrp','50'); s('p-gst','12');
-          });
-        } else alert('Scanner not available');
+      document.getElementById('btn-save').onclick = ()=>{
+        if(state.cart.length===0){ alert('Cart is empty'); return; }
+        const pid = (window._getLinkedPatient && window._getLinkedPatient()) || '';
+        const invId = 'INV-' + Date.now();
+        const date = new Date().toISOString().slice(0,10);
+        const pay = document.getElementById('pay-mode').value;
+        const sub = state.cart.reduce((s,r)=> s+r.qty*r.mrp, 0);
+        const gst = state.cart.reduce((s,r)=> s + ((r.qty*r.mrp) - (r.qty*r.mrp/(1+(r.gst||0)/100))), 0);
+        const dVal = Number(document.getElementById('discount-value').value||0);
+        const dTyp = document.getElementById('discount-type').value||'INR';
+        const disc = dTyp==='PCT' ? (sub*(dVal/100)) : dVal;
+        const grand = Math.max(0, sub - disc);
+
+        // invoices.csv row
+        const invHeader = ['invoice_id','date','patient_id','patient_name','pay_mode','subtotal','discount_type','discount_value','gst','grand_total'];
+        const invRow = [invId, date, pid, document.getElementById('cust-name').value || '', pay, sub.toFixed(2), dTyp, dVal, gst.toFixed(2), grand.toFixed(2)];
+        downloadCSV(`invoices_${invId}.csv`, invHeader, [invRow]);
+
+        // invoice_items.csv rows
+        const itemHeader = ['invoice_id','item','batch','qty','mrp','gst','amount'];
+        const itemRows = state.cart.map(r=> [invId, r.name, r.batch||'', r.qty, r.mrp.toFixed(2), r.gst||0, (r.qty*r.mrp).toFixed(2)]);
+        downloadCSV(`invoice_items_${invId}.csv`, itemHeader, itemRows);
+
+        alert(`Saved invoice ${invId}.\nDownloaded two CSVs. Append them into /data/invoices.csv and /data/invoice_items.csv.`);
       };
 
-      document.getElementById('btn-scan-stock').onclick = ()=>{
-        if(typeof window.startScanner === 'function') startScanner(code=> alert(`Stock scanned: ${code} (wire to inventory update next)`));
-        else alert('Scanner not available');
+      document.getElementById('btn-export-bill').onclick = ()=>{
+        if(state.cart.length===0){ alert('Cart is empty'); return; }
+        const itemHeader = ['item','batch','qty','mrp','gst','amount'];
+        const rows = state.cart.map(r=> [r.name, r.batch||'', r.qty, r.mrp.toFixed(2), r.gst||0, (r.qty*r.mrp).toFixed(2)]);
+        const id = 'BILL-' + Date.now();
+        downloadCSV(`bill_${id}.csv`, itemHeader, rows);
       };
 
-      function g(id){ return document.getElementById(id).value.trim(); }
-      function s(id,val){ document.getElementById(id).value = val; }
+      document.getElementById('btn-print').onclick = ()=> window.print();
 
       // init
-      renderCart(); renderPurchase();
+      renderCart();
     })();
+
+    // Quick stubs for Purchase/Stock buttons (kept minimal)
+    document.getElementById('btn-scan-purchase').onclick = ()=> typeof startScanner==='function' ? startScanner(code=>{ s('p-item',`Item ${code}`); s('p-batch','B'+Math.floor(Math.random()*100)); s('p-qty','1'); s('p-mrp','50'); s('p-gst','12'); }) : alert('Scanner not available');
+    function s(id,val){ const el=document.getElementById(id); if(el) el.value=val; }
   </script>
 </body>
 </html>
