@@ -4,10 +4,31 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Dashboard • Hospital ERP</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="../styles/styles.css" />
+  <style>
+    /* Layout overrides for dashboard */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .chart-block {
+      background: var(--card);
+      border-radius: var(--radius-xl);
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow-soft);
+    }
+    .dashboard-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px,1fr));
+      gap: 1rem;
+    }
+  </style>
 </head>
 <body>
-  <!-- Banner -->
+  <!-- Header -->
   <header class="banner">
     <div class="brand">
       <span class="brand-mark">🏥</span>
@@ -16,104 +37,81 @@
     <button id="themeToggle" class="toggle" title="Toggle theme">🌙</button>
   </header>
 
-  <!-- Toolbar -->
+  <!-- Top toolbar -->
   <nav class="toolbar">
-    <a class="chip" href="index.html">← Home</a>
     <button id="btnLogout" class="chip">Logout</button>
     <button id="btnClear" class="chip">Clear Cache</button>
   </nav>
 
-  <!-- Dashboard -->
-  <main class="section">
-    <div class="card-grid">
-      <!-- Analytics -->
-      <a class="card grad-purple" href="analytics.html">
-        <h2>Analytics</h2>
-        <p>Sales KPIs & Weekly Reports</p>
-      </a>
+  <main class="container">
+    <!-- === Sales Analytics Section === -->
+    <section class="panel">
+      <h2>📊 Sales Analytics</h2>
 
-      <!-- Bookings -->
-      <a class="card grad-mint" href="booking-status.html">
-        <h2>Bookings</h2>
-        <p>Today · Week · Month counts</p>
-      </a>
+      <!-- KPIs -->
+      <div class="kpi-row">
+        <div class="kpi grad-sky"><span>Today</span><strong id="kpiToday">₹0</strong></div>
+        <div class="kpi grad-mint"><span>MTD</span><strong id="kpiMTD">₹0</strong></div>
+        <div class="kpi grad-amber"><span>Invoices</span><strong id="kpiInv">0</strong></div>
+        <div class="kpi grad-violet"><span>Top Item</span><strong id="kpiTop">—</strong></div>
+      </div>
 
-      <!-- Pharmacy -->
-      <a class="card grad-sky" href="pharmacy.html">
-        <h2>Pharmacy</h2>
-        <p>
-          Today <b id="phToday">₹0.00</b> ·
-          MTD <b id="phMTD">₹0.00</b>
-        </p>
-      </a>
+      <!-- Charts -->
+      <div class="chart-block">
+        <h4>Revenue (Last 7 Days)</h4>
+        <canvas id="chartRevenue" height="140"></canvas>
+      </div>
+      <div class="chart-block">
+        <h4>Top 5 Items</h4>
+        <canvas id="chartItems" height="140"></canvas>
+      </div>
+    </section>
 
-      <!-- Patients -->
-      <a class="card grad-rose" href="patients.html">
-        <h2>Patients</h2>
-        <p><b id="dueToday">0</b> due today</p>
-      </a>
-
-      <!-- Staff -->
-      <a class="card grad-peach" href="staff.html">
-        <h2>Staff</h2>
-        <p>Roster & Attendance</p>
-      </a>
-
-      <!-- Settings -->
-      <a class="card grad-lavender" href="settings.html">
-        <h2>Settings</h2>
-        <p>Manage Staff, Patients & System</p>
-      </a>
-    </div>
+    <!-- === Bottom Cards Section === -->
+    <section>
+      <div class="dashboard-cards">
+        <a class="card grad-purple" href="analytics.html"><h3>Analytics</h3><p>Reports & KPIs</p></a>
+        <a class="card grad-mint" href="booking-status.html"><h3>Bookings</h3><p>Status & tokens</p></a>
+        <a class="card grad-sky" href="pharmacy.html"><h3>Pharmacy</h3><p>Stock & billing</p></a>
+        <a class="card grad-rose" href="patients.html"><h3>Patients</h3><p>History & reminders</p></a>
+        <a class="card grad-peach" href="staff.html"><h3>Staff</h3><p>Attendance & roster</p></a>
+        <a class="card grad-lavender" href="settings.html"><h3>Settings</h3><p>System setup</p></a>
+      </div>
+    </section>
   </main>
 
-  <script src="utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
+    // Simple demo charts (replace with real data wiring later)
+    const revCtx = document.getElementById('chartRevenue');
+    new Chart(revCtx, {
+      type: 'line',
+      data: { labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+              datasets:[{label:'Revenue', data:[2000,3000,2500,4000,3500,2800,5000],
+              borderColor:'#2563eb', fill:false}] },
+      options:{ responsive:true, plugins:{legend:{display:false}} }
+    });
+
+    const itemCtx = document.getElementById('chartItems');
+    new Chart(itemCtx, {
+      type: 'bar',
+      data: { labels:['Med A','Med B','Med C','Med D','Med E'],
+              datasets:[{label:'Sales', data:[1200,900,750,500,300],
+              backgroundColor:['#60a5fa','#34d399','#fbbf24','#a78bfa','#f472b6']}] },
+      options:{ responsive:true, plugins:{legend:{display:false}} }
+    });
+
     // Theme toggle
-    (function(){
-      const root=document.documentElement, btn=document.getElementById('themeToggle');
-      const saved=localStorage.getItem('theme')||'light';
-      root.dataset.theme=saved;
-      btn.textContent=saved==='dark'?'🌙':'🌞';
-      btn.onclick=()=>{
-        const next=root.dataset.theme==='dark'?'light':'dark';
-        root.dataset.theme=next;
-        localStorage.setItem('theme',next);
-        btn.textContent=next==='dark'?'🌙':'🌞';
-      };
-    })();
+    const root=document.documentElement, btn=document.getElementById('themeToggle');
+    const saved=localStorage.getItem('theme')||'light'; root.dataset.theme=saved;
+    btn.textContent=saved==='dark'?'🌙':'🌞';
+    btn.onclick=()=>{ const next=root.dataset.theme==='dark'?'light':'dark';
+      root.dataset.theme=next; localStorage.setItem('theme',next);
+      btn.textContent=next==='dark'?'🌙':'🌞'; };
 
-    // Logout
-    document.getElementById('btnLogout').onclick=()=>{
-      localStorage.clear();
-      location.href='login.html';
-    };
-
-    // Clear Cache
-    document.getElementById('btnClear').onclick=async()=>{ await ERP.hardClear(); };
-
-    // Fill pharmacy + patients data if LS available
-    (()=>{
-      const invoices=ERP.load('invoices',[]);
-      const items=ERP.load('invoice_items',[]);
-      const patients=ERP.load('patients',[]);
-
-      const todayISO=ERP.todayISO();
-      const invToday=ERP.filterInvoicesByDate(invoices,todayISO,todayISO);
-      const kpiToday=ERP.buildSalesKPIs(invToday,items);
-      document.getElementById('phToday').textContent=ERP.formatMoney(kpiToday.total);
-
-      const firstOfMTD=new Date(); firstOfMTD.setDate(1);
-      const invMTD=ERP.filterInvoicesByDate(invoices,firstOfMTD,new Date());
-      const kpiMTD=ERP.buildSalesKPIs(invMTD,items);
-      document.getElementById('phMTD').textContent=ERP.formatMoney(kpiMTD.total);
-
-      const due=patients.filter(p=>{
-        const d=p.next_followup||p.next_visit||p.followup||'';
-        return d && ERP.ymd(d)===todayISO;
-      }).length;
-      document.getElementById('dueToday').textContent=due;
-    })();
+    // Logout / Clear
+    document.getElementById('btnLogout').onclick=()=>{localStorage.clear();location.href='login.html'};
+    document.getElementById('btnClear').onclick=()=>{localStorage.clear();caches.keys().then(keys=>keys.forEach(k=>caches.delete(k)));alert('Cache cleared')};
   </script>
 </body>
 </html>
