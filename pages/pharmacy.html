@@ -1,152 +1,101 @@
-<!DOCTYPE html>
-<html lang="en" data-theme="light">
+<!doctype html>
+<html lang="en" data-theme="dark">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Pharmacy • Hospital ERP</title>
   <link rel="stylesheet" href="../styles/styles.css" />
-  <link rel="icon" href="../public/assets/icon-192.png" />
-  <meta name="theme-color" content="#0b1220" />
-  <style>
-    /* Page-specific tiny tweaks only (everything else from styles.css) */
-    .toolbar .chip{font-weight:700}
-    .tabbar{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 2px}
-    .tabbar .chip{border-radius:999px}
-    .grid-2{display:grid;gap:12px}
-    @media (min-width: 860px){ .grid-2{grid-template-columns: 1.1fr .9fr} }
-    .table-wrap{overflow:auto}
-    table{width:100%;border-collapse:separate;border-spacing:0 10px}
-    thead th{padding:10px 12px;text-align:left;opacity:.95}
-    tbody td{padding:12px;border-top:1px solid rgba(0,0,0,.06);border-bottom:1px solid rgba(0,0,0,.06);background:var(--card-bg)}
-    html[data-theme="dark"] tbody td{border-color:rgba(255,255,255,.07)}
-    tr td:first-child{border-left:1px solid rgba(0,0,0,.06);border-radius:10px 0 0 10px}
-    tr td:last-child{border-right:1px solid rgba(0,0,0,.06);border-radius:0 10px 10px 0}
-    .right{display:flex;gap:10px;align-items:center}
-    .muted-small{font-size:.9rem;color:var(--muted)}
-    .tag{display:inline-block;padding:.25rem .55rem;border-radius:999px;font-weight:700}
-    .tag--warn{background:var(--t-peach);color:var(--c-peach)}
-    .tag--ok{background:var(--t-mint);color:var(--c-mint)}
-    .pill-ghost{border:1px solid rgba(0,0,0,.08);background:transparent;color:var(--fg);border-radius:999px;padding:8px 12px}
-    html[data-theme="dark"] .pill-ghost{border-color:rgba(255,255,255,.12)}
-    /* Scanner overlay container */
-    #scanModal{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;z-index:50;align-items:center;justify-content:center;padding:16px}
-    #scanBox{width:min(680px,96vw);background:var(--card-bg);border-radius:16px;box-shadow:var(--shadow);padding:14px}
-    #scanArea{min-height:320px;border-radius:12px;overflow:hidden}
-    .modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-  </style>
+  <script defer src="../scripts/utils.js"></script>
+  <script defer src="../scripts/scanner.js"></script>
 </head>
 <body>
-
-  <!-- Banner (unified) -->
+  <!-- Banner -->
   <header class="banner">
-    <!-- If you want to show an actual image file instead of CSS background, uncomment:
-    <img src="../public/assets/hero-banner.jpg" alt="Banner" />
-    -->
-    <button id="themeToggle" class="floating-toggle" title="Toggle dark / light">🌙</button>
+    <button class="toggle" id="themeToggle" title="Toggle theme">🌙</button>
   </header>
 
-  <!-- Top actions (unified) -->
-  <div class="fixed-actions">
-    <a href="../index.html" class="chip">← Dashboard</a>
-    <button id="logoutBtn" class="chip">Logout</button>
-    <button id="clearCacheBtn" class="chip">Clear Cache</button>
-  </div>
-
-  <!-- Pharmacy header -->
-  <section class="section">
-    <div class="toolbar">
-      <div class="left">
-        <h1 style="margin:0">Pharmacy</h1>
-      </div>
-      <div class="right tabbar" role="tablist" aria-label="Pharmacy Tabs">
-        <button class="chip active" data-tab="sell">Sell</button>
-        <button class="chip" data-tab="purchase">Purchase</button>
-        <button class="chip" data-tab="stock">Stock</button>
-        <button class="chip" data-tab="reports">Reports</button>
-      </div>
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <a class="chip" href="../index.html">← Dashboard</a>
+    <button class="chip" id="clearCacheBtn">Clear Cache</button>
+    <div style="flex:1"></div>
+    <div class="row">
+      <button class="chip chip--primary" data-tab="sell">Sell</button>
+      <button class="chip" data-tab="purchase">Purchase</button>
+      <button class="chip" data-tab="stock">Stock</button>
+      <button class="chip" data-tab="reports">Reports</button>
     </div>
-    <p class="muted mt8">Search / scan items, attach a patient by barcode, and generate bills. Purchase updates stock with batch & expiry.</p>
-  </section>
+  </div>
 
   <!-- SELL -->
   <section class="section" id="tab-sell">
-    <div class="grid-2">
-      <div>
-        <h2>Quick POS</h2>
-        <div class="mt12">
-          <h3 class="mt8">Patient Link</h3>
-          <div class="toolbar mt8">
-            <div class="left" style="gap:10px">
-              <button id="btnScanPatient" class="btn">📷 Scan Patient ID</button>
-              <button id="btnNewPatient" class="pill-ghost">New Patient ID</button>
-            </div>
-            <div class="right muted-small">
-              <span id="patientStatus">No patient linked</span>
-            </div>
-          </div>
+    <div class="panel grad-lilac">
+      <h2>Quick POS</h2>
+      <p class="muted">Search or scan items, link a patient by barcode, and create a bill.</p>
+    </div>
+
+    <div class="grid-2" style="margin-top:12px">
+      <!-- Left: Cart -->
+      <div class="section">
+        <h3 style="margin:0 0 8px">Patient Link</h3>
+        <div class="row">
+          <button class="chip chip--primary" id="scanPatientBtn">📷 Scan Patient ID</button>
+          <button class="chip" id="newPatientBtn">New Patient ID</button>
+        </div>
+        <p id="linkedPatient" class="muted" style="margin-top:8px">No patient linked</p>
+
+        <div class="row" style="margin-top:14px">
+          <input id="searchItem" placeholder="Search item name or scan…" />
+          <button id="scanItemBtn" class="btn">📷 Scan Item</button>
+          <button id="loadDemoBtn" class="chip">Load Demo</button>
         </div>
 
-        <div class="mt16">
-          <div class="toolbar">
-            <div class="left" style="gap:10px">
-              <input id="searchItem" type="search" placeholder="Search item name or scan barcode…" class="input--sm" />
-              <button id="btnScanItem" class="btn">📷 Scan Item</button>
-              <button id="btnLoadDemo" class="pill-ghost">Load Demo</button>
-            </div>
-            <div class="right">
-              <button id="btnClearCart" class="pill-ghost">Clear</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="table-wrap mt12">
-          <table>
+        <div style="margin-top:14px; overflow:auto">
+          <table class="table" id="cartTable">
             <thead>
               <tr>
-                <th>Item</th>
-                <th>Batch</th>
-                <th>Qty</th>
-                <th>MRP</th>
-                <th>GST%</th>
-                <th>Line</th>
-                <th></th>
+                <th>Item</th><th>Batch</th><th>Qty</th><th>MRP</th><th>GST%</th><th>Line</th><th></th>
               </tr>
             </thead>
-            <tbody id="cartBody">
-              <tr><td colspan="7" class="muted">Cart is empty</td></tr>
-            </tbody>
+            <tbody id="cartBody"><tr><td class="muted" colspan="7">Cart is empty</td></tr></tbody>
           </table>
         </div>
       </div>
 
-      <div>
-        <h3>Customer</h3>
-        <div class="mt8">
-          <input id="custName" type="text" placeholder="Customer name (optional)" />
-        </div>
-        <div class="mt8">
-          <input id="custPhone" type="text" placeholder="Phone (optional)" />
+      <!-- Right: Customer + Summary -->
+      <div class="section">
+        <h3 style="margin:0 0 8px">Customer</h3>
+        <input id="custName" placeholder="Customer name (optional)" style="margin-bottom:10px" />
+        <input id="custPhone" placeholder="Phone (optional)" />
+
+        <div class="kpi-grid" style="margin-top:14px">
+          <div class="kpi grad-sky">
+            <div class="label">Subtotal</div>
+            <div class="num" id="kSub">0.00</div>
+          </div>
+          <div class="kpi grad-mint">
+            <div class="label">GST</div>
+            <div class="num" id="kGst">0.00</div>
+          </div>
+          <div class="kpi grad-rose">
+            <div class="label">Discount</div>
+            <div class="num" id="kDisc">0.00</div>
+          </div>
+          <div class="kpi grad-amber">
+            <div class="label">Total</div>
+            <div class="num" id="kTotal">0.00</div>
+          </div>
         </div>
 
-        <h3 class="mt16">Summary</h3>
-        <div class="kpi-grid mt8">
-          <div class="kpi panel--blue"><h4>Subtotal</h4><div class="num" id="sumSubtotal">0.00</div></div>
-          <div class="kpi panel--mint"><h4>GST</h4><div class="num" id="sumGST">0.00</div></div>
-          <div class="kpi panel--peach"><h4>Discount</h4><div class="num" id="sumDisc">0.00</div></div>
-          <div class="kpi panel--lilac"><h4>Total</h4><div class="num" id="sumTotal">0.00</div></div>
-        </div>
-
-        <div class="mt16">
-          <input id="discount" type="number" min="0" step="0.01" placeholder="Discount (₹)" class="input--sm" />
-          <select id="payMode" class="select--sm">
-            <option value="CASH">Cash</option>
-            <option value="CARD">Card</option>
-            <option value="UPI">UPI</option>
+        <div class="row" style="margin-top:12px">
+          <input id="discount" type="number" min="0" step="0.01" placeholder="Discount (₹)" style="max-width:180px"/>
+          <select id="payMode" style="max-width:180px">
+            <option value="cash">Cash</option>
+            <option value="upi">UPI</option>
+            <option value="card">Card</option>
           </select>
-        </div>
-        <div class="mt16">
-          <button id="btnSaveInvoice" class="btn">Save & Print</button>
-          <button id="btnExportInvoice" class="pill-ghost">Export CSV</button>
+          <div style="flex:1"></div>
+          <button class="btn" id="saveBillBtn">Save & Print</button>
         </div>
       </div>
     </div>
@@ -154,36 +103,39 @@
 
   <!-- PURCHASE -->
   <section class="section" id="tab-purchase" hidden>
-    <h2>Purchase / Stock-in</h2>
-    <div class="grid-2 mt12">
-      <div>
-        <div class="toolbar">
-          <div class="left" style="gap:10px">
-            <input id="purItem" type="search" placeholder="Item name…" class="input--sm" />
-            <button id="btnScanPurchase" class="btn">📷 Scan</button>
-          </div>
+    <div class="panel grad-mint">
+      <h2>Purchase</h2>
+      <p class="muted">Add supplier invoice. Updates <strong>batch</strong>, <strong>expiry</strong>, cost & stock.</p>
+    </div>
+    <div class="grid-2" style="margin-top:12px">
+      <div class="section">
+        <div class="row">
+          <input id="supName" placeholder="Supplier / Party" style="max-width:260px">
+          <input id="billNo" placeholder="Supplier Bill No." style="max-width:200px">
+          <input id="billDate" type="date" style="max-width:180px">
+          <div style="flex:1"></div>
+          <button class="btn" id="addRowBtn">+ Add Item</button>
         </div>
-
-        <div class="mt12">
-          <div class="grid-2">
-            <input id="purBatch" type="text" placeholder="Batch" />
-            <input id="purExpiry" type="month" placeholder="Expiry (YYYY-MM)" />
-            <input id="purMRP" type="number" step="0.01" placeholder="MRP" />
-            <input id="purCost" type="number" step="0.01" placeholder="Cost" />
-            <input id="purQty" type="number" min="1" step="1" placeholder="Qty" />
-            <input id="purGST" type="number" min="0" step="0.1" placeholder="GST %" />
-          </div>
-          <div class="mt12">
-            <button id="btnAddPurchase" class="btn">Add to Stock</button>
-          </div>
+        <div style="margin-top:12px; overflow:auto">
+          <table class="table" id="purTable">
+            <thead>
+              <tr>
+                <th>Item</th><th>Batch</th><th>Expiry</th><th>Qty</th><th>Cost</th><th>MRP</th><th>GST%</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="purBody"><tr><td class="muted" colspan="8">No items</td></tr></tbody>
+          </table>
         </div>
       </div>
-
-      <div>
+      <div class="section">
         <div class="kpi-grid">
-          <div class="kpi panel--blue"><h4>Items Added</h4><div class="num" id="purCount">0</div></div>
-          <div class="kpi panel--mint"><h4>Total Qty</h4><div class="num" id="purQtySum">0</div></div>
-          <div class="kpi panel--peach"><h4>Stock Value (Cost)</h4><div class="num" id="purVal">0.00</div></div>
+          <div class="kpi grad-sky"><div class="label">Items</div><div class="num" id="pItems">0</div></div>
+          <div class="kpi grad-amber"><div class="label">Gross</div><div class="num" id="pGross">0.00</div></div>
+          <div class="kpi grad-rose"><div class="label">GST</div><div class="num" id="pGST">0.00</div></div>
+          <div class="kpi grad-mint"><div class="label">Total</div><div class="num" id="pTotal">0.00</div></div>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <button class="btn" id="savePurchaseBtn">Save Purchase</button>
         </div>
       </div>
     </div>
@@ -191,469 +143,100 @@
 
   <!-- STOCK -->
   <section class="section" id="tab-stock" hidden>
-    <div class="toolbar">
+    <div class="panel grad-sky">
       <h2>Stock</h2>
-      <div class="right">
-        <button id="btnExportStock" class="pill-ghost">Export CSV</button>
-      </div>
+      <p class="muted">Current stock, expiry & near-expiry, and re-order list.</p>
     </div>
-    <div class="chips mt8">
-      <button class="chip active" data-stock="all">All</button>
-      <button class="chip" data-stock="near">Near expiry</button>
-      <button class="chip" data-stock="expired">Expired</button>
-      <button class="chip" data-stock="low">Re-order</button>
+    <div class="row" style="margin-top:12px">
+      <input id="stockSearch" placeholder="Search item / batch…" style="max-width:320px">
+      <select id="stockFilter" style="max-width:220px">
+        <option value="all">All</option>
+        <option value="near">Near Expiry (≤60d)</option>
+        <option value="expired">Expired</option>
+        <option value="low">Below Min Qty</option>
+      </select>
+      <div style="flex:1"></div>
+      <button class="chip" id="exportStock">↓ Export CSV</button>
     </div>
-    <div class="table-wrap mt12">
-      <table>
+    <div style="margin-top:12px; overflow:auto">
+      <table class="table" id="stockTable">
         <thead>
           <tr>
-            <th>Item</th><th>Batch</th><th>Expiry</th><th>MRP</th><th>Qty</th><th>Status</th>
+            <th>Item</th><th>Batch</th><th>Expiry</th><th>Qty</th><th>MRP</th><th>Status</th>
           </tr>
         </thead>
-        <tbody id="stockBody"><tr><td colspan="6" class="muted">Loading…</td></tr></tbody>
+        <tbody id="stockBody"><tr><td class="muted" colspan="6">No rows</td></tr></tbody>
       </table>
     </div>
   </section>
 
   <!-- REPORTS -->
   <section class="section" id="tab-reports" hidden>
-    <h2>Pharmacy Reports</h2>
-    <div class="toolbar mt12">
-      <div class="left" style="gap:10px">
-        <input type="date" id="rFrom" class="input--sm" />
-        <input type="date" id="rTo" class="input--sm" />
-        <button id="runReports" class="btn">Run</button>
-      </div>
-      <div class="right chips">
-        <button class="chip" data-r="today">Today</button>
-        <button class="chip" data-r="7d">Last 7D</button>
-        <button class="chip" data-r="30d">Last 30D</button>
-        <button class="chip" data-r="mtd">MTD</button>
-        <button id="btnExportSales" class="pill-ghost">Export CSV</button>
-      </div>
+    <div class="panel grad-rose">
+      <h2>Pharmacy Reports</h2>
+      <p class="muted">Daily / MTD / Custom Sales, Purchases, Profit, Top Items. Export CSV.</p>
     </div>
 
-    <div class="kpi-grid mt12">
-      <div class="kpi panel--blue"><h4>Total (₹)</h4><div class="num" id="rpTotal">0.00</div></div>
-      <div class="kpi panel--mint"><h4>Paid (₹)</h4><div class="num" id="rpPaid">0.00</div></div>
-      <div class="kpi panel--peach"><h4>Balance (₹)</h4><div class="num" id="rpBalance">0.00</div></div>
-      <div class="kpi panel--lilac"><h4>Invoices</h4><div class="num" id="rpInvoices">0</div></div>
+    <div class="row" style="margin-top:12px">
+      <input type="date" id="rFrom" style="max-width:180px">
+      <input type="date" id="rTo" style="max-width:180px">
+      <button class="chip chip--primary" id="runRpt">Run</button>
+      <button class="chip" data-q="today">Today</button>
+      <button class="chip" data-q="7d">Last 7D</button>
+      <button class="chip" data-q="30d">Last 30D</button>
+      <button class="chip" data-q="mtd">MTD</button>
+      <div style="flex:1"></div>
+      <button class="chip" id="exportRpt">↓ Export CSV</button>
     </div>
 
-    <div class="chart-wrap mt16">
-      <div class="chart-title">Top Items</div>
-      <div id="topItems" class="muted">—</div>
+    <div class="kpi-grid" style="margin-top:12px">
+      <div class="kpi grad-sky"><div class="label">Total (₹)</div><div class="num" id="rtTotal">0.00</div></div>
+      <div class="kpi grad-lilac"><div class="label">Avg / Day (₹)</div><div class="num" id="rtAvg">0.00</div></div>
+      <div class="kpi grad-mint"><div class="label">Invoices</div><div class="num" id="rtInv">0</div></div>
+      <div class="kpi grad-rose"><div class="label">Top Item</div><div class="num" id="rtTop">—</div></div>
+    </div>
+
+    <div class="section" style="margin-top:12px">
+      <table class="table" id="rTable">
+        <thead><tr><th>Date</th><th>Invoice</th><th>Items</th><th>Subtotal</th><th>GST</th><th>Total</th></tr></thead>
+        <tbody id="rBody"><tr><td class="muted" colspan="6">No data</td></tr></tbody>
+      </table>
     </div>
   </section>
 
-  <!-- Scanner Modal -->
-  <div id="scanModal" role="dialog" aria-modal="true" aria-labelledby="scanTitle">
-    <div id="scanBox">
-      <div class="modal-head">
-        <strong id="scanTitle">Scan</strong>
-        <button id="scanClose" class="pill-ghost">Close</button>
-      </div>
-      <div id="scanArea"></div>
-    </div>
-  </div>
-
-  <!-- Scripts -->
-  <!-- Scanner lib (CDN) – safe to defer; scanner.js guards if not present -->
-  <script defer src="https://unpkg.com/html5-qrcode@2.3.10/html5-qrcode.min.js"></script>
-  <script src="../scripts/utils.js"></script>
-  <script src="../scripts/scanner.js"></script>
+  <div class="spacer"></div>
 
   <script>
-    // ===== THEME (unified) =====
-    (function initTheme(){
-      const key='erp-theme';
-      const saved = localStorage.getItem(key) || 'light';
-      document.documentElement.setAttribute('data-theme', saved);
-      const btn = document.getElementById('themeToggle');
-      btn.textContent = saved === 'dark' ? '🌙' : '🌞';
-      btn.addEventListener('click', ()=>{
-        const cur = document.documentElement.getAttribute('data-theme');
-        const next = cur === 'dark' ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', next);
-        localStorage.setItem(key, next);
-        btn.textContent = next === 'dark' ? '🌙' : '🌞';
-      });
-    })();
+    // Theme toggle (shared)
+    const html = document.documentElement;
+    const btnTheme = document.getElementById('themeToggle');
+    function syncIcon(){ btnTheme.textContent = html.dataset.theme==='dark' ? '🌙' : '🌞'; }
+    btnTheme.onclick = ()=>{ html.dataset.theme = (html.dataset.theme==='dark'?'light':'dark'); localStorage.setItem('theme', html.dataset.theme); syncIcon(); };
+    html.dataset.theme = localStorage.getItem('theme') || 'dark'; syncIcon();
 
-    // ===== NAV UTILS =====
-    document.getElementById('logoutBtn').onclick = ()=>{ localStorage.clear(); location.href = './login.html'; };
-    document.getElementById('clearCacheBtn').onclick = async ()=>{
-      await clearAppCache?.(); // from utils.js if available
-      alert('Cache cleared. Reloading…'); location.reload();
-    };
-
-    // ===== TAB SWITCH =====
-    const tabBtns = document.querySelectorAll('[data-tab]');
-    const tabs = {
-      sell: document.getElementById('tab-sell'),
-      purchase: document.getElementById('tab-purchase'),
-      stock: document.getElementById('tab-stock'),
-      reports: document.getElementById('tab-reports')
-    };
-    tabBtns.forEach(b=>{
+    // Tabs
+    const tabButtons = document.querySelectorAll('[data-tab]');
+    const tabs = { sell: '#tab-sell', purchase: '#tab-purchase', stock: '#tab-stock', reports: '#tab-reports' };
+    tabButtons.forEach(b=>{
       b.addEventListener('click', ()=>{
-        tabBtns.forEach(x=>x.classList.remove('active'));
-        b.classList.add('active');
-        const sel = b.dataset.tab;
-        Object.entries(tabs).forEach(([k,el])=>{
-          el.hidden = (k!==sel);
-        });
+        tabButtons.forEach(x=>x.classList.remove('chip--primary'));
+        b.classList.add('chip--primary');
+        for(const k in tabs) document.querySelector(tabs[k]).hidden = true;
+        document.querySelector(tabs[b.dataset.tab]).hidden = false;
       });
     });
+    // default tab
+    document.querySelector('[data-tab="sell"]').click();
 
-    // ===== DATA (CSV) =====
-    const CSV = {
-      inv: '../data/inventory.csv',
-      invoices: '../data/invoices.csv',
-      items: '../data/invoice_items.csv',
-      patients: '../data/patients.csv'
-    };
-    let INVENTORY = [];
-    let PATIENTS = [];
-    let CART = [];
-    let LINKED_PATIENT = null;
-
-    async function loadAll() {
-      INVENTORY = await loadCSV(CSV.inv);            // utils.js
-      PATIENTS  = await loadCSV(CSV.patients);
-      // invoices/items lazy-load when Reports tab runs
-      renderStockTable('all');
-    }
-    loadAll();
-
-    // ===== SELL =====
-    const els = {
-      cartBody: document.getElementById('cartBody'),
-      subtotal: document.getElementById('sumSubtotal'),
-      gst: document.getElementById('sumGST'),
-      disc: document.getElementById('sumDisc'),
-      total: document.getElementById('sumTotal'),
-      discount: document.getElementById('discount'),
-      payMode: document.getElementById('payMode'),
-      patientStatus: document.getElementById('patientStatus'),
-      searchItem: document.getElementById('searchItem')
-    };
-
-    function findItemByQuery(q){
-      q = (q||'').toLowerCase().trim();
-      if(!q) return null;
-      // match by barcode, then name
-      return INVENTORY.find(r => (r.barcode||'').toLowerCase() === q) ||
-             INVENTORY.find(r => (r.name||'').toLowerCase().includes(q));
-    }
-
-    function addToCart(item, qty=1){
-      if(!item) return;
-      const line = {
-        name: item.name,
-        batch: item.batch,
-        qty: qty,
-        mrp: Number(item.mrp||0),
-        gst: Number(item.gst||0),
-        barcode: item.barcode||''
-      };
-      CART.push(line);
-      renderCart();
-    }
-
-    function renderCart(){
-      if(CART.length===0){
-        els.cartBody.innerHTML = '<tr><td colspan="7" class="muted">Cart is empty</td></tr>';
-        updateSummary();
-        return;
-      }
-      els.cartBody.innerHTML = CART.map((l,i)=>`
-        <tr>
-          <td>${escapeHtml(l.name||'')}</td>
-          <td>${escapeHtml(l.batch||'')}</td>
-          <td><input type="number" min="1" step="1" value="${l.qty}" data-qty="${i}" class="input--sm" style="width:80px" /></td>
-          <td>₹ ${Number(l.mrp).toFixed(2)}</td>
-          <td>${Number(l.gst).toFixed(1)}%</td>
-          <td>₹ ${(l.qty*l.mrp).toFixed(2)}</td>
-          <td><button class="pill-ghost" data-rm="${i}">✕</button></td>
-        </tr>
-      `).join('');
-      els.cartBody.querySelectorAll('[data-qty]').forEach(inp=>{
-        inp.addEventListener('change', e=>{
-          const i = Number(inp.dataset.qty);
-          CART[i].qty = Math.max(1, Number(inp.value||1));
-          updateSummary();
-          renderCart(); // rerender line total
-        });
-      });
-      els.cartBody.querySelectorAll('[data-rm]').forEach(btn=>{
-        btn.addEventListener('click', ()=>{
-          CART.splice(Number(btn.dataset.rm),1);
-          renderCart();
-        });
-      });
-      updateSummary();
-    }
-
-    function updateSummary(){
-      const disc = Number(els.discount.value||0);
-      let sub = 0, gst=0;
-      CART.forEach(l=>{
-        const line = l.qty * l.mrp;
-        sub += line;
-        gst += line * (Number(l.gst||0)/100);
-      });
-      els.subtotal.textContent = sub.toFixed(2);
-      els.gst.textContent = gst.toFixed(2);
-      els.disc.textContent = disc.toFixed(2);
-      els.total.textContent = (sub + gst - disc).toFixed(2);
-    }
-    els.discount.addEventListener('input', updateSummary);
-
-    // Quick search add
-    els.searchItem.addEventListener('keydown', (e)=>{
-      if(e.key==='Enter'){
-        const it = findItemByQuery(e.target.value);
-        if(it){ addToCart(it,1); e.target.value=''; }
-        else alert('Item not found in inventory.csv');
-      }
+    // Clear cache button
+    document.getElementById('clearCacheBtn')?.addEventListener('click', ()=>{
+      localStorage.clear(); caches?.keys?.().then(keys=>keys.forEach(k=>caches.delete(k))); alert('Cache cleared');
     });
 
-    // Demo
-    document.getElementById('btnLoadDemo').onclick = ()=>{
-      const picks = INVENTORY.slice(0,3);
-      if(!picks.length) return alert('No inventory loaded yet.');
-      CART = picks.map(p=>({name:p.name,batch:p.batch,qty:1,mrp:+p.mrp||0,gst:+p.gst||0,barcode:p.barcode||''}));
-      renderCart();
-    };
-
-    document.getElementById('btnClearCart').onclick = ()=>{
-      CART = []; renderCart();
-    };
-
-    // Save invoice (writes to localStorage as a demo store; CSV export available)
-    document.getElementById('btnSaveInvoice').onclick = ()=>{
-      if(CART.length===0) return alert('Cart empty');
-      const total = Number(els.total.textContent||0);
-      const doc = {
-        id: 'INV' + Date.now(),
-        date: new Date().toISOString().slice(0,10),
-        patient_id: LINKED_PATIENT?.patient_id || '',
-        patient_name: LINKED_PATIENT?.name || (document.getElementById('custName').value||''),
-        phone: document.getElementById('custPhone').value||'',
-        pay_mode: els.payMode.value,
-        discount: Number(els.discount.value||0),
-        total
-      };
-      const items = CART.map(l=>({invoice_id:doc.id,item_name:l.name,batch:l.batch,qty:l.qty,mrp:l.mrp,gst:l.gst}));
-      // persist demo
-      const store = JSON.parse(localStorage.getItem('erp-invoices')||'[]');
-      store.push({doc,items});
-      localStorage.setItem('erp-invoices', JSON.stringify(store));
-      alert('Saved! (demo local store). Use Export CSV to download.');
-      // clear
-      CART = []; renderCart();
-    };
-
-    document.getElementById('btnExportInvoice').onclick = ()=>{
-      const rows = [['invoice_id','patient_id','patient_name','phone','pay_mode','discount','total']];
-      const data = JSON.parse(localStorage.getItem('erp-invoices')||'[]');
-      data.forEach(({doc})=> rows.push([doc.id,doc.patient_id,doc.patient_name,doc.phone,doc.pay_mode,doc.discount,doc.total]));
-      downloadCSV(rows, 'invoices_demo.csv'); // from utils.js
-    };
-
-    // ===== PATIENT LINK + SCANNER =====
-    const scanModal = document.getElementById('scanModal');
-    const scanArea = document.getElementById('scanArea');
-    const scanClose = document.getElementById('scanClose');
-
-    function openScanner(title, onResult){
-      document.getElementById('scanTitle').textContent = title || 'Scan';
-      scanModal.style.display = 'flex';
-      if(typeof startScanner === 'function'){
-        startScanner(scanArea, (code)=>{
-          try{ onResult(code); } finally { closeScanner(); }
-        }, (err)=>{
-          alert(err || 'Scanner failed to start.');
-          closeScanner();
-        });
-      } else {
-        alert('Scanner library not loaded. Check network / script tag.');
-        closeScanner();
-      }
-    }
-    function closeScanner(){
-      scanModal.style.display = 'none';
-      try{ stopScanner?.(); } catch(e){}
-      scanArea.innerHTML = '';
-    }
-    scanClose.onclick = closeScanner;
-    scanModal.addEventListener('click', (e)=>{ if(e.target===scanModal) closeScanner(); });
-
-    document.getElementById('btnScanPatient').onclick = ()=>{
-      openScanner('Scan Patient ID', (code)=>{
-        const p = PATIENTS.find(r => String(r.patient_id)===String(code));
-        if(!p) return alert('Patient not found');
-        LINKED_PATIENT = p;
-        document.getElementById('custName').value = p.name||'';
-        document.getElementById('custPhone').value = p.phone||'';
-        document.getElementById('patientStatus').textContent = `Linked: ${p.name} (${p.patient_id})`;
-      });
-    };
-
-    document.getElementById('btnNewPatient').onclick = ()=>{
-      const id = 'P' + Date.now().toString().slice(-6);
-      LINKED_PATIENT = {patient_id:id,name:'New Patient',phone:''};
-      document.getElementById('patientStatus').textContent = `Linked: ${id} (new)`;
-    };
-
-    document.getElementById('btnScanItem').onclick = ()=>{
-      openScanner('Scan Item', (code)=>{
-        const it = findItemByQuery(code);
-        if(!it) return alert('Item not found for scanned code');
-        addToCart(it,1);
-      });
-    };
-
-    // ===== PURCHASE =====
-    document.getElementById('btnAddPurchase').onclick = ()=>{
-      const row = {
-        name: document.getElementById('purItem').value,
-        batch: document.getElementById('purBatch').value,
-        expiry: document.getElementById('purExpiry').value, // YYYY-MM
-        mrp: Number(document.getElementById('purMRP').value||0),
-        cost: Number(document.getElementById('purCost').value||0),
-        qty: Number(document.getElementById('purQty').value||0),
-        gst: Number(document.getElementById('purGST').value||0),
-      };
-      if(!row.name || !row.batch || !row.qty) return alert('Enter item, batch, qty');
-      INVENTORY.unshift({
-        name: row.name, batch: row.batch, expiry: row.expiry,
-        mrp: row.mrp, cost: row.cost, qty: row.qty, gst: row.gst, barcode: ''
-      });
-      // update mini KPIs
-      const c = Number(document.getElementById('purCount').textContent||0)+1;
-      const q = Number(document.getElementById('purQtySum').textContent||0)+row.qty;
-      const v = Number(document.getElementById('purVal').textContent||0)+ (row.cost*row.qty);
-      document.getElementById('purCount').textContent = c;
-      document.getElementById('purQtySum').textContent = q;
-      document.getElementById('purVal').textContent = v.toFixed(2);
-      renderStockTable(currentStockFilter);
-      alert('Added to stock (session only)');
-    };
-
-    // ===== STOCK =====
-    let currentStockFilter = 'all';
-    document.querySelectorAll('[data-stock]').forEach(ch=>{
-      ch.addEventListener('click', ()=>{
-        document.querySelectorAll('[data-stock]').forEach(x=>x.classList.remove('active'));
-        ch.classList.add('active');
-        currentStockFilter = ch.dataset.stock;
-        renderStockTable(currentStockFilter);
-      });
+    // VERY SMALL demo hooks (uses utils.js functions if present)
+    document.getElementById('loadDemoBtn')?.addEventListener('click', ()=>{
+      alert('Demo items can be wired to inventory.csv via utils.js (loadInventory → addToCart).');
     });
-
-    function expiryState(expiry){
-      if(!expiry) return {state:'ok',label:'—'};
-      // expiry as YYYY-MM or YYYY-MM-DD
-      const d = expiry.length===7 ? new Date(expiry+'-01') : new Date(expiry);
-      const now = new Date();
-      const diff = (d - now) / (1000*60*60*24);
-      if(diff < -1) return {state:'expired',label:'Expired'};
-      if(diff <= 60) return {state:'near',label:'Near'};
-      return {state:'ok',label:'OK'};
-    }
-
-    function renderStockTable(filter){
-      const body = document.getElementById('stockBody');
-      if(!INVENTORY.length){ body.innerHTML = '<tr><td colspan="6" class="muted">No inventory.</td></tr>'; return; }
-      const rows = INVENTORY.filter(r=>{
-        const st = expiryState(r.expiry).state;
-        if(filter==='near') return st==='near';
-        if(filter==='expired') return st==='expired';
-        if(filter==='low') return Number(r.qty||0) <= Number(r.min_qty||0 || 5);
-        return true;
-      }).map(r=>{
-        const st = expiryState(r.expiry);
-        const badge = st.state==='ok' ? '<span class="tag tag--ok">OK</span>'
-                    : st.state==='near' ? '<span class="tag tag--warn">Near</span>'
-                    : '<span class="tag tag--warn">Expired</span>';
-        return `<tr>
-          <td>${escapeHtml(r.name||'')}</td>
-          <td>${escapeHtml(r.batch||'')}</td>
-          <td>${escapeHtml(r.expiry||'')}</td>
-          <td>₹ ${(Number(r.mrp||0)).toFixed(2)}</td>
-          <td>${Number(r.qty||0)}</td>
-          <td>${badge}</td>
-        </tr>`;
-      }).join('');
-      body.innerHTML = rows || '<tr><td colspan="6" class="muted">No rows match.</td></tr>';
-    }
-
-    document.getElementById('btnExportStock').onclick = ()=>{
-      const header = ['name','batch','expiry','mrp','qty','gst','barcode'];
-      const rows = [header];
-      INVENTORY.forEach(r=> rows.push(header.map(h=> r[h] ?? '')));
-      downloadCSV(rows, 'stock_export.csv');
-    };
-
-    // ===== REPORTS =====
-    const rBtns = document.querySelectorAll('[data-r]');
-    rBtns.forEach(b=> b.addEventListener('click', ()=>{
-      rBtns.forEach(x=>x.classList.remove('active'));
-      b.classList.add('active');
-      const now = new Date();
-      const to = now.toISOString().slice(0,10);
-      let from = to;
-      if(b.dataset.r==='7d'){ const d=new Date(now); d.setDate(d.getDate()-6); from=d.toISOString().slice(0,10); }
-      if(b.dataset.r==='30d'){ const d=new Date(now); d.setDate(d.getDate()-29); from=d.toISOString().slice(0,10); }
-      if(b.dataset.r==='mtd'){ const d=new Date(now.getFullYear(), now.getMonth(), 1); from=d.toISOString().slice(0,10); }
-      document.getElementById('rFrom').value = from;
-      document.getElementById('rTo').value = to;
-      runReports();
-    }));
-
-    document.getElementById('runReports').onclick = runReports;
-
-    async function runReports(){
-      const from = document.getElementById('rFrom').value;
-      const to = document.getElementById('rTo').value;
-      const INVS = await loadCSV(CSV.invoices);
-      const ITEMS = await loadCSV(CSV.items);
-      const f = (d)=> d>=from && d<=to;
-      const list = INVS.filter(r=> !from || !to || f(r.date));
-      const total = list.reduce((a,r)=> a + Number(r.total||0), 0);
-      const paid = list.reduce((a,r)=> a + Number(r.paid||r.total||0), 0);
-      const balance = total - paid;
-      document.getElementById('rpTotal').textContent = total.toFixed(2);
-      document.getElementById('rpPaid').textContent = paid.toFixed(2);
-      document.getElementById('rpBalance').textContent = balance.toFixed(2);
-      document.getElementById('rpInvoices').textContent = list.length;
-
-      const ids = new Set(list.map(r=> String(r.invoice_id)));
-      const top = {};
-      ITEMS.filter(x=> ids.has(String(x.invoice_id))).forEach(x=>{
-        top[x.item_name] = (top[x.item_name]||0) + Number(x.qty||0);
-      });
-      const topStr = Object.entries(top).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([n,q])=>`${n} — ${q}`).join('<br>');
-      document.getElementById('topItems').innerHTML = topStr || '—';
-    }
-
-    document.getElementById('btnExportSales').onclick = async ()=>{
-      const INVS = await loadCSV(CSV.invoices);
-      const rows = [['invoice_id','date','patient_id','total','paid','mode']];
-      INVS.forEach(r=> rows.push([r.invoice_id,r.date,r.patient_id,r.total,r.paid||r.total,r.pay_mode||'']));
-      downloadCSV(rows, 'sales_export.csv');
-    };
-
-    // ===== Purchase scanner (fills item field on scan) =====
-    document.getElementById('btnScanPurchase').onclick = ()=>{
-      openScanner('Scan Item', (code)=>{
-        const it = findItemByQuery(code);
-        if(it) document.getElementById('purItem').value = it.name;
-        else alert('No match in inventory');
-      });
-    };
   </script>
 </body>
 </html>
