@@ -3,8 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Analytics · Reports</title>
+  <title>Hospital ERP · Analytics</title>
   <link rel="stylesheet" href="../styles/styles.css" />
+  <style>
+    .kpi strong{ font-weight:900; letter-spacing:.2px }
+    .kpi span{ font-weight:800 }
+    .panel-head h2{ font-weight:900 }
+  </style>
 </head>
 <body>
   <header class="app-topbar">
@@ -27,26 +32,25 @@
         </div>
       </div>
 
-      <!-- NEW: date range filters -->
       <div class="controls" style="margin-top:.6rem">
-        <label>From&nbsp;<input class="input" type="date" id="fromDate"></label>
-        <label>To&nbsp;<input class="input" type="date" id="toDate"></label>
+        <label>From <input class="input" type="date" id="fromDate"></label>
+        <label>To <input class="input" type="date" id="toDate"></label>
         <button class="btn" id="applyRange">Apply</button>
       </div>
 
       <div class="kpi-row" style="margin-top:.6rem">
         <div class="kpi gradient-sky"><span>Total (₹)</span><strong id="kpiTotal">0.00</strong></div>
-        <div class="kpi gradient-purple"><span>Avg / Day (₹)</span><strong id="kpiAvg">0.00</strong></div>
+        <div class="kpi gradient-lavender"><span>Avg / Day (₹)</span><strong id="kpiAvg">0.00</strong></div>
         <div class="kpi gradient-green"><span>Invoices</span><strong id="kpiInvoices">0</strong></div>
-        <div class="kpi gradient-slate"><span>Top Item</span><strong id="kpiTop">—</strong></div>
-        <div class="kpi gradient-lavender"><span>Items Sold</span><strong id="kpiQty">0</strong></div>
+        <div class="kpi gradient-slate"><span>Top item</span><strong id="kpiTop">—</strong></div>
+        <div class="kpi gradient-amber"><span>Items sold</span><strong id="kpiQty">0</strong></div>
       </div>
 
-      <div class="chart-block"><h4>Revenue by Day</h4><div class="chart-placeholder" id="revChart"></div></div>
-      <div class="chart-block"><h4>Top Items</h4><div class="chart-placeholder" id="topChart"></div></div>
+      <div class="chart-block"><h4>Revenue by Day</h4><div class="chart-placeholder loading" id="revChart" style="position:relative"></div></div>
+      <div class="chart-block"><h4>Top Items</h4><div class="chart-placeholder loading" id="topChart" style="position:relative"></div></div>
 
       <div class="panel" style="margin-top:1rem">
-        <h3>Download</h3>
+        <h3 style="margin:0 0 10px 0; font-weight:900">Download</h3>
         <div class="controls">
           <button class="btn" id="btnExportSales">Export Sales (CSV)</button>
           <button class="btn" id="btnExportItems">Export Items (CSV)</button>
@@ -64,8 +68,8 @@
     const root = document.documentElement;
     const saved = localStorage.getItem('theme');
     if (saved) root.setAttribute('data-theme', saved);
-    else if (window.matchMedia('(prefers-color-scheme: light)').matches) root.setAttribute('data-theme','light');
-    document.getElementById('themeToggle').onclick = () => {
+    else if (matchMedia('(prefers-color-scheme: light)').matches) root.setAttribute('data-theme','light');
+    themeToggle.onclick = () => {
       const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
       root.setAttribute('data-theme', next); localStorage.setItem('theme', next);
     };
@@ -75,12 +79,12 @@
     const toEl   = document.getElementById('toDate');
     const apply  = document.getElementById('applyRange');
 
-    // helper dates
+    // helpers
     function parseD(s){ return new Date(s.replace(/-/g,'/')); }
     function fmtDate(d){ const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
     function clampDay(d){ const x=new Date(d); x.setHours(0,0,0,0); return x; }
 
-    // preset buttons
+    // presets
     document.querySelectorAll('#rangeCtl .seg').forEach(b=>{
       b.addEventListener('click', ()=> {
         document.querySelectorAll('#rangeCtl .seg').forEach(x=>x.classList.remove('active'));
@@ -89,64 +93,47 @@
       });
     });
 
-    // init default (last 7 days)
-    setPreset('7d');
-
-    // Apply custom date range
-    apply.addEventListener('click', ()=>{
-      const f = fromEl.value, t = toEl.value;
-      if (!f || !t) return alert('Pick both From and To dates');
-      const from = clampDay(new Date(f));
-      const to   = clampDay(new Date(t));
-      if (to < from) return alert('To date cannot be earlier than From date');
-      // clear preset highlight
-      document.querySelectorAll('#rangeCtl .seg').forEach(x=>x.classList.remove('active'));
-      load(from, to);
-    });
-
     // state for export
     let lastSales = []; let lastItems = [];
 
     async function load(from, to) {
+      const revEl = document.getElementById('revChart');
+      const topEl = document.getElementById('topChart');
+      revEl.classList.add('loading'); topEl.classList.add('loading');
+
       const inv   = await fetchCSV('../data/invoices.csv');
       const items = await fetchCSV('../data/invoice_items.csv');
 
-      // filter rows by date range (inclusive)
       const sales = inv.filter(r=>{
         const d = clampDay(parseD(r.date));
-        return d >= from && d <= to;
+        return d>=from && d<=to;
       });
 
-      // items under those invoices
       const idSet = new Set(sales.map(r=>r.invoice_id));
       const itemRows = items.filter(it=> idSet.has(it.invoice_id));
 
       // KPIs
-      const total = sales.reduce((a,b)=> a + Number(b.total||0), 0);
-      const days  = Math.max(1, Math.round((to - from)/86400000) + 1);
-      document.getElementById('kpiTotal').textContent    = formatINR(total);
-      document.getElementById('kpiAvg').textContent      = formatINR(total/days);
-      document.getElementById('kpiInvoices').textContent = String(sales.length);
-      const qty = itemRows.reduce((a,b)=> a + Number(b.qty||0), 0);
-      document.getElementById('kpiQty').textContent = String(qty);
+      const total = sales.reduce((a,b)=>a + Number(b.total||0), 0);
+      const days  = Math.max(1, Math.round((to-from)/86400000)+1);
+      kpiTotal.textContent    = formatINR(total);
+      kpiAvg.textContent      = formatINR(total/days);
+      kpiInvoices.textContent = String(sales.length);
+      kpiQty.textContent      = String(itemRows.reduce((a,b)=> a + Number(b.qty||0), 0));
 
-      // top item by value
+      // top item
       const byItem = sumBy(itemRows, it=>it.item, it=> Number(it.qty||0) * Number(it.price||0));
-      let top='—', topVal=0; for (const [k,v] of byItem.entries()) if (v>topVal){ top=k; topVal=v; }
-      document.getElementById('kpiTop').textContent = top || '—';
+      let top='—', topVal=0; for (const [k,v] of byItem.entries()) { if (v>topVal) { top=k; topVal=v; } }
+      kpiTop.textContent = top || '—';
 
       // charts
       const map = sumBy(sales, r=>r.date, r=>r.total);
       const series=[]; const cur = new Date(from);
-      while (cur <= to) {
-        const key = fmtDate(cur);
-        series.push({label:key, value:Number(map.get(key)||0)});
-        cur.setDate(cur.getDate()+1);
-      }
-      renderBars(document.getElementById('revChart'), series, {});
+      while (cur <= to) { const key = fmtDate(cur); series.push({label:key, value:Number(map.get(key)||0)}); cur.setDate(cur.getDate()+1); }
+      renderBars(revEl, series, {});   revEl.classList.remove('loading');
+
       const topSeries = Array.from(byItem.entries()).map(([label,value])=>({label,value}))
                         .sort((a,b)=>b.value-a.value).slice(0,8);
-      renderBars(document.getElementById('topChart'), topSeries, {});
+      renderBars(topEl, topSeries, {}); topEl.classList.remove('loading');
 
       // exports
       lastSales = sales;
@@ -159,7 +146,7 @@
       }));
     }
 
-    // presets set the date inputs + call load()
+    // presets -> inputs -> load
     function setPreset(preset){
       const today = clampDay(new Date());
       let from = new Date(today), to = new Date(today);
@@ -172,9 +159,21 @@
       load(from, to);
     }
 
+    apply.addEventListener('click', ()=>{
+      if (!fromEl.value || !toEl.value) return alert('Pick both From and To dates');
+      const from = clampDay(new Date(fromEl.value));
+      const to   = clampDay(new Date(toEl.value));
+      if (to < from) return alert('To date cannot be earlier than From date');
+      document.querySelectorAll('#rangeCtl .seg').forEach(x=>x.classList.remove('active'));
+      load(from, to);
+    });
+
     // export buttons
-    document.getElementById('btnExportSales').onclick = ()=> downloadCSV(`sales-${new Date().toISOString().slice(0,10)}.csv`, lastSales);
-    document.getElementById('btnExportItems').onclick = ()=> downloadCSV(`items-${new Date().toISOString().slice(0,10)}.csv`, lastItems);
+    btnExportSales.onclick = ()=> downloadCSV(`sales-${new Date().toISOString().slice(0,10)}.csv`, lastSales);
+    btnExportItems.onclick = ()=> downloadCSV(`items-${new Date().toISOString().slice(0,10)}.csv`, lastItems);
+
+    // init
+    setPreset('7d');
   </script>
 </body>
 </html>
