@@ -1,223 +1,249 @@
-/* ===========================
-   Hospital ERP – Universal UI
-   Color-coded & page-safe
-   ===========================
-   HOW TO TUNE COLORS:
-   (Light)
-     Background        #F8FAFC
-     Card              #FFFFFF
-     Text              #0B0C0F
-     Muted Text        #6B7280
-     Border            #E5E7EB
-     Chip/Surface      #F3F4F6
-     Button (solid)    #111827  (text #FFFFFF)
-     Brand Accent      #2563EB  (used only for .btn.primary / .tab.active)
-   (Dark)
-     Background        #0B0C0F
-     Card              #111214
-     Text              #E6E7EB
-     Muted Text        #9AA0A6
-     Border            #1F2937
-     Chip/Surface      #15171A
-     Button (solid)    #E6E7EB  (text #0B0C0F)
-     Brand Accent      #4F86FF
-*/
+/* =========================================================
+   Hospital ERP — UNIVERSAL STYLES (all pages)
+   – Uses your color tokens + pastel tints
+   – Light/Dark via html[data-theme]
+   – One set of components for Dashboard/Analytics/Pharmacy
+   ========================================================= */
 
-/* ---------- Light tokens ---------- */
+/* ========== TOKENS (LIGHT) ========== */
 :root {
-  --bg:        #F8FAFC;
-  --card-bg:   #FFFFFF;
+  --bg: #f7f8fb;
+  --fg: #0f172a;
+  --card-bg: #ffffff;
+  --accent: #2563eb;        /* primary action / active tab */
+  --muted: #6b7280;
 
-  --fg:        #0B0C0F;
-  --muted:     #6B7280;
+  --radius: 16px;
+  --shadow: 0 6px 18px rgba(0,0,0,0.10);
 
-  --border:    #E5E7EB;
-  --soft-shadow: 0 1px 0 rgba(0,0,0,.05);
-  --card-shadow: 0 1px 0 rgba(0,0,0,.06), 0 0 0 1px var(--border);
+  /* Bold pastel tints */
+  --t-lilac: #e0d4ff;
+  --t-blue:  #d2e5ff;
+  --t-mint:  #c8f7e1;
+  --t-peach: #ffd7d2;
+  --t-rose:  #ffcfe0;
 
-  --chip-bg:   #F3F4F6;
-  --input-bg:  transparent;
-
-  /* Buttons */
-  --btn-bg:    #111827;
-  --btn-fg:    #FFFFFF;
-
-  /* Accent (tabs selected / primary button) */
-  --brand-chip:#2563EB;
+  /* Paired text colors for tints */
+  --c-lilac: #4c1d95;
+  --c-blue:  #1e40af;
+  --c-mint:  #065f46;
+  --c-peach: #9a3412;
+  --c-rose:  #9d174d;
 }
 
-/* ---------- Dark tokens ---------- */
+/* ========== TOKENS (DARK) ========== */
 html[data-theme="dark"] {
-  --bg:        #0B0C0F;
-  --card-bg:   #111214;
+  --bg: #0b1220;
+  --fg: #e6edf7;
+  --card-bg: #111827;
+  --accent: #3b82f6;
+  --muted: #9ca3af;
 
-  --fg:        #E6E7EB;
-  --muted:     #9AA0A6;
+  --t-lilac:#352359;
+  --t-blue:#1e2a48;
+  --t-mint:#123d2d;
+  --t-peach:#4a2a23;
+  --t-rose:#4a1e33;
 
-  --border:    #1F2937;
-  --soft-shadow: 0 1px 0 rgba(255,255,255,.04);
-  --card-shadow: 0 0 0 1px var(--border);
-
-  --chip-bg:   #15171A;
-  --input-bg:  transparent;
-
-  --btn-bg:    #E6E7EB;
-  --btn-fg:    #0B0C0F;
-
-  --brand-chip:#4F86FF;
+  --c-lilac:#c4b5fd;
+  --c-blue:#93c5fd;
+  --c-mint:#6ee7b7;
+  --c-peach:#fca5a5;
+  --c-rose:#f9a8d4;
 }
 
-/* Respect system preference if no explicit theme set */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) { color-scheme: dark; }
 }
 
-/* ---------- Base ---------- */
+/* ========== BASE ========== */
 * { box-sizing: border-box; }
 html, body { height: 100%; }
 body {
   margin: 0;
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
   background: var(--bg);
   color: var(--fg);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+  padding-bottom: env(safe-area-inset-bottom);
 }
+a { color: var(--fg); text-decoration: none; }
+a:hover { text-decoration: underline; }
 
-/* ---------- Layout helpers ---------- */
-.container { max-width: 1100px; margin: 0 auto; }
-.section   { padding: 8px 12px 32px; }
-.row       { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.grid      { display: grid; gap: 12px; }
-.grid-2    { grid-template-columns: 1fr; }
-@media (min-width: 860px) { .grid-2 { grid-template-columns: 1fr 1fr; } }
+/* ========== LAYOUT HELPERS ========== */
+.container { max-width: 1140px; margin: 0 auto; }
+.section   { background: var(--card-bg); margin: 12px; padding: 18px; border-radius: var(--radius); box-shadow: var(--shadow); }
+@media (min-width:768px){ .section{ margin:12px auto; } }
 
-.right { text-align: right; }
-.mono  { font-variant-numeric: tabular-nums; }
+.row   { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+.grid  { display:grid; gap:18px; }
+.grid-2{ grid-template-columns: 1fr; }
+@media (min-width:860px){ .grid-2{ grid-template-columns: 1fr 1fr; } }
+
+.right { text-align:right; }
 .muted { color: var(--muted); }
-.hide  { display: none !important; }
+.hide  { display:none !important; }
+.mono  { font-variant-numeric: tabular-nums; }
 
-/* ---------- Cards ---------- */
-.card {
-  background: var(--card-bg);
-  border-radius: 18px;
-  padding: 14px;
-  box-shadow: var(--card-shadow);
+/* ========== BANNER (optional, shared) ========== */
+header.banner{
+  position:relative; height:148px; border-radius:18px; overflow:hidden;
+  margin:12px 12px 8px; box-shadow: var(--shadow);
+  background:#0c3a5c url('/hospital-erp-starter/public/assets/banner.png') center/cover no-repeat;
+}
+header.banner .floating-toggle{
+  position:absolute; top:12px; right:12px; width:44px; height:44px;
+  border-radius:50%; display:grid; place-items:center; font-size:18px;
+  background: rgba(255,255,255,0.92); border:1px solid rgba(0,0,0,.06); backdrop-filter: blur(6px); cursor:pointer;
+}
+@media (min-width:1024px){
+  header.banner{ height:180px; margin:16px auto 12px; max-width:1140px;
+    background:#0b2a44 url('/hospital-erp-starter/public/assets/banner.png') center/contain no-repeat; }
 }
 
-/* ---------- Buttons ---------- */
-.btn {
-  appearance: none;
-  border: 1px solid var(--border);
-  background: var(--chip-bg);
-  color: var(--fg);
-  border-radius: 12px;
-  padding: .55rem .85rem;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: var(--soft-shadow);
+/* ========== FIXED/UTILITY ACTIONS ========== */
+.fixed-actions{
+  position: sticky; top: calc(6px + env(safe-area-inset-top)); z-index:10;
+  display:flex; gap:10px; flex-wrap:wrap; padding:6px 12px; margin:0 12px 12px;
 }
-.btn:hover  { filter: brightness(0.985); }
-.btn:active { transform: translateY(1px); }
+.fixed-actions .chip{
+  font-size:14px; padding:10px 14px; border-radius:999px;
+  background: var(--card-bg); color: var(--fg);
+  border:1px solid rgba(0,0,0,.06); box-shadow: var(--shadow); cursor:pointer;
+}
+html[data-theme="dark"] .fixed-actions .chip{ border-color: rgba(255,255,255,.10); }
 
-/* Primary → uses brand accent (limited to CTA) */
-.btn.primary {
-  background: var(--brand-chip);
-  color: #fff;
-  border-color: transparent;
+/* ========== CARDS & PANELS ========== */
+.card-grid{ display:grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap:18px; }
+.card{
+  border-radius:18px; padding:20px; box-shadow: var(--shadow);
+  text-decoration:none; display:block; transition: transform .18s, box-shadow .18s;
+  border:1px solid rgba(0,0,0,.06); background: var(--card-bg); color: var(--fg);
 }
+.card:hover{ transform: translateY(-2px); box-shadow: 0 10px 24px rgba(0,0,0,.14); }
+.card h3{ font-size:22px; margin-bottom:8px; text-decoration: underline; text-underline-offset:3px; }
+.card p{ font-size:15px; opacity:.9; }
 
-/* Solid neutral button (used widely in Pharmacy plain UI) */
-.btn.solid {
-  background: var(--btn-bg);
-  color: var(--btn-fg);
-  border-color: transparent;
-}
+/* colorful panels (dashboard shortcuts) */
+.panel--blue  { background: linear-gradient(135deg, var(--t-blue),  #bcdfff);  color: var(--c-blue); }
+.panel--mint  { background: linear-gradient(135deg, var(--t-mint),  #aaf5d0);  color: var(--c-mint); }
+.panel--peach { background: linear-gradient(135deg, var(--t-peach), #ffb9ad);  color: var(--c-peach); }
+.panel--lilac { background: linear-gradient(135deg, var(--t-lilac), #cab8ff);  color: var(--c-lilac); }
+.panel--rose  { background: linear-gradient(135deg, var(--t-rose),  #ffb6cc);  color: var(--c-rose); }
 
-/* Muted/secondary chip-like */
-.btn.muted {
-  background: var(--chip-bg);
-  color: var(--fg);
+/* ========== BUTTONS ========== */
+.btn{
+  background: var(--accent); color:#fff; border:0; padding:10px 14px;
+  border-radius:12px; font-weight:700; cursor:pointer;
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--accent) 35%, transparent);
+  transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;
 }
+.btn:hover{ transform: translateY(-1px); box-shadow: 0 12px 24px color-mix(in srgb, var(--accent) 40%, transparent); }
+.btn:active{ transform: translateY(0);   box-shadow: 0 6px 16px  color-mix(in srgb, var(--accent) 30%, transparent); }
+.btn:disabled{ opacity:.6; cursor:not-allowed; }
+.btn--ghost{
+  background:transparent; color:var(--accent);
+  border:1px solid color-mix(in srgb, var(--accent) 35%, #fff 65%);
+}
+.btn.icon{ width:42px; height:42px; display:inline-grid; place-items:center; padding:0; border-radius:999px; }
 
-/* Ghost outline */
-.btn.ghost {
-  background: transparent;
-  color: var(--fg);
-  border: 1px solid var(--border);
-}
-
-/* Icon button (theme toggle etc.) */
-.btn.icon {
-  width: 42px; height: 42px;
-  display: inline-grid; place-items: center;
-  padding: 0;
-  border-radius: 999px;
-}
-
-/* ---------- Tabs (chip style) ---------- */
-.tabs { display: flex; gap: .45rem; flex-wrap: wrap; }
-.tab {
-  padding: .45rem .8rem;
-  border-radius: 999px;
-  background: var(--chip-bg);
-  box-shadow: var(--soft-shadow);
-  font-weight: 700;
-  border: 1px solid var(--border);
-  color: var(--fg);
-}
-.tab.active {
-  background: var(--brand-chip);
-  color: #fff;
-  border-color: transparent;
+/* keyboard focus */
+:where(a,button,.btn,.chip,.tab):focus-visible{
+  outline:2px solid color-mix(in srgb, var(--accent) 60%, #fff 40%);
+  outline-offset:2px; border-radius:10px;
 }
 
-/* ---------- Badges / Chips ---------- */
-.badge, .chip {
-  display: inline-block;
-  padding: .45rem .75rem;
-  border-radius: 14px;
-  background: var(--chip-bg);
-  box-shadow: var(--soft-shadow);
-  font-weight: 800;
-  border: 1px solid var(--border);
+/* ========== CHIPS / TABS ========== */
+.chips{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+.chip, .tab{
+  --ring: rgba(37,99,235,.35);
+  padding: 8px 14px; border-radius:999px;
+  border:1px solid rgba(0,0,0,.08); background: var(--card-bg); color: var(--fg);
+  font-weight:600; line-height:1;
+  transition: transform .12s, box-shadow .12s, border-color .12s, background .12s;
+}
+.chip:hover, .tab:hover{ transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0,0,0,.08); }
+.chip:active, .tab:active{ transform: translateY(0);   box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+.chip.active, .tab.active{
+  background: var(--accent); color:#fff; border-color: transparent;
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.chip--sm{ padding:6px 10px; font-size:.9rem; }
+
+/* preset tinted chips (optional) */
+.chip--blue  { background: var(--t-blue);  color: var(--c-blue);  }
+.chip--mint  { background: var(--t-mint);  color: var(--c-mint);  }
+.chip--peach { background: var(--t-peach); color: var(--c-peach); }
+.chip--lilac { background: var(--t-lilac); color: var(--c-lilac); }
+.chip--rose  { background: var(--t-rose);  color: var(--c-rose);  }
+
+/* ========== INPUTS / FIELDS ========== */
+input[type="text"], input[type="search"], input[type="number"], input[type="date"],
+input[type="month"], input[type="tel"], select, textarea {
+  appearance:none; background: var(--card-bg); color: var(--fg);
+  border:1px solid rgba(0,0,0,.12); border-radius:12px; padding:10px 12px; line-height:1.2;
+  box-shadow: var(--shadow); transition: border-color .15s, box-shadow .15s, background .15s;
+}
+textarea { min-height: 92px; resize: vertical; }
+.input--sm, select.select--sm, input[type="date"].input--sm{
+  padding:8px 10px; border-radius:10px; box-shadow: 0 3px 10px rgba(0,0,0,.06); font-size:.95rem;
+}
+input:focus, select:focus, textarea:focus{
+  outline:none; border-color: rgba(37,99,235,.55);
+  box-shadow: 0 0 0 3px rgba(37,99,235,.10), 0 8px 20px rgba(37,99,235,.15);
+}
+::placeholder{ color: color-mix(in srgb, var(--muted) 80%, #fff 20%); }
+select{
+  background-image:
+    linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%),
+    linear-gradient(to right, transparent, transparent);
+  background-position: calc(100% - 18px) 50%, calc(100% - 12px) 50%, 0 0;
+  background-size: 6px 6px, 6px 6px, 100% 100%;
+  background-repeat: no-repeat; padding-right: 28px;
 }
 
-/* ---------- Inputs ---------- */
-.input,
-input[type="text"], input[type="number"], input[type="date"], input[type="month"],
-input[type="tel"], input[type="search"], select, textarea {
-  width: 100%;
-  padding: .6rem .8rem;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--input-bg);
-  color: var(--fg);
-  outline: none;
+/* dark-form contrast */
+html[data-theme="dark"] input, html[data-theme="dark"] select, html[data-theme="dark"] textarea{
+  background:#171b23; border-color:#273140; box-shadow: 0 6px 18px rgba(0,0,0,.35);
 }
-.input:focus, input:focus, select:focus, textarea:focus {
-  box-shadow: 0 0 0 3px color-mix(in oklab, var(--brand-chip) 20%, transparent);
-  border-color: color-mix(in oklab, var(--brand-chip) 35%, var(--border));
+html[data-theme="dark"] .chip, html[data-theme="dark"] .tab{ border-color: rgba(255,255,255,.12); }
+
+/* ========== TABLES ========== */
+table { width:100%; border-collapse: separate; border-spacing: 0 8px; }
+thead th { font-weight:700; opacity:.95; }
+th, td { padding:.6rem .7rem; border-bottom:1px solid rgba(0,0,0,.08); }
+tbody tr:last-child td { border-bottom:0; }
+.table-compact th, .table-compact td { padding:.45rem .55rem; }
+
+/* ========== KPI / CHART WRAPPERS (Analytics) ========== */
+.kpi-grid{
+  display:grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr));
+  gap:12px; margin-top:12px;
+}
+.kpi{ border-radius:14px; padding:12px; text-align:center; box-shadow: var(--shadow);
+  border:1px solid rgba(0,0,0,.06); background: var(--card-bg); }
+.kpi h4{ font-size:.9rem; margin-bottom:6px; opacity:.9; }
+.kpi .num{ font-size:1.2rem; font-weight:600; }
+.chart-wrap{ border-radius:18px; background:var(--card-bg); padding:16px; box-shadow:var(--shadow); margin-top:16px; }
+.chart-title{ font-weight:800; margin-bottom:8px; }
+
+/* ========== TOOLBARS ========== */
+.toolbar{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; justify-content:space-between; }
+.toolbar .left, .toolbar .right{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+
+/* ========== MOTION & PRINT ========== */
+@media (prefers-reduced-motion: reduce){
+  *{ transition:none !important; animation:none !important; }
+}
+@media print{
+  header.banner, .fixed-actions{ display:none; }
+  .section{ box-shadow:none; }
+  body{ background:#fff; color:#000; }
 }
 
-/* ---------- Tables ---------- */
-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
-thead th { font-weight: 700; color: var(--muted); }
-th, td { padding: .6rem .7rem; border-bottom: 1px solid var(--border); }
-tbody tr:last-child td { border-bottom: 0; }
-
-/* ---------- KPI blocks (analytics) ---------- */
-.kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .75rem; }
-.kpi  { padding: 14px; border-radius: 16px; background: var(--chip-bg); box-shadow: var(--soft-shadow); }
-.kpi .label { color: var(--muted); font-size: .9rem; }
-.kpi .value { font-weight: 900; font-variant-numeric: tabular-nums; font-size: 1.25rem; }
-@media (max-width: 900px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-
-/* ---------- Header pattern (optional) ---------- */
-.header     { padding: 14px 12px 0; }
-.header .title { font-size: 1.6rem; margin: 8px 0 0; font-weight: 900; }
-
-/* ---------- Theme toggle visibility ---------- */
-.theme-toggle .sun, .theme-toggle .moon { display: none; }
-html[data-theme="light"] .theme-toggle .sun { display: block; }
-html[data-theme="dark"]  .theme-toggle .moon { display: block; }
+/* ========== THEME TOGGLE ICON VISIBILITY (if you show ☀️/🌙) ========== */
+.theme-toggle .sun, .theme-toggle .moon { display:none; }
+html[data-theme="light"] .theme-toggle .sun { display:block; }
+html[data-theme="dark"]  .theme-toggle .moon { display:block; }
