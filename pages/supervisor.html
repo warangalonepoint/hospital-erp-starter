@@ -5,15 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Supervisor • Hospital ERP</title>
   <link rel="stylesheet" href="../styles/styles.css" />
-  <!-- optional: if you also use ui.css -->
-  <!-- <link rel="stylesheet" href="../styles/ui.css" /> -->
   <link rel="icon" href="../public/manifest-icon-192.png" />
   <script src="../scripts/utils.js"></script>
   <style>
-    /* local helpers */
     .brand{display:flex;align-items:center;gap:8px;font-weight:900}
     .brand-title{font-size:1.1rem}
-    #who{margin-left:auto}
     .grid{display:grid;gap:16px}
     @media (min-width: 980px){ .grid.cols-2{ grid-template-columns: 1.1fr .9fr } }
     .cards-3{display:grid;gap:16px;grid-template-columns:1fr}
@@ -32,7 +28,6 @@
       <span class="brand-mark">🗂️</span>
       <span class="brand-title">Supervisor</span>
     </div>
-    <span id="who" class="muted"></span>
     <button id="themeToggle" class="toggle" title="Toggle theme">🌙</button>
   </header>
 
@@ -42,23 +37,21 @@
     <a class="chip" href="./analytics.html">Analytics</a>
     <a class="chip" href="./pharmacy.html">Pharmacy</a>
     <span style="flex:1"></span>
-    <button id="btnLogout" class="chip">Logout</button>
+    <a class="chip" href="./login.html">Logout</a>
     <button id="btnClear" class="chip">Clear Cache</button>
   </nav>
 
   <!-- Hero panels -->
   <main class="section">
     <div class="cards-3">
-      <a class="card panel--lilac card panel grad-lilac" href="./analytics.html">
+      <a class="card panel grad-lilac" href="./analytics.html">
         <h3>Today KPIs</h3>
         <p class="muted">Pharmacy sales, items sold, patients due</p>
       </a>
-
       <a class="card" style="background-image:var(--grad-blue); color:#eef2ff; border-color:#22324a" href="./pharmacy.html">
         <h3>Quick Actions</h3>
         <p class="muted" style="color:#e6ecff">Sell, stock, and returns</p>
       </a>
-
       <a class="card" style="background-image:var(--grad-mint); color:#ecfffb; border-color:#1c3d34" href="#today">
         <h3>Today’s List</h3>
         <p class="muted" style="color:#c9fff3">Appointments & reminders</p>
@@ -66,66 +59,34 @@
     </div>
   </main>
 
-  <!-- Content: KPIs + Lists -->
+  <!-- Content -->
   <section class="section grid cols-2">
-    <!-- Left: KPIs + Today -->
     <div class="grid" style="gap:16px">
       <div class="card">
         <h3>Today’s KPIs</h3>
         <div class="kpi-grid mt12">
-          <div class="kpi">
-            <div class="label">Sales (Today)</div>
-            <div id="kpiSalesToday" class="value money">₹ 0.00</div>
-          </div>
-          <div class="kpi">
-            <div class="label">Items Sold</div>
-            <div id="kpiItemsToday" class="value">0</div>
-          </div>
-          <div class="kpi">
-            <div class="label">Invoices Today</div>
-            <div id="kpiInvToday" class="value">0</div>
-          </div>
-          <div class="kpi">
-            <div class="label">Patients Due</div>
-            <div id="kpiDueToday" class="value">0</div>
-          </div>
-          <div class="kpi">
-            <div class="label">Top Item (MTD)</div>
-            <div id="kpiTopItem" class="value nowrap">—</div>
-          </div>
+          <div class="kpi"><div class="label">Sales (Today)</div><div id="kpiSalesToday" class="value money">₹ 0.00</div></div>
+          <div class="kpi"><div class="label">Items Sold</div><div id="kpiItemsToday" class="value">0</div></div>
+          <div class="kpi"><div class="label">Invoices Today</div><div id="kpiInvToday" class="value">0</div></div>
+          <div class="kpi"><div class="label">Patients Due</div><div id="kpiDueToday" class="value">0</div></div>
+          <div class="kpi"><div class="label">Top Item (MTD)</div><div id="kpiTopItem" class="value nowrap">—</div></div>
         </div>
       </div>
 
       <div id="today" class="card">
         <h3>Today’s Appointments / Follow-ups</h3>
         <table class="table" id="tblToday">
-          <thead>
-            <tr>
-              <th>Patient</th>
-              <th>ID</th>
-              <th>Reason</th>
-              <th>Date</th>
-              <th class="right">Action</th>
-            </tr>
-          </thead>
-          <tbody><!-- filled by JS --></tbody>
+          <thead><tr><th>Patient</th><th>ID</th><th>Reason</th><th>Date</th><th class="right">Action</th></tr></thead>
+          <tbody></tbody>
         </table>
       </div>
     </div>
 
-    <!-- Right: Recent sales -->
     <div class="card">
       <h3>Recent Pharmacy Sales</h3>
       <table class="table" id="tblSales">
-        <thead>
-          <tr>
-            <th># Invoice</th>
-            <th>Date</th>
-            <th>Items</th>
-            <th class="right">Total</th>
-          </tr>
-        </thead>
-        <tbody><!-- filled by JS --></tbody>
+        <thead><tr><th># Invoice</th><th>Date</th><th>Items</th><th class="right">Total</th></tr></thead>
+        <tbody></tbody>
       </table>
     </div>
   </section>
@@ -133,79 +94,56 @@
   <footer class="section center muted">Supervisor · Hospital ERP</footer>
 
   <script>
-    /* ===== Guard: supervisor only ===== */
-    (function guard(){
-      try {
-        if (window.ERP?.requireRole) { ERP.requireRole('supervisor', './login.html'); return; }
-      } catch {}
-      const role = localStorage.getItem('erp:role') || localStorage.getItem('role');
-      if (role !== 'supervisor') location.replace('./login.html');
-    })();
-
-    /* ===== Theme toggle (unified) ===== */
+    // Theme
     (function theme(){
       const root = document.documentElement;
       const btn  = document.getElementById('themeToggle');
       const saved = localStorage.getItem('theme') || 'light';
       root.dataset.theme = saved;
       btn.textContent = saved === 'dark' ? '🌙' : '🌞';
-      btn.onclick = () => {
-        const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
-        root.dataset.theme = next;
-        localStorage.setItem('theme', next);
+      btn.onclick = () => { const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+        root.dataset.theme = next; localStorage.setItem('theme', next);
         btn.textContent = next === 'dark' ? '🌙' : '🌞';
       };
     })();
 
-    /* ===== Toolbar actions ===== */
-    document.getElementById('btnLogout').onclick = () => {
-      localStorage.removeItem('role');
-      localStorage.removeItem('erp:role');
-      localStorage.removeItem('erp:auth');
-      location.href = './login.html';
-    };
+    // Clear cache (keep theme)
     document.getElementById('btnClear').onclick = async () => {
-      const keep = new Set(['theme','pins','erp:pin_doctor','erp:pin_supervisor','erp:pin_admin']);
+      const keep = new Set(['theme']);
       for (const k of Object.keys(localStorage)) if (!keep.has(k)) localStorage.removeItem(k);
-      if ('caches' in window) {
-        const names = await caches.keys(); await Promise.all(names.map(n => caches.delete(n)));
-      }
-      alert('Cleared local data (kept theme & PINs).');
+      if ('caches' in window) { const names = await caches.keys(); await Promise.all(names.map(n => caches.delete(n))); }
+      alert('Cleared local data (kept theme).');
       location.reload();
     };
 
-    /* ===== Page data ===== */
+    // Data
     (function hydrate(){
-      const fm = (n)=> window.ERP?.formatMoney ? ERP.formatMoney(n) : `₹ ${(n||0).toFixed(2)}`;
-      const ymd = (d)=> window.ERP?.ymd?.(d) || (new Date(d).toISOString().slice(0,10));
-      const today = window.ERP?.todayISO?.() || new Date().toISOString().slice(0,10);
+      const ERPsafe = window.ERP || {};
+      const fm = (n)=> ERPsafe.formatMoney ? ERPsafe.formatMoney(n) : `₹ ${(Number(n)||0).toFixed(2)}`;
+      const ymd = (d)=> ERPsafe.ymd ? ERPsafe.ymd(d) : new Date(d).toISOString().slice(0,10);
+      const today = ERPsafe.todayISO ? ERPsafe.todayISO() : new Date().toISOString().slice(0,10);
 
-      const invoices = window.ERP?.load?.('invoices', []) || [];
-      const items    = window.ERP?.load?.('invoice_items', []) || [];
-      const pats     = window.ERP?.load?.('patients', []) || [];
+      const invoices = ERPsafe.load ? ERPsafe.load('invoices', []) : [];
+      const items    = ERPsafe.load ? ERPsafe.load('invoice_items', []) : [];
+      const pats     = ERPsafe.load ? ERPsafe.load('patients', []) : [];
 
-      // --- KPIs (today) ---
       const invById = new Map(invoices.map(i => [String(i.id || i.invoice_id), i]));
-
       const invToday = invoices.filter(inv => ymd(inv.date || inv.invoice_date) === today);
-      const itemsToday = items.filter(it => {
-        const inv = invById.get(String(it.invoice_id));
-        return inv && ymd(inv.date || inv.invoice_date) === today;
-      });
+      const itemsToday = items.filter(it => { const inv = invById.get(String(it.invoice_id)); return inv && ymd(inv.date || inv.invoice_date) === today; });
 
-      const kpi = window.ERP?.buildSalesKPIs ? ERP.buildSalesKPIs(invToday, itemsToday) : {total:0, itemsSold:0};
-      document.getElementById('kpiSalesToday').textContent = fm(kpi.total || 0);
-      document.getElementById('kpiItemsToday').textContent = kpi.itemsSold || 0;
+      const kpiFn = ERPsafe.buildSalesKPIs || ((a,b)=>({ total:0, itemsSold:0 }));
+      const kpiToday = kpiFn(invToday, itemsToday);
+
+      document.getElementById('kpiSalesToday').textContent = fm(kpiToday.total || 0);
+      document.getElementById('kpiItemsToday').textContent = kpiToday.itemsSold || 0;
       document.getElementById('kpiInvToday').textContent   = invToday.length || 0;
 
-      // Patients due today (uses next_followup/next_visit/followup)
       const due = pats.filter(p => {
         const d = p.next_followup || p.next_visit || p.followup || '';
         return d && ymd(d) === today;
       });
       document.getElementById('kpiDueToday').textContent = due.length;
 
-      // Top item MTD
       const first = new Date(); first.setDate(1);
       const firstYMD = ymd(first);
       const itemsMTD = items.filter(it => {
@@ -213,10 +151,11 @@
         const d = inv ? ymd(inv.date || inv.invoice_date) : null;
         return d && d >= firstYMD && d <= today;
       });
-      const top = window.ERP?.topItems ? ERP.topItems(itemsMTD, 1)[0] : null;
+      const topFn = ERPsafe.topItems || ((arr)=>[]);
+      const top = topFn(itemsMTD, 1)[0];
       document.getElementById('kpiTopItem').textContent = top ? (top.name || '—') : '—';
 
-      // --- Today’s list (appointments/follow-ups) ---
+      // Tables
       const tbodyToday = document.querySelector('#tblToday tbody');
       tbodyToday.innerHTML = due.slice(0, 10).map(p => `
         <tr>
@@ -225,38 +164,18 @@
           <td>${p.reason || p.visit_reason || p.dept || '—'}</td>
           <td class="nowrap">${ymd(p.next_followup || p.next_visit || p.followup)}</td>
           <td class="right"><a class="chip" href="./admin.html#patients">Open</a></td>
-        </tr>
-      `).join('') || `<tr><td colspan="5" class="muted">No follow-ups due today.</td></tr>`;
+        </tr>`).join('') || `<tr><td colspan="5" class="muted">No follow-ups due today.</td></tr>`;
 
-      // --- Recent sales (last 8 invoices) ---
       const tbodySales = document.querySelector('#tblSales tbody');
-      const recents = [...invoices]
-        .sort((a,b)=> (new Date(b.date||b.invoice_date)) - (new Date(a.date||a.invoice_date)))
-        .slice(0, 8);
-
-      // Pre-count items per invoice
+      const recents = [...invoices].sort((a,b)=> (new Date(b.date||b.invoice_date)) - (new Date(a.date||a.invoice_date))).slice(0, 8);
       const countItems = (invId) => items.reduce((n,it)=> n + (String(it.invoice_id)===String(invId)? (Number(it.qty)||0):0), 0);
-
-      tbodySales.innerHTML = recents.map(inv => {
-        const id = inv.id || inv.invoice_id || '—';
-        const total = inv.total ?? inv.grand_total;
-        const cnt = countItems(id);
-        return `
-          <tr>
-            <td>${id}</td>
-            <td class="nowrap">${ymd(inv.date || inv.invoice_date)}</td>
-            <td>${cnt}</td>
-            <td class="right">${fm(total || 0)}</td>
-          </tr>
-        `;
-      }).join('') || `<tr><td colspan="4" class="muted">No recent sales.</td></tr>`;
-    })();
-
-    // Show signed-in role
-    (function showRole(){
-      const role = localStorage.getItem('erp:role') || localStorage.getItem('role') || '';
-      const who = document.getElementById('who');
-      if (role && who) who.textContent = `Signed in as ${role}`;
+      tbodySales.innerHTML = recents.map(inv => `
+        <tr>
+          <td>${inv.id || inv.invoice_id || '—'}</td>
+          <td class="nowrap">${ymd(inv.date || inv.invoice_date)}</td>
+          <td>${countItems(inv.id || inv.invoice_id)}</td>
+          <td class="right">${fm(inv.total ?? inv.grand_total ?? 0)}</td>
+        </tr>`).join('') || `<tr><td colspan="4" class="muted">No recent sales.</td></tr>`;
     })();
   </script>
 </body>
