@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Settings</title>
+  <title>Admin Settings</title>
   <link rel="stylesheet" href="../styles/styles.css" />
 </head>
 <body>
@@ -12,16 +12,43 @@
       <a class="link-back" href="./dashboard.html">← Dashboard</a>
       <div class="spacer"></div>
       <button class="pill" id="themeToggle">🌗</button>
+      <button class="pill" id="btnLogout">Logout</button>
     </nav>
   </header>
+
   <main class="container">
     <section class="panel">
-      <h2 style="margin-bottom:.25rem">Settings</h2>
-      <p>Stub page. Wire your data/API next.</p>
-      <div class="chart-block" style="margin-top:1rem"><h4>Placeholder</h4><div class="chart-placeholder"></div></div>
+      <h2>Admin Settings</h2>
+      <div class="grid-cards mt16">
+        <div class="card grad-mint">
+          <h3>Clinic Info</h3>
+          <p>Update hospital name, address, contact</p>
+        </div>
+        <div class="card grad-blue">
+          <h3>Manage Users</h3>
+          <p>Add/remove staff, assign roles</p>
+        </div>
+        <div class="card grad-amber">
+          <h3>PIN & Access</h3>
+          <p>Reset PINs for Doctor / Supervisor / Admin</p>
+        </div>
+        <div class="card grad-pink">
+          <h3>Backup & Export</h3>
+          <p>Export CSV data, download backups</p>
+        </div>
+      </div>
     </section>
   </main>
+
+  <footer class="footer">Admin Settings · Hospital ERP</footer>
+
   <script>
+    // Role guard
+    if (sessionStorage.getItem('role') !== 'admin') {
+      location.replace('./login.html');
+    }
+
+    // Theme
     const root = document.documentElement;
     const saved = localStorage.getItem('theme');
     if (saved) root.setAttribute('data-theme', saved);
@@ -30,6 +57,8 @@
       const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
       root.setAttribute('data-theme', next); localStorage.setItem('theme', next);
     };
+
+    document.getElementById('btnLogout').onclick = () => { sessionStorage.clear(); location.href='./login.html'; };
   </script>
 </body>
 </html>
