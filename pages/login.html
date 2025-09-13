@@ -10,44 +10,53 @@
   <div class="center">
     <div class="form">
       <h2 style="margin-bottom:.5rem">Welcome</h2>
-      <p>Role-based PIN access</p>
-      <div style="height:.5rem"></div>
-      <label class="label" for="role">Role</label>
-      <select id="role" class="input">
-        <option value="doctor">Doctor</option>
-        <option value="supervisor">Supervisor</option>
-        <option value="admin">Admin</option>
-      </select>
+      <p>Enter your PIN to continue</p>
+
       <div style="height:.5rem"></div>
       <label class="label" for="pin">PIN</label>
       <input id="pin" class="input" type="password" placeholder="Enter PIN" />
+
       <div style="height:.75rem"></div>
       <button id="loginBtn" class="btn">Login</button>
-      <div class="small">Doctor: 4321 · Supervisor: 9876 · Admin: 2468</div>
+
+      <div class="small">Doctor: <b>4321</b> · Supervisor: <b>9876</b> · Admin: <b>2468</b></div>
       <div class="small"><button id="themeToggle" class="pill" style="margin-top:.5rem">🌗 Toggle theme</button></div>
     </div>
   </div>
+
   <script>
+    // theme
     const root = document.documentElement;
     const saved = localStorage.getItem('theme');
     if (saved) root.setAttribute('data-theme', saved);
     else if (window.matchMedia('(prefers-color-scheme: light)').matches) root.setAttribute('data-theme','light');
-
     document.getElementById('themeToggle').onclick = () => {
       const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
       root.setAttribute('data-theme', next); localStorage.setItem('theme', next);
     };
 
-    const PINS = { doctor:'4321', supervisor:'9876', admin:'2468' };
+    // PIN routing (single field)
+    const PINS = {
+      doctor:     ['4321'],
+      supervisor: ['9876'],
+      admin:      ['2468']
+    };
+
     document.getElementById('loginBtn').onclick = () => {
-      const role = document.getElementById('role').value;
-      const pin = document.getElementById('pin').value.trim();
-      if (pin === PINS[role]) {
-        sessionStorage.setItem('role', role);
-        location.href = './dashboard.html';
-      } else {
-        alert('Wrong PIN');
-      }
+      const pin = (document.getElementById('pin').value || '').trim();
+      const role =
+        PINS.doctor.includes(pin)     ? 'doctor' :
+        PINS.supervisor.includes(pin) ? 'supervisor' :
+        PINS.admin.includes(pin)      ? 'admin' : null;
+
+      if (!role) return alert('Wrong PIN');
+
+      sessionStorage.setItem('role', role);
+
+      // route by role
+      if (role === 'doctor')      location.href = './dashboard.html';
+      else if (role === 'supervisor') location.href = './supervisor.html';
+      else if (role === 'admin')  location.href = './admin.html';
     };
   </script>
 </body>
