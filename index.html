@@ -3,9 +3,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="refresh" content="0; url=pages/login.html">
   <title>Hospital ERP · Redirect</title>
-  <script>location.replace('pages/login.html');</script>
+  <script>
+    // Decide target page based on stored role
+    const role = localStorage.getItem('role');
+    let target = 'pages/login.html';
+
+    if (role === 'doctor')      target = 'pages/analytics.html';
+    else if (role === 'supervisor') target = 'pages/supervisor.html';
+    else if (role === 'admin')      target = 'pages/admin.html';
+
+    location.replace(target);
+  </script>
 </head>
-<body>Redirecting to login…</body>
+<body>
+  Redirecting…
+</body>
 </html>
