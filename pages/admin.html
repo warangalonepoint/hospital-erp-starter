@@ -99,6 +99,48 @@
     </div>
   </section>
 
+  <!-- NEW: PIN Management -->
+  <section class="section">
+    <h2>Security & PIN Management</h2>
+    <div class="card-grid mt12">
+      <div class="card panel--lilac" style="max-width:860px">
+        <h3>Change PINs</h3>
+        <p class="muted">Only Admin can change these. PINs must be 4–6 digits.</p>
+
+        <div class="row mt12">
+          <label class="chip">Show PINs
+            <input id="showPins" type="checkbox" style="margin-left:8px">
+          </label>
+        </div>
+
+        <div class="grid-2 mt12">
+          <div class="section">
+            <h4 style="margin-bottom:6px">Admin PIN</h4>
+            <input id="pinAdminCurrent" type="password" inputmode="numeric" placeholder="Current Admin PIN">
+            <div class="row mt8">
+              <input id="pinAdminNew" type="password" inputmode="numeric" placeholder="New Admin PIN (4–6 digits)">
+              <input id="pinAdminConfirm" type="password" inputmode="numeric" placeholder="Confirm Admin PIN">
+            </div>
+          </div>
+
+          <div class="section">
+            <h4 style="margin-bottom:6px">Doctor & Supervisor PINs</h4>
+            <div class="row">
+              <input id="pinDoctorNew" type="password" inputmode="numeric" placeholder="Doctor PIN (4–6 digits)">
+              <input id="pinSupervisorNew" type="password" inputmode="numeric" placeholder="Supervisor PIN (4–6 digits)">
+            </div>
+          </div>
+        </div>
+
+        <div class="chips mt12">
+          <button id="btnSavePins" class="chip action">Save PINs</button>
+          <button id="btnResetPins" class="chip">Reset to Defaults</button>
+          <span id="pinMsg" class="muted">—</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <script src="../scripts/utils.js"></script>
   <script src="../scripts/scanner.js"></script>
   <script>
@@ -109,12 +151,35 @@
       btn.onclick=()=>{ const next=root.dataset.theme==='dark'?'light':'dark'; root.dataset.theme=next; localStorage.setItem(key,next); btn.textContent=next==='dark'?'🌙':'🌞'; };
     })();
 
+    // ===== Admin Guard =====
+    (function enforceAdmin(){
+      // seed default pins if missing
+      if(!localStorage.getItem('erp:pin_doctor'))     localStorage.setItem('erp:pin_doctor','4321');
+      if(!localStorage.getItem('erp:pin_supervisor')) localStorage.setItem('erp:pin_supervisor','1111');
+      if(!localStorage.getItem('erp:pin_admin'))      localStorage.setItem('erp:pin_admin','0000');
+
+      const authed = localStorage.getItem('erp:auth') === 'true';
+      const role   = localStorage.getItem('erp:role');
+      if (!authed || role !== 'admin') {
+        const pinAdmin = localStorage.getItem('erp:pin_admin') || '0000';
+        const entered = prompt('Admin PIN required:', '');
+        if (entered !== pinAdmin) {
+          alert('Access denied. Redirecting to login.');
+          location.href = './login.html';
+        } else {
+          localStorage.setItem('erp:auth','true');
+          localStorage.setItem('erp:role','admin');
+        }
+      }
+    })();
+
     // Auth & cache
     document.getElementById('btnLogout').onclick = ()=>{ localStorage.removeItem('erp:auth'); localStorage.removeItem('erp:role'); location.href='./login.html'; };
     document.getElementById('btnClear').onclick = async ()=>{
-      const keep=['theme']; Object.keys(localStorage).forEach(k=>{ if(!keep.includes(k)) localStorage.removeItem(k); });
+      const keep=['theme','erp:pin_doctor','erp:pin_supervisor','erp:pin_admin'];
+      Object.keys(localStorage).forEach(k=>{ if(!keep.includes(k)) localStorage.removeItem(k); });
       if('caches' in window){ const keys=await caches.keys(); await Promise.all(keys.map(k=>caches.delete(k))); }
-      alert('Cleared.');
+      alert('Cleared (PINs preserved).');
     };
 
     // --- Admin: Scan to Upload Stock (using utils.js + scanner.js) ---
@@ -129,13 +194,11 @@
       qty:    document.getElementById('admin-qty'),
     };
 
-    // Use the helper we provided earlier (works even if scanner lib not present)
     const scan = (function(){
       let stopFn=null;
       async function start(){
         try{
           if(typeof window.startScanner==='function'){
-            // Your existing scanner.js global helper
             stopFn = await startScanner({
               containerId: 'admin-scan-video',
               onDetected: (code)=>{
@@ -183,7 +246,7 @@
       scanEls.qty.value = '';
     };
 
-    // CSV import/export
+    // --- CSV import/export ---
     document.getElementById('btnImportCSV').onclick = async ()=>{
       const f = document.getElementById('invCSVFile').files?.[0];
       if(!f) return alert('Choose a CSV file first');
@@ -195,6 +258,74 @@
     document.getElementById('btnExportPatients').onclick = ()=> ERP.downloadCSV('patients.csv', ERP.load('patients', []));
     document.getElementById('btnExportInvoices').onclick = ()=> ERP.downloadCSV('invoices.csv', ERP.load('invoices', []));
     document.getElementById('btnExportInvItems').onclick = ()=> ERP.downloadCSV('invoice_items.csv', ERP.load('invoice_items', []));
+
+    // --- PIN Management ---
+    (function pinSettings(){
+      const $ = id => document.getElementById(id);
+      const msg = (t, ok=false) => { const el=$('pinMsg'); el.textContent=t; el.style.color = ok ? 'var(--c-mint)' : 'var(--fg)'; };
+
+      // Seed defaults (defensive)
+      if(!localStorage.getItem('erp:pin_doctor'))     localStorage.setItem('erp:pin_doctor','4321');
+      if(!localStorage.getItem('erp:pin_supervisor')) localStorage.setItem('erp:pin_supervisor','1111');
+      if(!localStorage.getItem('erp:pin_admin'))      localStorage.setItem('erp:pin_admin','0000');
+
+      const showBox = $('showPins');
+      const fields = [
+        'pinAdminCurrent','pinAdminNew','pinAdminConfirm',
+        'pinDoctorNew','pinSupervisorNew'
+      ].map(id => $(id));
+
+      // show/hide pins
+      showBox?.addEventListener('change', ()=>{
+        const type = showBox.checked ? 'text' : 'password';
+        fields.forEach(f => { if(f) f.type = type; });
+      });
+
+      function isValid(pin){ return /^\d{4,6}$/.test(pin); }
+
+      $('btnSavePins').onclick = ()=>{
+        const cur = $('pinAdminCurrent').value.trim();
+        const newA = $('pinAdminNew').value.trim();
+        const newC = $('pinAdminConfirm').value.trim();
+        const newD = $('pinDoctorNew').value.trim();
+        const newS = $('pinSupervisorNew').value.trim();
+
+        const storedAdmin = localStorage.getItem('erp:pin_admin') || '0000';
+        if(cur !== storedAdmin){ msg('Current Admin PIN incorrect'); return; }
+
+        // Admin: if provided, validate & save
+        if(newA || newC){
+          if(newA !== newC){ msg('Admin PIN mismatch'); return; }
+          if(!isValid(newA)){ msg('Admin PIN must be 4–6 digits'); return; }
+          localStorage.setItem('erp:pin_admin', newA);
+        }
+
+        // Doctor
+        if(newD){
+          if(!isValid(newD)){ msg('Doctor PIN must be 4–6 digits'); return; }
+          localStorage.setItem('erp:pin_doctor', newD);
+        }
+
+        // Supervisor
+        if(newS){
+          if(!isValid(newS)){ msg('Supervisor PIN must be 4–6 digits'); return; }
+          localStorage.setItem('erp:pin_supervisor', newS);
+        }
+
+        // clear inputs (except current admin)
+        ['pinAdminNew','pinAdminConfirm','pinDoctorNew','pinSupervisorNew'].forEach(id => { const el=$(id); if(el) el.value=''; });
+        msg('PINs updated ✓', true);
+      };
+
+      $('btnResetPins').onclick = ()=>{
+        if(!confirm('Reset Admin(0000), Doctor(4321), Supervisor(1111)?')) return;
+        localStorage.setItem('erp:pin_admin','0000');
+        localStorage.setItem('erp:pin_doctor','4321');
+        localStorage.setItem('erp:pin_supervisor','1111');
+        ['pinAdminCurrent','pinAdminNew','pinAdminConfirm','pinDoctorNew','pinSupervisorNew'].forEach(id => { const el=$(id); if(el) el.value=''; });
+        msg('PINs reset to defaults ✓', true);
+      };
+    })();
   </script>
 </body>
 </html>
