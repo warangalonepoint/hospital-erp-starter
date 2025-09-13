@@ -1,418 +1,659 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Pharmacy • Hospital ERP</title>
-
   <link rel="stylesheet" href="../styles/styles.css" />
-  <link rel="manifest" href="../manifest.json" />
-
-  <!-- ZXing UMD (guarantees ZXingBrowser on window) -->
-  <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/index.min.js"></script>
-
-  <script defer src="../scripts/utils.js"></script>
-  <script defer src="../scripts/scanner.js"></script>
-
-  <!-- Page-local neutral styling (no colors) -->
+  <link rel="icon" href="../public/assets/icon-192.png" />
+  <meta name="theme-color" content="#0b1220" />
   <style>
-    :root{
-      --bg:#fff; --fg:#111; --muted:#6b7280; --line:#e5e7eb;
-      --card:#ffffff; --chip:#f5f5f5; --btn:#111; --btn-fg:#fff; --shadow:0 0 0 1px var(--line);
-    }
-    [data-theme="dark"] :root, html[data-theme="dark"] {
-      --bg:#0b0b0b; --fg:#e5e7eb; --muted:#9ca3af; --line:#1f2937;
-      --card:#111213; --chip:#151617; --btn:#e5e7eb; --btn-fg:#0b0b0b; --shadow:0 0 0 1px var(--line);
-    }
-    body{background:var(--bg);color:var(--fg)}
-    .container{max-width:1100px;margin:0 auto}
-    .row{display:flex;gap:12px;flex-wrap:wrap}
-    .btn{border:none;background:var(--btn);color:var(--btn-fg);border-radius:10px;padding:.6rem .9rem;font-weight:700;cursor:pointer}
-    .btn.ghost{background:transparent;color:var(--fg);border:1px solid var(--line)}
-    .btn.muted{background:var(--chip);color:var(--fg);border:1px solid var(--line)}
-    .tabs{display:flex;gap:.5rem;margin:8px 0 16px}
-    .tab{background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:.5rem .9rem;font-weight:600}
-    .tab.active{background:transparent;border:2px solid var(--fg)}
-    .card{background:var(--card);border-radius:14px;padding:14px;box-shadow:var(--shadow)}
-    .grid{display:grid;gap:12px}
-    .grid-2{grid-template-columns:1fr}
-    @media (min-width:860px){.grid-2{grid-template-columns:1fr 1fr}}
-    .muted{color:var(--muted)}
-    .input, select{width:100%;padding:.6rem .8rem;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--fg)}
-    table{width:100%;border-collapse:separate;border-spacing:0 8px}
-    th,td{padding:.55rem .7rem;border-bottom:1px solid var(--line)}
-    thead th{font-weight:700;border-bottom:2px solid var(--line)}
-    .right{text-align:right}.mono{font-variant-numeric:tabular-nums}
-    .hide{display:none!important}
-    .chip{display:inline-block;padding:.35rem .6rem;border-radius:999px;background:var(--chip);border:1px solid var(--line)}
+    /* Page-specific tiny tweaks only (everything else from styles.css) */
+    .toolbar .chip{font-weight:700}
+    .tabbar{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 2px}
+    .tabbar .chip{border-radius:999px}
+    .grid-2{display:grid;gap:12px}
+    @media (min-width: 860px){ .grid-2{grid-template-columns: 1.1fr .9fr} }
+    .table-wrap{overflow:auto}
+    table{width:100%;border-collapse:separate;border-spacing:0 10px}
+    thead th{padding:10px 12px;text-align:left;opacity:.95}
+    tbody td{padding:12px;border-top:1px solid rgba(0,0,0,.06);border-bottom:1px solid rgba(0,0,0,.06);background:var(--card-bg)}
+    html[data-theme="dark"] tbody td{border-color:rgba(255,255,255,.07)}
+    tr td:first-child{border-left:1px solid rgba(0,0,0,.06);border-radius:10px 0 0 10px}
+    tr td:last-child{border-right:1px solid rgba(0,0,0,.06);border-radius:0 10px 10px 0}
+    .right{display:flex;gap:10px;align-items:center}
+    .muted-small{font-size:.9rem;color:var(--muted)}
+    .tag{display:inline-block;padding:.25rem .55rem;border-radius:999px;font-weight:700}
+    .tag--warn{background:var(--t-peach);color:var(--c-peach)}
+    .tag--ok{background:var(--t-mint);color:var(--c-mint)}
+    .pill-ghost{border:1px solid rgba(0,0,0,.08);background:transparent;color:var(--fg);border-radius:999px;padding:8px 12px}
+    html[data-theme="dark"] .pill-ghost{border-color:rgba(255,255,255,.12)}
+    /* Scanner overlay container */
+    #scanModal{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;z-index:50;align-items:center;justify-content:center;padding:16px}
+    #scanBox{width:min(680px,96vw);background:var(--card-bg);border-radius:16px;box-shadow:var(--shadow);padding:14px}
+    #scanArea{min-height:320px;border-radius:12px;overflow:hidden}
+    .modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
   </style>
-
-  <script>
-    // Apply saved theme early (prevents flash)
-    (function () {
-      const stored = localStorage.getItem('erp_theme');
-      const prefersDark = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches;
-      const theme = stored || (prefersDark ? 'dark' : 'light');
-      document.documentElement.setAttribute('data-theme', theme);
-    })();
-  </script>
 </head>
-
 <body>
-  <header class="container" style="padding:16px 12px 0">
-    <div class="row" style="justify-content:space-between;align-items:center">
-      <div class="row">
-        <a class="btn ghost" href="./dashboard.html">← Home</a>
-        <button id="btn-logout" class="btn ghost">Logout</button>
-        <button id="btn-clear" class="btn ghost">Clear Cache</button>
-      </div>
-      <span class="muted">Pharmacy</span>
-    </div>
-    <h1 style="margin:8px 0 2px">Pharmacy</h1>
-    <div class="muted" style="margin-bottom:8px">Sell • Purchase • Stock • Reports</div>
-    <div class="tabs" role="tablist">
-      <button class="tab active" data-tab="sell" aria-selected="true">Sell</button>
-      <button class="tab" data-tab="purchase">Purchase</button>
-      <button class="tab" data-tab="stock">Stock</button>
-      <button class="tab" data-tab="reports">Reports</button>
-    </div>
+
+  <!-- Banner (unified) -->
+  <header class="banner">
+    <!-- If you want to show an actual image file instead of CSS background, uncomment:
+    <img src="../public/assets/hero-banner.jpg" alt="Banner" />
+    -->
+    <button id="themeToggle" class="floating-toggle" title="Toggle dark / light">🌙</button>
   </header>
 
-  <main class="container" style="padding:0 12px 32px">
-    <!-- SELL -->
-    <section id="tab-sell" class="grid grid-2">
-      <div class="card">
+  <!-- Top actions (unified) -->
+  <div class="fixed-actions">
+    <a href="../index.html" class="chip">← Dashboard</a>
+    <button id="logoutBtn" class="chip">Logout</button>
+    <button id="clearCacheBtn" class="chip">Clear Cache</button>
+  </div>
+
+  <!-- Pharmacy header -->
+  <section class="section">
+    <div class="toolbar">
+      <div class="left">
+        <h1 style="margin:0">Pharmacy</h1>
+      </div>
+      <div class="right tabbar" role="tablist" aria-label="Pharmacy Tabs">
+        <button class="chip active" data-tab="sell">Sell</button>
+        <button class="chip" data-tab="purchase">Purchase</button>
+        <button class="chip" data-tab="stock">Stock</button>
+        <button class="chip" data-tab="reports">Reports</button>
+      </div>
+    </div>
+    <p class="muted mt8">Search / scan items, attach a patient by barcode, and generate bills. Purchase updates stock with batch & expiry.</p>
+  </section>
+
+  <!-- SELL -->
+  <section class="section" id="tab-sell">
+    <div class="grid-2">
+      <div>
         <h2>Quick POS</h2>
-        <p class="muted">Search or scan barcode to add to cart</p>
-
-        <div class="card" style="margin:.5rem 0 1rem">
-          <div class="row" style="justify-content:space-between;align-items:center">
-            <h3 style="margin:0">Patient Link</h3>
-            <span id="patient-chip" class="chip">No patient linked</span>
+        <div class="mt12">
+          <h3 class="mt8">Patient Link</h3>
+          <div class="toolbar mt8">
+            <div class="left" style="gap:10px">
+              <button id="btnScanPatient" class="btn">📷 Scan Patient ID</button>
+              <button id="btnNewPatient" class="pill-ghost">New Patient ID</button>
+            </div>
+            <div class="right muted-small">
+              <span id="patientStatus">No patient linked</span>
+            </div>
           </div>
-          <div class="row" style="margin-top:8px">
-            <button id="btn-scan-patient" class="btn">📷 Scan Patient ID</button>
-            <button id="btn-new-patient" class="btn muted">New Patient ID</button>
-          </div>
-          <div style="margin-top:8px"><svg id="patient-barcode"></svg></div>
         </div>
 
-        <div class="row" style="align-items:center">
-          <input id="sell-search" class="input" placeholder="Search item name / SKU / barcode…" />
-          <button id="btn-scan" class="btn">📷 Scan Item</button>
-          <button id="btn-load-demo" class="btn muted">Load Demo</button>
+        <div class="mt16">
+          <div class="toolbar">
+            <div class="left" style="gap:10px">
+              <input id="searchItem" type="search" placeholder="Search item name or scan barcode…" class="input--sm" />
+              <button id="btnScanItem" class="btn">📷 Scan Item</button>
+              <button id="btnLoadDemo" class="pill-ghost">Load Demo</button>
+            </div>
+            <div class="right">
+              <button id="btnClearCart" class="pill-ghost">Clear</button>
+            </div>
+          </div>
         </div>
 
-        <div class="card" style="margin-top:12px">
+        <div class="table-wrap mt12">
           <table>
             <thead>
               <tr>
-                <th>Item</th><th class="right">Batch</th><th class="right">Qty</th>
-                <th class="right">MRP</th><th class="right">GST%</th><th class="right">Line</th><th></th>
+                <th>Item</th>
+                <th>Batch</th>
+                <th>Qty</th>
+                <th>MRP</th>
+                <th>GST%</th>
+                <th>Line</th>
+                <th></th>
               </tr>
             </thead>
-            <tbody id="sell-cart"><tr><td class="muted" colspan="7">Cart is empty</td></tr></tbody>
+            <tbody id="cartBody">
+              <tr><td colspan="7" class="muted">Cart is empty</td></tr>
+            </tbody>
           </table>
-          <div class="row" style="justify-content:flex-end;margin-top:.5rem">
-            <button id="btn-clear-cart" class="btn muted">Clear</button>
-          </div>
-        </div>
-
-        <div class="grid grid-2" style="margin-top:12px">
-          <div class="card">
-            <h3>Customer</h3>
-            <input id="cust-name" class="input" placeholder="Patient / Customer name" />
-            <input id="cust-phone" class="input" placeholder="Phone (optional)" />
-          </div>
-          <div class="card">
-            <h3>Totals</h3>
-            <div class="grid" style="grid-template-columns:1fr 1fr">
-              <div><div class="muted">Subtotal</div><div id="t-sub" class="mono">0.00</div></div>
-              <div>
-                <label class="muted">Discount</label>
-                <div class="row">
-                  <input id="discount-value" class="input" placeholder="0" style="max-width:120px">
-                  <select id="discount-type" class="input" style="max-width:120px">
-                    <option value="INR">₹</option><option value="PCT">%</option>
-                  </select>
-                </div>
-              </div>
-              <div><div class="muted">GST</div><div id="t-gst" class="mono">0.00</div></div>
-              <div><div class="muted">Grand Total</div><div id="t-grand" class="mono" style="font-weight:800">0.00</div></div>
-            </div>
-            <div class="row" style="margin-top:.75rem">
-              <select id="pay-mode" class="input" style="max-width:160px"><option>Cash</option><option>Card</option><option>UPI</option></select>
-              <button id="btn-save" class="btn">Save Invoice</button>
-              <button id="btn-export-bill" class="btn muted">Export CSV</button>
-              <button id="btn-print" class="btn muted">Print</button>
-            </div>
-          </div>
         </div>
       </div>
 
-      <div class="card">
-        <h2>Item Lookup</h2>
-        <p class="muted">Live results (placeholder)</p>
-        <table>
-          <thead><tr><th>Item</th><th class="right">Batch</th><th class="right">Expiry</th><th class="right">MRP</th><th class="right">Stock</th><th></th></tr></thead>
-        <tbody id="sell-results"><tr><td class="muted" colspan="6">Start typing to see results…</td></tr></tbody>
-        </table>
-      </div>
-    </section>
+      <div>
+        <h3>Customer</h3>
+        <div class="mt8">
+          <input id="custName" type="text" placeholder="Customer name (optional)" />
+        </div>
+        <div class="mt8">
+          <input id="custPhone" type="text" placeholder="Phone (optional)" />
+        </div>
 
-    <!-- PURCHASE -->
-    <section id="tab-purchase" class="grid grid-2 hide">
-      <div class="card">
-        <h2>Purchase Bill</h2>
-        <div class="grid">
-          <input id="sup-name" class="input" placeholder="Supplier / Party" />
-          <div class="grid" style="grid-template-columns:1fr 1fr">
-            <input id="inv-no" class="input" placeholder="Invoice No." />
-            <input id="inv-date" class="input" type="date" />
+        <h3 class="mt16">Summary</h3>
+        <div class="kpi-grid mt8">
+          <div class="kpi panel--blue"><h4>Subtotal</h4><div class="num" id="sumSubtotal">0.00</div></div>
+          <div class="kpi panel--mint"><h4>GST</h4><div class="num" id="sumGST">0.00</div></div>
+          <div class="kpi panel--peach"><h4>Discount</h4><div class="num" id="sumDisc">0.00</div></div>
+          <div class="kpi panel--lilac"><h4>Total</h4><div class="num" id="sumTotal">0.00</div></div>
+        </div>
+
+        <div class="mt16">
+          <input id="discount" type="number" min="0" step="0.01" placeholder="Discount (₹)" class="input--sm" />
+          <select id="payMode" class="select--sm">
+            <option value="CASH">Cash</option>
+            <option value="CARD">Card</option>
+            <option value="UPI">UPI</option>
+          </select>
+        </div>
+        <div class="mt16">
+          <button id="btnSaveInvoice" class="btn">Save & Print</button>
+          <button id="btnExportInvoice" class="pill-ghost">Export CSV</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PURCHASE -->
+  <section class="section" id="tab-purchase" hidden>
+    <h2>Purchase / Stock-in</h2>
+    <div class="grid-2 mt12">
+      <div>
+        <div class="toolbar">
+          <div class="left" style="gap:10px">
+            <input id="purItem" type="search" placeholder="Item name…" class="input--sm" />
+            <button id="btnScanPurchase" class="btn">📷 Scan</button>
           </div>
         </div>
 
-        <div class="card" style="margin-top:12px">
-          <h3>Add Line</h3>
-          <div class="row"><button id="btn-scan-purchase" class="btn">📷 Scan to Add</button></div>
-          <div class="grid" style="grid-template-columns:repeat(6,1fr)">
-            <input id="p-item" class="input" placeholder="Item name" />
-            <input id="p-batch" class="input" placeholder="Batch" />
-            <input id="p-exp" class="input" type="month" placeholder="Expiry" />
-            <input id="p-qty" class="input" type="number" min="1" placeholder="Qty" />
-            <input id="p-mrp" class="input" type="number" step="0.01" placeholder="MRP" />
-            <input id="p-gst" class="input" type="number" step="0.1" placeholder="GST%" />
+        <div class="mt12">
+          <div class="grid-2">
+            <input id="purBatch" type="text" placeholder="Batch" />
+            <input id="purExpiry" type="month" placeholder="Expiry (YYYY-MM)" />
+            <input id="purMRP" type="number" step="0.01" placeholder="MRP" />
+            <input id="purCost" type="number" step="0.01" placeholder="Cost" />
+            <input id="purQty" type="number" min="1" step="1" placeholder="Qty" />
+            <input id="purGST" type="number" min="0" step="0.1" placeholder="GST %" />
           </div>
-          <div class="row" style="margin-top:.6rem">
-            <button id="btn-add-purchase" class="btn">Add</button>
-            <button id="btn-clear-purchase" class="btn muted">Clear</button>
-          </div>
-
-          <table style="margin-top:.6rem">
-            <thead><tr><th>Item</th><th class="right">Batch</th><th class="right">Expiry</th><th class="right">Qty</th><th class="right">MRP</th><th class="right">GST%</th><th></th></tr></thead>
-            <tbody id="purchase-lines"><tr><td class="muted" colspan="7">No lines yet</td></tr></tbody>
-          </table>
-
-          <div class="row" style="justify-content:flex-end;margin-top:.5rem">
-            <button id="btn-save-purchase" class="btn">Save Purchase</button>
-            <button id="btn-export-purchase" class="btn muted">Export CSV</button>
+          <div class="mt12">
+            <button id="btnAddPurchase" class="btn">Add to Stock</button>
           </div>
         </div>
       </div>
 
-      <div class="card">
-        <h2>Recent Purchases</h2>
-        <p class="muted">Placeholder list</p>
-        <table>
-          <thead><tr><th>Date</th><th>Invoice</th><th>Supplier</th><th class="right">Items</th><th class="right">Amount</th></tr></thead>
-          <tbody id="purchase-recent"><tr><td class="muted" colspan="5">No data yet</td></tr></tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- STOCK -->
-    <section id="tab-stock" class="grid hide">
-      <div class="row card" style="justify-content:space-between;align-items:center">
-        <h2 style="margin:0">Inventory</h2>
-        <div class="row">
-          <button id="btn-scan-stock" class="btn">📷 Scan Stock</button>
-          <input id="stock-search" class="input" placeholder="Search items…" style="max-width:220px">
-          <button id="btn-export-stock" class="btn muted">Export CSV</button>
+      <div>
+        <div class="kpi-grid">
+          <div class="kpi panel--blue"><h4>Items Added</h4><div class="num" id="purCount">0</div></div>
+          <div class="kpi panel--mint"><h4>Total Qty</h4><div class="num" id="purQtySum">0</div></div>
+          <div class="kpi panel--peach"><h4>Stock Value (Cost)</h4><div class="num" id="purVal">0.00</div></div>
         </div>
       </div>
+    </div>
+  </section>
 
-      <div class="card">
-        <table>
-          <thead><tr><th>Item</th><th class="right">Batch</th><th class="right">Expiry</th><th class="right">MRP</th><th class="right">GST%</th><th class="right">Qty</th><th class="right">Min</th></tr></thead>
-          <tbody id="stock-table"><tr><td class="muted" colspan="7">Inventory will appear here…</td></tr></tbody>
-        </table>
+  <!-- STOCK -->
+  <section class="section" id="tab-stock" hidden>
+    <div class="toolbar">
+      <h2>Stock</h2>
+      <div class="right">
+        <button id="btnExportStock" class="pill-ghost">Export CSV</button>
       </div>
-    </section>
+    </div>
+    <div class="chips mt8">
+      <button class="chip active" data-stock="all">All</button>
+      <button class="chip" data-stock="near">Near expiry</button>
+      <button class="chip" data-stock="expired">Expired</button>
+      <button class="chip" data-stock="low">Re-order</button>
+    </div>
+    <div class="table-wrap mt12">
+      <table>
+        <thead>
+          <tr>
+            <th>Item</th><th>Batch</th><th>Expiry</th><th>MRP</th><th>Qty</th><th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="stockBody"><tr><td colspan="6" class="muted">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
 
-    <!-- REPORTS -->
-    <section id="tab-reports" class="grid hide">
-      <div class="card">
-        <div class="row" style="justify-content:space-between;align-items:center">
-          <h2 style="margin:0">Sales & Purchase Reports</h2>
-          <div class="row">
-            <button class="tab active" data-range="today">Today</button>
-            <button class="tab" data-range="7d">7D</button>
-            <button class="tab" data-range="mtd">MTD</button>
-            <input id="r-from" class="input" type="date">
-            <input id="r-to" class="input" type="date">
-          </div>
-        </div>
-        <table style="margin-top:10px">
-          <thead><tr><th>Date</th><th>Type</th><th>Ref</th><th>Party/Patient</th><th class="right">Items</th><th class="right">Amount</th></tr></thead>
-          <tbody id="reports-table"><tr><td class="muted" colspan="6">Run a range to see rows…</td></tr></tbody>
-        </table>
-        <div class="row" style="margin-top:.5rem;justify-content:flex-end">
-          <button id="btn-export-reports" class="btn muted">Export CSV</button>
-        </div>
+  <!-- REPORTS -->
+  <section class="section" id="tab-reports" hidden>
+    <h2>Pharmacy Reports</h2>
+    <div class="toolbar mt12">
+      <div class="left" style="gap:10px">
+        <input type="date" id="rFrom" class="input--sm" />
+        <input type="date" id="rTo" class="input--sm" />
+        <button id="runReports" class="btn">Run</button>
       </div>
-    </section>
-  </main>
+      <div class="right chips">
+        <button class="chip" data-r="today">Today</button>
+        <button class="chip" data-r="7d">Last 7D</button>
+        <button class="chip" data-r="30d">Last 30D</button>
+        <button class="chip" data-r="mtd">MTD</button>
+        <button id="btnExportSales" class="pill-ghost">Export CSV</button>
+      </div>
+    </div>
+
+    <div class="kpi-grid mt12">
+      <div class="kpi panel--blue"><h4>Total (₹)</h4><div class="num" id="rpTotal">0.00</div></div>
+      <div class="kpi panel--mint"><h4>Paid (₹)</h4><div class="num" id="rpPaid">0.00</div></div>
+      <div class="kpi panel--peach"><h4>Balance (₹)</h4><div class="num" id="rpBalance">0.00</div></div>
+      <div class="kpi panel--lilac"><h4>Invoices</h4><div class="num" id="rpInvoices">0</div></div>
+    </div>
+
+    <div class="chart-wrap mt16">
+      <div class="chart-title">Top Items</div>
+      <div id="topItems" class="muted">—</div>
+    </div>
+  </section>
+
+  <!-- Scanner Modal -->
+  <div id="scanModal" role="dialog" aria-modal="true" aria-labelledby="scanTitle">
+    <div id="scanBox">
+      <div class="modal-head">
+        <strong id="scanTitle">Scan</strong>
+        <button id="scanClose" class="pill-ghost">Close</button>
+      </div>
+      <div id="scanArea"></div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <!-- Scanner lib (CDN) – safe to defer; scanner.js guards if not present -->
+  <script defer src="https://unpkg.com/html5-qrcode@2.3.10/html5-qrcode.min.js"></script>
+  <script src="../scripts/utils.js"></script>
+  <script src="../scripts/scanner.js"></script>
 
   <script>
-    // --- Session ---
-    document.getElementById('btn-logout').onclick = () => { localStorage.removeItem('erp_active_role'); location.href = './login.html'; };
-    document.getElementById('btn-clear').onclick = () => {
-      localStorage.clear();
-      if (window.caches?.keys) caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+    // ===== THEME (unified) =====
+    (function initTheme(){
+      const key='erp-theme';
+      const saved = localStorage.getItem(key) || 'light';
+      document.documentElement.setAttribute('data-theme', saved);
+      const btn = document.getElementById('themeToggle');
+      btn.textContent = saved === 'dark' ? '🌙' : '🌞';
+      btn.addEventListener('click', ()=>{
+        const cur = document.documentElement.getAttribute('data-theme');
+        const next = cur === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem(key, next);
+        btn.textContent = next === 'dark' ? '🌙' : '🌞';
+      });
+    })();
+
+    // ===== NAV UTILS =====
+    document.getElementById('logoutBtn').onclick = ()=>{ localStorage.clear(); location.href = './login.html'; };
+    document.getElementById('clearCacheBtn').onclick = async ()=>{
+      await clearAppCache?.(); // from utils.js if available
       alert('Cache cleared. Reloading…'); location.reload();
     };
 
-    // --- Tabs ---
-    (function(){
-      const btns = Array.from(document.querySelectorAll('.tab[data-tab]'));
-      const sections = {
-        sell: document.getElementById('tab-sell'),
-        purchase: document.getElementById('tab-purchase'),
-        stock: document.getElementById('tab-stock'),
-        reports: document.getElementById('tab-reports'),
+    // ===== TAB SWITCH =====
+    const tabBtns = document.querySelectorAll('[data-tab]');
+    const tabs = {
+      sell: document.getElementById('tab-sell'),
+      purchase: document.getElementById('tab-purchase'),
+      stock: document.getElementById('tab-stock'),
+      reports: document.getElementById('tab-reports')
+    };
+    tabBtns.forEach(b=>{
+      b.addEventListener('click', ()=>{
+        tabBtns.forEach(x=>x.classList.remove('active'));
+        b.classList.add('active');
+        const sel = b.dataset.tab;
+        Object.entries(tabs).forEach(([k,el])=>{
+          el.hidden = (k!==sel);
+        });
+      });
+    });
+
+    // ===== DATA (CSV) =====
+    const CSV = {
+      inv: '../data/inventory.csv',
+      invoices: '../data/invoices.csv',
+      items: '../data/invoice_items.csv',
+      patients: '../data/patients.csv'
+    };
+    let INVENTORY = [];
+    let PATIENTS = [];
+    let CART = [];
+    let LINKED_PATIENT = null;
+
+    async function loadAll() {
+      INVENTORY = await loadCSV(CSV.inv);            // utils.js
+      PATIENTS  = await loadCSV(CSV.patients);
+      // invoices/items lazy-load when Reports tab runs
+      renderStockTable('all');
+    }
+    loadAll();
+
+    // ===== SELL =====
+    const els = {
+      cartBody: document.getElementById('cartBody'),
+      subtotal: document.getElementById('sumSubtotal'),
+      gst: document.getElementById('sumGST'),
+      disc: document.getElementById('sumDisc'),
+      total: document.getElementById('sumTotal'),
+      discount: document.getElementById('discount'),
+      payMode: document.getElementById('payMode'),
+      patientStatus: document.getElementById('patientStatus'),
+      searchItem: document.getElementById('searchItem')
+    };
+
+    function findItemByQuery(q){
+      q = (q||'').toLowerCase().trim();
+      if(!q) return null;
+      // match by barcode, then name
+      return INVENTORY.find(r => (r.barcode||'').toLowerCase() === q) ||
+             INVENTORY.find(r => (r.name||'').toLowerCase().includes(q));
+    }
+
+    function addToCart(item, qty=1){
+      if(!item) return;
+      const line = {
+        name: item.name,
+        batch: item.batch,
+        qty: qty,
+        mrp: Number(item.mrp||0),
+        gst: Number(item.gst||0),
+        barcode: item.barcode||''
       };
-      const show = t => {
-        Object.entries(sections).forEach(([k,el])=> el.classList.toggle('hide', k!==t));
-        btns.forEach(b=> b.classList.toggle('active', b.dataset.tab===t));
-      };
-      btns.forEach(b => b.addEventListener('click', () => show(b.dataset.tab)));
-      show('sell');
-    })();
-
-    // --- Patient link ---
-    (function(){
-      const ERP = window.ERP;
-      const chip = document.getElementById('patient-chip');
-      const svg  = document.getElementById('patient-barcode');
-      let pid = localStorage.getItem('pharmacy_current_patient') || null;
-
-      function setPatient(val){
-        pid = val; chip.textContent = `Patient: ${val}`;
-        ERP.renderBarcode(svg, val);
-        localStorage.setItem('pharmacy_current_patient', val);
-      }
-      if (pid) setPatient(pid);
-
-      document.getElementById('btn-scan-patient').onclick = () => {
-        if (typeof window.startScanner === 'function') startScanner(code => setPatient(String(code).trim()));
-        else alert('Scanner not available');
-      };
-      document.getElementById('btn-new-patient').onclick = () => setPatient(ERP.generatePatientId());
-
-      window._getLinkedPatient = () => pid || '';
-    })();
-
-    // --- POS (demo logic + CSV export with patient_id) ---
-    (function(){
-      const ERP = window.ERP, money = ERP.money;
-      const cartTbody = document.getElementById('sell-cart');
-      const state = { cart: [] };
-
-      function renderCart(){
-        if(state.cart.length===0){
-          cartTbody.innerHTML = `<tr><td class="muted" colspan="7">Cart is empty</td></tr>`;
-        } else {
-          cartTbody.innerHTML = state.cart.map((r,i)=>`
-            <tr>
-              <td>${r.name}</td>
-              <td class="right">${r.batch||'-'}</td>
-              <td class="right"><input type="number" min="1" value="${r.qty}" style="width:70px" oninput="updateQty(${i}, this.value)" class="input"></td>
-              <td class="right mono">₹${money(r.mrp)}</td>
-              <td class="right mono">${r.gst||0}%</td>
-              <td class="right mono">₹${money(r.qty*r.mrp)}</td>
-              <td class="right"><button class="btn muted" onclick="removeLine(${i})">✕</button></td>
-            </tr>`).join('');
-        }
-        recomputeTotals();
-      }
-      window.updateQty=(i,v)=>{ state.cart[i].qty=Math.max(1,Number(v)||1); renderCart(); };
-      window.removeLine=i=>{ state.cart.splice(i,1); renderCart(); };
-
-      function recomputeTotals(){
-        const sub = state.cart.reduce((s,r)=> s+r.qty*r.mrp, 0);
-        const gst = state.cart.reduce((s,r)=> s + ((r.qty*r.mrp) - (r.qty*r.mrp/(1+(r.gst||0)/100))), 0);
-        const val = Number(document.getElementById('discount-value').value||0);
-        const typ = document.getElementById('discount-type').value||'INR';
-        const disc = typ==='PCT' ? (sub*(val/100)) : val;
-        const grand = Math.max(0, sub - disc);
-        document.getElementById('t-sub').textContent = money(sub);
-        document.getElementById('t-gst').textContent = money(gst);
-        document.getElementById('t-grand').textContent = money(grand);
-      }
-      document.getElementById('discount-value').addEventListener('input', recomputeTotals);
-      document.getElementById('discount-type').addEventListener('change', recomputeTotals);
-
-      document.getElementById('btn-load-demo').onclick = ()=>{
-        state.cart = [
-          {name:'PARACETAMOL 500MG TAB', batch:'B23', qty:1, mrp:28.00, gst:12},
-          {name:'CETIRIZINE 10MG TAB', batch:'C17', qty:2, mrp:22.50, gst:12},
-        ];
-        renderCart();
-      };
-      document.getElementById('btn-clear-cart').onclick = ()=>{ state.cart = []; renderCart(); };
-
-      document.getElementById('btn-scan').onclick = ()=>{
-        if(typeof window.startScanner === 'function'){
-          startScanner(code=>{
-            state.cart.push({name:`Scanned ${code}`, batch:'—', qty:1, mrp:10.00, gst:12});
-            renderCart();
-          });
-        } else alert('Scanner not available');
-      };
-
-      // Save -> download two CSV rows (invoices + items) including patient_id
-      function toCSVRow(arr){ return arr.map(v=> `"${String(v).replace(/"/g,'""')}"`).join(','); }
-      function downloadCSV(filename, header, rows){
-        const csv = [header.join(','), ...rows.map(toCSVRow)].join('\n');
-        const blob = new Blob([csv], {type:'text/csv'});
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click();
-        setTimeout(()=>URL.revokeObjectURL(a.href), 1500);
-      }
-
-      document.getElementById('btn-save').onclick = ()=>{
-        if(state.cart.length===0){ alert('Cart is empty'); return; }
-        const pid = (window._getLinkedPatient && window._getLinkedPatient()) || '';
-        const invId = 'INV-' + Date.now();
-        const date = new Date().toISOString().slice(0,10);
-        const pay = document.getElementById('pay-mode').value;
-        const sub = state.cart.reduce((s,r)=> s+r.qty*r.mrp, 0);
-        const gst = state.cart.reduce((s,r)=> s + ((r.qty*r.mrp) - (r.qty*r.mrp/(1+(r.gst||0)/100))), 0);
-        const dVal = Number(document.getElementById('discount-value').value||0);
-        const dTyp = document.getElementById('discount-type').value||'INR';
-        const disc = dTyp==='PCT' ? (sub*(dVal/100)) : dVal;
-        const grand = Math.max(0, sub - disc);
-
-        // invoices.csv row
-        const invHeader = ['invoice_id','date','patient_id','patient_name','pay_mode','subtotal','discount_type','discount_value','gst','grand_total'];
-        const invRow = [invId, date, pid, document.getElementById('cust-name').value || '', pay, sub.toFixed(2), dTyp, dVal, gst.toFixed(2), grand.toFixed(2)];
-        downloadCSV(`invoices_${invId}.csv`, invHeader, [invRow]);
-
-        // invoice_items.csv rows
-        const itemHeader = ['invoice_id','item','batch','qty','mrp','gst','amount'];
-        const itemRows = state.cart.map(r=> [invId, r.name, r.batch||'', r.qty, r.mrp.toFixed(2), r.gst||0, (r.qty*r.mrp).toFixed(2)]);
-        downloadCSV(`invoice_items_${invId}.csv`, itemHeader, itemRows);
-
-        alert(`Saved invoice ${invId}.\nDownloaded two CSVs. Append them into /data/invoices.csv and /data/invoice_items.csv.`);
-      };
-
-      document.getElementById('btn-export-bill').onclick = ()=>{
-        if(state.cart.length===0){ alert('Cart is empty'); return; }
-        const itemHeader = ['item','batch','qty','mrp','gst','amount'];
-        const rows = state.cart.map(r=> [r.name, r.batch||'', r.qty, r.mrp.toFixed(2), r.gst||0, (r.qty*r.mrp).toFixed(2)]);
-        const id = 'BILL-' + Date.now();
-        downloadCSV(`bill_${id}.csv`, itemHeader, rows);
-      };
-
-      document.getElementById('btn-print').onclick = ()=> window.print();
-
-      // init
+      CART.push(line);
       renderCart();
-    })();
+    }
 
-    // Quick stubs for Purchase/Stock buttons (kept minimal)
-    document.getElementById('btn-scan-purchase').onclick = ()=> typeof startScanner==='function' ? startScanner(code=>{ s('p-item',`Item ${code}`); s('p-batch','B'+Math.floor(Math.random()*100)); s('p-qty','1'); s('p-mrp','50'); s('p-gst','12'); }) : alert('Scanner not available');
-    function s(id,val){ const el=document.getElementById(id); if(el) el.value=val; }
+    function renderCart(){
+      if(CART.length===0){
+        els.cartBody.innerHTML = '<tr><td colspan="7" class="muted">Cart is empty</td></tr>';
+        updateSummary();
+        return;
+      }
+      els.cartBody.innerHTML = CART.map((l,i)=>`
+        <tr>
+          <td>${escapeHtml(l.name||'')}</td>
+          <td>${escapeHtml(l.batch||'')}</td>
+          <td><input type="number" min="1" step="1" value="${l.qty}" data-qty="${i}" class="input--sm" style="width:80px" /></td>
+          <td>₹ ${Number(l.mrp).toFixed(2)}</td>
+          <td>${Number(l.gst).toFixed(1)}%</td>
+          <td>₹ ${(l.qty*l.mrp).toFixed(2)}</td>
+          <td><button class="pill-ghost" data-rm="${i}">✕</button></td>
+        </tr>
+      `).join('');
+      els.cartBody.querySelectorAll('[data-qty]').forEach(inp=>{
+        inp.addEventListener('change', e=>{
+          const i = Number(inp.dataset.qty);
+          CART[i].qty = Math.max(1, Number(inp.value||1));
+          updateSummary();
+          renderCart(); // rerender line total
+        });
+      });
+      els.cartBody.querySelectorAll('[data-rm]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          CART.splice(Number(btn.dataset.rm),1);
+          renderCart();
+        });
+      });
+      updateSummary();
+    }
+
+    function updateSummary(){
+      const disc = Number(els.discount.value||0);
+      let sub = 0, gst=0;
+      CART.forEach(l=>{
+        const line = l.qty * l.mrp;
+        sub += line;
+        gst += line * (Number(l.gst||0)/100);
+      });
+      els.subtotal.textContent = sub.toFixed(2);
+      els.gst.textContent = gst.toFixed(2);
+      els.disc.textContent = disc.toFixed(2);
+      els.total.textContent = (sub + gst - disc).toFixed(2);
+    }
+    els.discount.addEventListener('input', updateSummary);
+
+    // Quick search add
+    els.searchItem.addEventListener('keydown', (e)=>{
+      if(e.key==='Enter'){
+        const it = findItemByQuery(e.target.value);
+        if(it){ addToCart(it,1); e.target.value=''; }
+        else alert('Item not found in inventory.csv');
+      }
+    });
+
+    // Demo
+    document.getElementById('btnLoadDemo').onclick = ()=>{
+      const picks = INVENTORY.slice(0,3);
+      if(!picks.length) return alert('No inventory loaded yet.');
+      CART = picks.map(p=>({name:p.name,batch:p.batch,qty:1,mrp:+p.mrp||0,gst:+p.gst||0,barcode:p.barcode||''}));
+      renderCart();
+    };
+
+    document.getElementById('btnClearCart').onclick = ()=>{
+      CART = []; renderCart();
+    };
+
+    // Save invoice (writes to localStorage as a demo store; CSV export available)
+    document.getElementById('btnSaveInvoice').onclick = ()=>{
+      if(CART.length===0) return alert('Cart empty');
+      const total = Number(els.total.textContent||0);
+      const doc = {
+        id: 'INV' + Date.now(),
+        date: new Date().toISOString().slice(0,10),
+        patient_id: LINKED_PATIENT?.patient_id || '',
+        patient_name: LINKED_PATIENT?.name || (document.getElementById('custName').value||''),
+        phone: document.getElementById('custPhone').value||'',
+        pay_mode: els.payMode.value,
+        discount: Number(els.discount.value||0),
+        total
+      };
+      const items = CART.map(l=>({invoice_id:doc.id,item_name:l.name,batch:l.batch,qty:l.qty,mrp:l.mrp,gst:l.gst}));
+      // persist demo
+      const store = JSON.parse(localStorage.getItem('erp-invoices')||'[]');
+      store.push({doc,items});
+      localStorage.setItem('erp-invoices', JSON.stringify(store));
+      alert('Saved! (demo local store). Use Export CSV to download.');
+      // clear
+      CART = []; renderCart();
+    };
+
+    document.getElementById('btnExportInvoice').onclick = ()=>{
+      const rows = [['invoice_id','patient_id','patient_name','phone','pay_mode','discount','total']];
+      const data = JSON.parse(localStorage.getItem('erp-invoices')||'[]');
+      data.forEach(({doc})=> rows.push([doc.id,doc.patient_id,doc.patient_name,doc.phone,doc.pay_mode,doc.discount,doc.total]));
+      downloadCSV(rows, 'invoices_demo.csv'); // from utils.js
+    };
+
+    // ===== PATIENT LINK + SCANNER =====
+    const scanModal = document.getElementById('scanModal');
+    const scanArea = document.getElementById('scanArea');
+    const scanClose = document.getElementById('scanClose');
+
+    function openScanner(title, onResult){
+      document.getElementById('scanTitle').textContent = title || 'Scan';
+      scanModal.style.display = 'flex';
+      if(typeof startScanner === 'function'){
+        startScanner(scanArea, (code)=>{
+          try{ onResult(code); } finally { closeScanner(); }
+        }, (err)=>{
+          alert(err || 'Scanner failed to start.');
+          closeScanner();
+        });
+      } else {
+        alert('Scanner library not loaded. Check network / script tag.');
+        closeScanner();
+      }
+    }
+    function closeScanner(){
+      scanModal.style.display = 'none';
+      try{ stopScanner?.(); } catch(e){}
+      scanArea.innerHTML = '';
+    }
+    scanClose.onclick = closeScanner;
+    scanModal.addEventListener('click', (e)=>{ if(e.target===scanModal) closeScanner(); });
+
+    document.getElementById('btnScanPatient').onclick = ()=>{
+      openScanner('Scan Patient ID', (code)=>{
+        const p = PATIENTS.find(r => String(r.patient_id)===String(code));
+        if(!p) return alert('Patient not found');
+        LINKED_PATIENT = p;
+        document.getElementById('custName').value = p.name||'';
+        document.getElementById('custPhone').value = p.phone||'';
+        document.getElementById('patientStatus').textContent = `Linked: ${p.name} (${p.patient_id})`;
+      });
+    };
+
+    document.getElementById('btnNewPatient').onclick = ()=>{
+      const id = 'P' + Date.now().toString().slice(-6);
+      LINKED_PATIENT = {patient_id:id,name:'New Patient',phone:''};
+      document.getElementById('patientStatus').textContent = `Linked: ${id} (new)`;
+    };
+
+    document.getElementById('btnScanItem').onclick = ()=>{
+      openScanner('Scan Item', (code)=>{
+        const it = findItemByQuery(code);
+        if(!it) return alert('Item not found for scanned code');
+        addToCart(it,1);
+      });
+    };
+
+    // ===== PURCHASE =====
+    document.getElementById('btnAddPurchase').onclick = ()=>{
+      const row = {
+        name: document.getElementById('purItem').value,
+        batch: document.getElementById('purBatch').value,
+        expiry: document.getElementById('purExpiry').value, // YYYY-MM
+        mrp: Number(document.getElementById('purMRP').value||0),
+        cost: Number(document.getElementById('purCost').value||0),
+        qty: Number(document.getElementById('purQty').value||0),
+        gst: Number(document.getElementById('purGST').value||0),
+      };
+      if(!row.name || !row.batch || !row.qty) return alert('Enter item, batch, qty');
+      INVENTORY.unshift({
+        name: row.name, batch: row.batch, expiry: row.expiry,
+        mrp: row.mrp, cost: row.cost, qty: row.qty, gst: row.gst, barcode: ''
+      });
+      // update mini KPIs
+      const c = Number(document.getElementById('purCount').textContent||0)+1;
+      const q = Number(document.getElementById('purQtySum').textContent||0)+row.qty;
+      const v = Number(document.getElementById('purVal').textContent||0)+ (row.cost*row.qty);
+      document.getElementById('purCount').textContent = c;
+      document.getElementById('purQtySum').textContent = q;
+      document.getElementById('purVal').textContent = v.toFixed(2);
+      renderStockTable(currentStockFilter);
+      alert('Added to stock (session only)');
+    };
+
+    // ===== STOCK =====
+    let currentStockFilter = 'all';
+    document.querySelectorAll('[data-stock]').forEach(ch=>{
+      ch.addEventListener('click', ()=>{
+        document.querySelectorAll('[data-stock]').forEach(x=>x.classList.remove('active'));
+        ch.classList.add('active');
+        currentStockFilter = ch.dataset.stock;
+        renderStockTable(currentStockFilter);
+      });
+    });
+
+    function expiryState(expiry){
+      if(!expiry) return {state:'ok',label:'—'};
+      // expiry as YYYY-MM or YYYY-MM-DD
+      const d = expiry.length===7 ? new Date(expiry+'-01') : new Date(expiry);
+      const now = new Date();
+      const diff = (d - now) / (1000*60*60*24);
+      if(diff < -1) return {state:'expired',label:'Expired'};
+      if(diff <= 60) return {state:'near',label:'Near'};
+      return {state:'ok',label:'OK'};
+    }
+
+    function renderStockTable(filter){
+      const body = document.getElementById('stockBody');
+      if(!INVENTORY.length){ body.innerHTML = '<tr><td colspan="6" class="muted">No inventory.</td></tr>'; return; }
+      const rows = INVENTORY.filter(r=>{
+        const st = expiryState(r.expiry).state;
+        if(filter==='near') return st==='near';
+        if(filter==='expired') return st==='expired';
+        if(filter==='low') return Number(r.qty||0) <= Number(r.min_qty||0 || 5);
+        return true;
+      }).map(r=>{
+        const st = expiryState(r.expiry);
+        const badge = st.state==='ok' ? '<span class="tag tag--ok">OK</span>'
+                    : st.state==='near' ? '<span class="tag tag--warn">Near</span>'
+                    : '<span class="tag tag--warn">Expired</span>';
+        return `<tr>
+          <td>${escapeHtml(r.name||'')}</td>
+          <td>${escapeHtml(r.batch||'')}</td>
+          <td>${escapeHtml(r.expiry||'')}</td>
+          <td>₹ ${(Number(r.mrp||0)).toFixed(2)}</td>
+          <td>${Number(r.qty||0)}</td>
+          <td>${badge}</td>
+        </tr>`;
+      }).join('');
+      body.innerHTML = rows || '<tr><td colspan="6" class="muted">No rows match.</td></tr>';
+    }
+
+    document.getElementById('btnExportStock').onclick = ()=>{
+      const header = ['name','batch','expiry','mrp','qty','gst','barcode'];
+      const rows = [header];
+      INVENTORY.forEach(r=> rows.push(header.map(h=> r[h] ?? '')));
+      downloadCSV(rows, 'stock_export.csv');
+    };
+
+    // ===== REPORTS =====
+    const rBtns = document.querySelectorAll('[data-r]');
+    rBtns.forEach(b=> b.addEventListener('click', ()=>{
+      rBtns.forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      const now = new Date();
+      const to = now.toISOString().slice(0,10);
+      let from = to;
+      if(b.dataset.r==='7d'){ const d=new Date(now); d.setDate(d.getDate()-6); from=d.toISOString().slice(0,10); }
+      if(b.dataset.r==='30d'){ const d=new Date(now); d.setDate(d.getDate()-29); from=d.toISOString().slice(0,10); }
+      if(b.dataset.r==='mtd'){ const d=new Date(now.getFullYear(), now.getMonth(), 1); from=d.toISOString().slice(0,10); }
+      document.getElementById('rFrom').value = from;
+      document.getElementById('rTo').value = to;
+      runReports();
+    }));
+
+    document.getElementById('runReports').onclick = runReports;
+
+    async function runReports(){
+      const from = document.getElementById('rFrom').value;
+      const to = document.getElementById('rTo').value;
+      const INVS = await loadCSV(CSV.invoices);
+      const ITEMS = await loadCSV(CSV.items);
+      const f = (d)=> d>=from && d<=to;
+      const list = INVS.filter(r=> !from || !to || f(r.date));
+      const total = list.reduce((a,r)=> a + Number(r.total||0), 0);
+      const paid = list.reduce((a,r)=> a + Number(r.paid||r.total||0), 0);
+      const balance = total - paid;
+      document.getElementById('rpTotal').textContent = total.toFixed(2);
+      document.getElementById('rpPaid').textContent = paid.toFixed(2);
+      document.getElementById('rpBalance').textContent = balance.toFixed(2);
+      document.getElementById('rpInvoices').textContent = list.length;
+
+      const ids = new Set(list.map(r=> String(r.invoice_id)));
+      const top = {};
+      ITEMS.filter(x=> ids.has(String(x.invoice_id))).forEach(x=>{
+        top[x.item_name] = (top[x.item_name]||0) + Number(x.qty||0);
+      });
+      const topStr = Object.entries(top).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([n,q])=>`${n} — ${q}`).join('<br>');
+      document.getElementById('topItems').innerHTML = topStr || '—';
+    }
+
+    document.getElementById('btnExportSales').onclick = async ()=>{
+      const INVS = await loadCSV(CSV.invoices);
+      const rows = [['invoice_id','date','patient_id','total','paid','mode']];
+      INVS.forEach(r=> rows.push([r.invoice_id,r.date,r.patient_id,r.total,r.paid||r.total,r.pay_mode||'']));
+      downloadCSV(rows, 'sales_export.csv');
+    };
+
+    // ===== Purchase scanner (fills item field on scan) =====
+    document.getElementById('btnScanPurchase').onclick = ()=>{
+      openScanner('Scan Item', (code)=>{
+        const it = findItemByQuery(code);
+        if(it) document.getElementById('purItem').value = it.name;
+        else alert('No match in inventory');
+      });
+    };
   </script>
 </body>
 </html>
