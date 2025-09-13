@@ -5,19 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Pharmacy • Hospital ERP</title>
 
-  <!-- Global styles/manifest (already in your repo) -->
+  <!-- Global styles/manifest -->
   <link rel="stylesheet" href="../styles/styles.css" />
   <link rel="manifest" href="../manifest.json" />
 
-  <!-- Camera scanner + barcode render (UMD builds) -->
-  <script src="https://unpkg.com/@zxing/browser@0.1.5/umd/index.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+  <!-- Barcode + Camera (UMD, reliable on GitHub Pages) -->
+  <!-- library UMD ensures core ZXing primitives; browser UMD provides BrowserMultiFormatReader -->
+  <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/index.min.js"></script>
 
   <!-- Project scripts -->
   <script defer src="../scripts/utils.js"></script>
   <script defer src="../scripts/scanner.js"></script>
 
-  <!-- Page-local micro styles (rest lives in styles.css for theme consistency) -->
+  <!-- Page-local micro styles (page still follows styles.css theme) -->
   <style>
     .tabs{display:flex;gap:.5rem;flex-wrap:wrap;margin:.5rem 0 1rem}
     .tab{padding:.6rem .9rem;border-radius:999px;font-weight:600;background:var(--chip-bg,#f4f6ff);box-shadow:var(--soft-shadow)}
@@ -309,7 +310,7 @@
       window._getLinkedPatient = () => pid || '';
     })();
 
-    // ---- POS demo cart (kept simple; persistence lands in next step) ----
+    // ---- POS demo cart (kept simple; CSV persistence comes next) ----
     (function(){
       const ERP = window.ERP, money = ERP.money;
       const cartTbody = document.getElementById('sell-cart');
@@ -370,7 +371,7 @@
 
       document.getElementById('btn-save').onclick = ()=>{
         const pid = (window._getLinkedPatient && window._getLinkedPatient()) || '';
-        alert(`Save Invoice (placeholder) with patient_id: ${pid}\nNext step: write to invoices.csv & invoice_items.csv.`);
+        alert(`Save Invoice (placeholder) with patient_id: ${pid}\nNext: write to invoices.csv & invoice_items.csv.`);
       };
       document.getElementById('btn-print').onclick = ()=> window.print();
       document.getElementById('btn-export-bill').onclick = ()=> alert('Export current bill as CSV (placeholder).');
