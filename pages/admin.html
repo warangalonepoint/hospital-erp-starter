@@ -1,17 +1,154 @@
-<!doctype html><html lang="en" data-theme="dark"><head>
-<meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Admin</title><link rel="stylesheet" href="../styles/styles.css"/></head>
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin • Hospital ERP</title>
+  <link rel="stylesheet" href="../styles/styles.css">
+  <link rel="icon" href="../public/assets/icon-192.png">
+</head>
 <body>
-<header class="app-topbar"><nav class="nav">
-  <a class="link-back" href="./login.html">← Login</a><div class="spacer"></div>
-  <button class="pill" id="themeToggle">🌗</button>
-</nav></header>
-<main class="container"><section class="panel">
-  <h2>Admin — coming next</h2><p>Settings, users, branches, backup/export.</p>
-</section></main>
-<script>
-  const root=document.documentElement;const s=localStorage.getItem('theme');
-  if(s)root.setAttribute('data-theme',s);else if(window.matchMedia('(prefers-color-scheme: light)').matches)root.setAttribute('data-theme','light');
-  document.getElementById('themeToggle').onclick=()=>{const n=root.getAttribute('data-theme')==='dark'?'light':'dark';root.setAttribute('data-theme',n);localStorage.setItem('theme',n);};
-</script>
-</body></html>
+  <!-- Banner (shared) -->
+  <header class="banner">
+    <!-- If you want an image instead of CSS background, uncomment:
+    <img src="../public/assets/banner.png" alt="Abhaya Hospital" />
+    -->
+    <button id="themeToggle" class="floating-toggle" title="Toggle theme">🌙</button>
+  </header>
+
+  <!-- Top actions (shared) -->
+  <div class="fixed-actions">
+    <a class="chip" href="./dashboard.html">← Dashboard</a>
+    <button class="chip" id="logoutBtn">Logout</button>
+    <button class="chip" id="clearCacheBtn">Clear Cache</button>
+  </div>
+
+  <!-- Admin Hub -->
+  <section class="section">
+    <h1 class="muted" style="font-size:28px;margin-bottom:6px;">Admin & Setup</h1>
+    <p class="muted">Manage login PINs, staff, patients, inventory, and data tools.</p>
+
+    <!-- Primary admin areas -->
+    <div class="card-grid mt16">
+      <a class="card panel--lilac" href="./settings.html#pins">
+        <h3>Login PINs</h3>
+        <p>Doctor & Supervisor PINs</p>
+      </a>
+      <a class="card panel--mint" href="./settings.html#staff">
+        <h3>Staff</h3>
+        <p>Add / edit staff & roles</p>
+      </a>
+      <a class="card panel--rose" href="./settings.html#patients">
+        <h3>Patients</h3>
+        <p>List, add, and barcode IDs</p>
+      </a>
+      <a class="card panel--peach" href="./pharmacy.html#stock">
+        <h3>Inventory</h3>
+        <p>Upload stock CSV / scan barcodes</p>
+      </a>
+      <a class="card panel--blue" href="./analytics.html">
+        <h3>Analytics</h3>
+        <p>Sales KPIs, charts & top items</p>
+      </a>
+    </div>
+  </section>
+
+  <!-- Data utilities -->
+  <section class="section">
+    <h2 style="margin-bottom:10px;">Data Tools</h2>
+
+    <div class="toolbar mt12">
+      <div class="left">
+        <button class="chip action" id="exportPatients">↓ Export Patients</button>
+        <button class="chip action" id="exportInventory">↓ Export Inventory</button>
+        <button class="chip action" id="exportInvoices">↓ Export Invoices</button>
+      </div>
+      <div class="right">
+        <label class="chip" style="cursor:pointer;">
+          <input id="importCsv" type="file" accept=".csv" hidden />
+          ↑ Import CSV
+        </label>
+      </div>
+    </div>
+
+    <p class="muted mt8">CSV files are stored in browser cache (PWA). Clearing cache will reset demo data.</p>
+  </section>
+
+  <!-- Shortcuts -->
+  <section class="section">
+    <h2 style="margin-bottom:10px;">Shortcuts</h2>
+    <div class="chips">
+      <a class="chip" href="./pharmacy.html">Open Pharmacy – Billing</a>
+      <a class="chip" href="./pharmacy.html#reports">Open Pharmacy – Reports</a>
+      <a class="chip" href="./booking-status.html">Bookings / Tokens</a>
+      <a class="chip" href="./analytics.html">Sales Analytics</a>
+    </div>
+  </section>
+
+  <script src="../scripts/utils.js"></script>
+  <script>
+    // --- Theme toggle (shared) ---
+    (function initTheme(){
+      try {
+        const key = 'erp_theme';
+        const root = document.documentElement;
+        const btn  = document.getElementById('themeToggle');
+        const saved = localStorage.getItem(key) || 'light';
+        root.setAttribute('data-theme', saved);
+        btn.textContent = saved === 'dark' ? '☀️' : '🌙';
+        btn.addEventListener('click', () => {
+          const now = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+          root.setAttribute('data-theme', now);
+          localStorage.setItem(key, now);
+          btn.textContent = now === 'dark' ? '☀️' : '🌙';
+        });
+      } catch(e) {}
+    })();
+
+    // --- Logout & Clear cache (shared) ---
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      localStorage.removeItem('erp_role');
+      localStorage.removeItem('erp_pin_doctor');
+      localStorage.removeItem('erp_pin_supervisor');
+      window.location.href = './login.html';
+    });
+    document.getElementById('clearCacheBtn').addEventListener('click', async () => {
+      if (!confirm('Clear cached data & reload?')) return;
+      const keep = ['erp_theme'];
+      Object.keys(localStorage).forEach(k => { if(!keep.includes(k)) localStorage.removeItem(k); });
+      if ('caches' in window) {
+        const names = await caches.keys();
+        await Promise.all(names.map(n => caches.delete(n)));
+      }
+      location.reload();
+    });
+
+    // --- Export helpers (reads from utils store if present) ---
+    function downloadCsv(name, rows){
+      const blob = new Blob([rows], {type:'text/csv;charset=utf-8;'});
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href = url; a.download = name; a.click();
+      URL.revokeObjectURL(url);
+    }
+    document.getElementById('exportPatients').onclick  = () => window.erp?.exportCsv?.('patients');
+    document.getElementById('exportInventory').onclick = () => window.erp?.exportCsv?.('inventory');
+    document.getElementById('exportInvoices').onclick  = () => window.erp?.exportCsv?.('invoices');
+
+    // --- Import CSV (delegates to utils if available) ---
+    document.getElementById('importCsv').addEventListener('change', async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const text = await file.text();
+      // try to infer type by header
+      let type = 'generic';
+      if (/patient_id/i.test(text)) type = 'patients';
+      else if (/item_code|batch/i.test(text)) type = 'inventory';
+      else if (/invoice_id|total/i.test(text)) type = 'invoices';
+      window.erp?.importCsv?.(type, text);
+      alert(`Imported into: ${type}`);
+      e.target.value = '';
+    });
+  </script>
+</body>
+</html>
