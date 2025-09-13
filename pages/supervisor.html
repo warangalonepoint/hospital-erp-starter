@@ -1,435 +1,253 @@
-<!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<!doctype html>
+<html lang="en" data-theme="light">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Supervisor • Abhaya Hospital ERP</title>
-
-  <link rel="stylesheet" href="../styles.css" />
-  <link rel="manifest" href="../manifest.json" />
-  <meta name="theme-color" content="#0b1220" />
-  <style>
-    /* Page-specific tiny tweaks (kept minimal; most styling comes from styles.css) */
-    .kpi .label { opacity:.85; font-weight:700; margin-bottom:6px; }
-    .tools-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
-    .pill{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;background:var(--card-bg);border:1px solid rgba(0,0,0,.06)}
-    html[data-theme="dark"] .pill{border-color:rgba(255,255,255,.12)}
-    .table{width:100%;border-collapse:separate;border-spacing:0 8px}
-    .table th{ text-align:left; font-weight:800; opacity:.95; padding:10px 12px;}
-    .table td{ padding:12px; background:var(--card-bg); border:1px solid rgba(0,0,0,.06); }
-    .table tr td:first-child{ border-top-left-radius:12px; border-bottom-left-radius:12px;}
-    .table tr td:last-child{ border-top-right-radius:12px; border-bottom-right-radius:12px;}
-    html[data-theme="dark"] .table td{ border-color:rgba(255,255,255,.10); }
-    canvas{width:100%;height:220px}
-  </style>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Supervisor • Hospital ERP</title>
+  <link rel="stylesheet" href="../styles/styles.css"/>
+  <link rel="icon" href="../public/assets/icon-192.png"/>
 </head>
 <body>
-  <!-- Banner (shared) -->
+  <!-- Banner -->
   <header class="banner">
-    <!-- If you prefer an <img>, keep it here; CSS will handle contain/cover per screen -->
-    <button id="themeToggle" class="floating-toggle" title="Toggle theme">🌙</button>
+    <button id="themeToggle" class="toggle" title="Toggle theme">🌙</button>
   </header>
 
-  <!-- Global quick actions -->
-  <div class="fixed-actions">
-    <a href="../index.html" class="chip">← Dashboard</a>
-    <button class="chip" id="btnLogout">Logout</button>
-    <button class="chip" id="btnClearCache">Clear Cache</button>
+  <!-- Top actions -->
+  <div class="toolbar">
+    <a class="chip" href="./dashboard.html">← Dashboard</a>
+    <button class="chip" id="btnClear">Clear Cache</button>
+    <div style="flex:1"></div>
+    <a class="chip admin-only" href="./admin.html">Admin</a>
   </div>
 
-  <!-- Supervisor – Launcher panels (match dashboard style) -->
+  <!-- Header -->
   <section class="section">
-    <div class="card-grid">
-      <a class="card panel--lilac" href="./booking-status.html">
-        <h3>Bookings</h3>
-        <p>Create tokens & manage appointments</p>
-      </a>
-      <a class="card panel--mint" href="./pharmacy.html?tab=sell">
-        <h3>Pharmacy – Billing</h3>
-        <p>Multi-item invoices, discounts, payments</p>
-      </a>
-      <a class="card panel--peach" href="./analytics.html">
-        <h3>Pharmacy – Reports</h3>
-        <p>Daily / Weekly / Monthly / Yearly sales & items</p>
-      </a>
-      <a class="card panel--rose" href="./staff.html">
-        <h3>Staff – Attendance & Roster</h3>
-        <p>Create day sheet, mark, edit, export</p>
-      </a>
+    <div class="panel grad-lilac">
+      <h2>Supervisor Snapshot</h2>
+      <p class="muted">Daily performance, quick exports, and team view.</p>
+    </div>
+
+    <div class="row mt12">
+      <input type="date" id="from" style="max-width:180px">
+      <input type="date" id="to" style="max-width:180px">
+      <button id="btnRun" class="chip chip--primary">Run</button>
+      <button class="chip" data-q="today">Today</button>
+      <button class="chip" data-q="7d">Last 7D</button>
+      <button class="chip" data-q="30d">Last 30D</button>
+      <button class="chip" data-q="mtd">MTD</button>
+      <div style="flex:1"></div>
+      <button id="btnExportInvoices" class="chip">↓ Invoices CSV</button>
+      <button id="btnExportItems" class="chip">↓ Items CSV</button>
     </div>
   </section>
 
-  <!-- Today Snapshot -->
+  <!-- KPIs -->
   <section class="section">
-    <h2>Today Snapshot</h2>
-    <div class="kpi-grid mt12">
-      <div class="kpi panel--blue">
-        <div class="label">Total (₹)</div>
-        <div id="kpiTotal" class="num">0.00</div>
+    <div class="kpi-grid">
+      <div class="kpi" style="background:var(--t-blue);color:var(--c-blue)">
+        <h4>Total (₹)</h4><div class="num" id="kTotal">0.00</div>
       </div>
-      <div class="kpi panel--lilac">
-        <div class="label">Invoices</div>
-        <div id="kpiInvoices" class="num">0</div>
+      <div class="kpi" style="background:var(--t-mint);color:var(--c-mint)">
+        <h4>Paid (₹)</h4><div class="num" id="kPaid">0.00</div>
       </div>
-      <div class="kpi panel--mint">
-        <div class="label">Paid (₹)</div>
-        <div id="kpiPaid" class="num">0.00</div>
+      <div class="kpi" style="background:var(--t-peach);color:var(--c-peach)">
+        <h4>Invoices</h4><div class="num" id="kInv">0</div>
       </div>
-      <div class="kpi panel--peach">
-        <div class="label">Balance (₹)</div>
-        <div id="kpiBalance" class="num">0.00</div>
-      </div>
-    </div>
-
-    <div class="chart-wrap mt16">
-      <div class="chart-title">Daily Revenue (Last 7 days)</div>
-      <canvas id="revChart" aria-label="Daily revenue chart"></canvas>
-    </div>
-  </section>
-
-  <!-- Supervisor tools -->
-  <section class="section">
-    <h2>Supervisor Tools</h2>
-    <div class="tools-grid mt12">
-      <div class="card panel--blue">
-        <h3>Invoice Search</h3>
-        <p class="muted">Find by number / patient / date range</p>
-        <div class="toolbar mt12">
-          <div class="left">
-            <input id="qInvoice" type="search" placeholder="Type to search…" class="input--sm" />
-            <input id="qFrom" type="date" class="input--sm" />
-            <input id="qTo" type="date" class="input--sm" />
-          </div>
-          <div class="right">
-            <button class="btn" id="btnSearch">Run</button>
-            <button class="btn btn--ghost" id="btnExport">↓ Export CSV</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="card panel--mint">
-        <h3>Approvals</h3>
-        <p class="muted">Price/discount overrides pending review</p>
-        <div class="mt12">
-          <span class="pill"><strong id="cntApprovals">0</strong> pending</span>
-          <button class="btn btn--ghost" id="btnApproveAll">Approve All</button>
-        </div>
-      </div>
-
-      <div class="card panel--peach">
-        <h3>Day Close (Z-Report)</h3>
-        <p class="muted">Preview totals and lock day</p>
-        <div class="mt12">
-          <div class="pill"><span>Sales:</span><strong id="zSales">0.00</strong></div>
-          <div class="pill mt8"><span>Paid:</span><strong id="zPaid">0.00</strong></div>
-          <div class="pill mt8"><span>Balance:</span><strong id="zBal">0.00</strong></div>
-          <button class="btn mt12" id="btnCloseDay">Close Day</button>
-        </div>
-      </div>
-
-      <div class="card panel--rose">
-        <h3>Stock Alerts</h3>
-        <p class="muted">Near expiry & low stock</p>
-        <div class="chips mt12">
-          <button class="chip chip--peach" id="tabNear">Near Expiry</button>
-          <button class="chip chip--lilac" id="tabLow">Low Stock</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Alerts tables -->
-    <div class="mt16">
-      <div id="alertsWrap" class="chart-wrap">
-        <div class="chart-title" id="alertsTitle">Near Expiry (next 60 days)</div>
-        <table class="table" id="alertsTable" aria-label="Stock alerts">
-          <thead>
-            <tr>
-              <th>Item</th><th>Batch</th><th>Expiry</th><th>Stock</th>
-            </tr>
-          </thead>
-          <tbody id="alertsBody"></tbody>
-        </table>
+      <div class="kpi" style="background:var(--t-rose);color:var(--c-rose)">
+        <h4>Avg/Day (₹)</h4><div class="num" id="kAvg">0.00</div>
       </div>
     </div>
   </section>
 
-  <!-- Search results -->
+  <!-- Charts -->
   <section class="section">
-    <h2>Results</h2>
-    <table class="table" id="tblResults">
-      <thead>
-        <tr>
-          <th>Date</th><th>Invoice #</th><th>Patient</th><th>Items</th><th>Total (₹)</th><th>Paid (₹)</th>
-        </tr>
-      </thead>
-      <tbody id="tbodyResults"></tbody>
-    </table>
+    <div class="grid-2">
+      <div class="chart-wrap">
+        <div class="chart-title">Revenue by Day</div>
+        <canvas id="revChart" aria-label="Revenue line" style="width:100%;height:260px"></canvas>
+      </div>
+      <div class="chart-wrap">
+        <div class="chart-title">Top 10 Items (₹)</div>
+        <canvas id="topChart" aria-label="Top items bar" style="width:100%;height:260px"></canvas>
+      </div>
+    </div>
   </section>
 
-  <script src="../utils.js"></script>
+  <!-- Tables -->
+  <section class="section">
+    <h3 style="margin:0 0 8px">Top Items</h3>
+    <div style="overflow:auto">
+      <table class="table">
+        <thead><tr><th>#</th><th>Item</th><th>Qty</th><th>Amount (₹)</th></tr></thead>
+        <tbody id="topBody"><tr><td class="muted" colspan="4">—</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="section">
+    <h3 style="margin:0 0 8px">Recent Invoices</h3>
+    <div style="overflow:auto">
+      <table class="table">
+        <thead><tr><th>Date</th><th>Invoice #</th><th>Patient</th><th>Total</th><th>Paid</th></tr></thead>
+        <tbody id="invBody"><tr><td class="muted" colspan="5">—</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <script src="../scripts/utils.js"></script>
   <script>
-    // ---------- Theme toggle (shared) ----------
-    const htmlEl = document.documentElement;
-    const themeToggle = document.getElementById('themeToggle');
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) htmlEl.setAttribute('data-theme', savedTheme);
-    themeToggle.textContent = htmlEl.getAttribute('data-theme') === 'dark' ? '🌙' : '🌞';
-    themeToggle.onclick = () => {
-      const next = htmlEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-      htmlEl.setAttribute('data-theme', next);
-      localStorage.setItem('theme', next);
-      themeToggle.textContent = next === 'dark' ? '🌙' : '🌞';
+    // ================= Theme toggle =================
+    (function(){
+      const key='theme', root=document.documentElement, btn=document.getElementById('themeToggle');
+      const saved=localStorage.getItem(key)||'light'; root.dataset.theme=saved; btn.textContent=saved==='dark'?'🌙':'🌞';
+      btn.onclick=()=>{ const next=root.dataset.theme==='dark'?'light':'dark'; root.dataset.theme=next; localStorage.setItem(key,next); btn.textContent=next==='dark'?'🌙':'🌞'; };
+    })();
+
+    // ================= Role-based visibility =================
+    (function guard(){
+      const role = localStorage.getItem('erp:role') || sessionStorage.getItem('role');
+      // Allow supervisor and admin; hide admin-only links if not admin
+      if (role !== 'supervisor' && role !== 'admin') {
+        // If they came here directly, bounce to login
+        location.replace('./login.html');
+        return;
+      }
+      if (role !== 'admin') document.querySelectorAll('.admin-only').forEach(el => el.remove());
+    })();
+
+    // ================= Clear cache =================
+    document.getElementById('btnClear').onclick = async ()=>{
+      const keep=['theme','erp:pin_doctor','erp:pin_supervisor','erp:pin_admin','erp:startup','erp:fmt','erp:auth','erp:role'];
+      Object.keys(localStorage).forEach(k=>{ if(!keep.includes(k)) localStorage.removeItem(k); });
+      if('caches' in window){ const keys=await caches.keys(); await Promise.all(keys.map(k=>caches.delete(k))); }
+      alert('Cache cleared (PINs/preferences preserved).');
     };
 
-    // ---------- Helpers / fallbacks ----------
-    const U = window.Utils || {};
-    const fmt = U.formatCurrency || (n => (Number(n||0)).toFixed(2));
-    const parseCSV = U.parseCSV || (text => {
-      const lines = text.trim().split(/\r?\n/);
-      const head = lines.shift().split(',').map(s=>s.trim());
-      return lines.map(row=>{
-        const cols = row.split(',').map(s=>s.trim());
-        const obj = {}; head.forEach((h,i)=>obj[h]=cols[i]); return obj;
-      });
+    // ================= Date helpers =================
+    const $ = (id)=> document.getElementById(id);
+    const fromEl=$('from'), toEl=$('to');
+    function setRange(days){
+      const to = new Date(); to.setHours(0,0,0,0);
+      const from = new Date(to); from.setDate(to.getDate()-days+1);
+      fromEl.value = from.toISOString().slice(0,10);
+      toEl.value   = to.toISOString().slice(0,10);
+    }
+    function setMTD(){
+      const d=new Date(); fromEl.value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`; toEl.value=new Date().toISOString().slice(0,10);
+    }
+    document.querySelectorAll('[data-q]').forEach(b => b.onclick = ()=>{
+      const q=b.dataset.q; if(q==='today') setRange(1); if(q==='7d') setRange(7); if(q==='30d') setRange(30); if(q==='mtd') setMTD();
+      run();
     });
-    async function loadCSV(url){
-      const r = await fetch(url, {cache: 'no-store'});
-      if(!r.ok) return [];
-      return parseCSV(await r.text());
-    }
-    const toISO = s => {
-      // supports dd/mm/yyyy in CSVs
-      if(!s) return '';
-      if (/\d{2}\/\d{2}\/\d{4}/.test(s)){
-        const [d,m,y]=s.split('/').map(Number);
-        return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-      }
-      return s;
-    };
 
-    // ---------- Data load ----------
-    let invoices=[], items=[], invIndex={};
-    let stock=[];
-
-    async function initData(){
-      [invoices, items, stock] = await Promise.all([
-        loadCSV('../data/invoices.csv').catch(()=>loadCSV('../invoices.csv')),
-        loadCSV('../data/invoice_items.csv').catch(()=>loadCSV('../invoice_items.csv')),
-        loadCSV('../data/inventory.csv').catch(()=>loadCSV('../inventory.csv'))
-      ]);
-      invIndex = invoices.reduce((a,v)=> (a[v.invoice_id]=v,a), {});
-      computeToday();
-      drawRevenue();
-      setupAlerts('near');
-    }
-
-    // ---------- KPIs ----------
-    function isToday(iso){
-      const d = new Date(iso || '');
-      if (!iso || isNaN(d)) return false;
-      const t = new Date();
-      return d.getFullYear()===t.getFullYear() && d.getMonth()===t.getMonth() && d.getDate()===t.getDate();
-    }
-    function computeToday(){
-      let total=0, paid=0, cnt=0;
-      invoices.forEach(inv=>{
-        const dateISO = toISO(inv.invoice_date);
-        if (isToday(dateISO)){
-          cnt++;
-          total += Number(inv.total||0);
-          paid  += Number(inv.paid ||0);
-        }
-      });
-      const bal = total - paid;
-      document.getElementById('kpiTotal').textContent   = fmt(total);
-      document.getElementById('kpiInvoices').textContent= cnt;
-      document.getElementById('kpiPaid').textContent    = fmt(paid);
-      document.getElementById('kpiBalance').textContent = fmt(bal);
-      // Z report mirrors today
-      document.getElementById('zSales').textContent = fmt(total);
-      document.getElementById('zPaid').textContent  = fmt(paid);
-      document.getElementById('zBal').textContent   = fmt(bal);
-    }
-
-    // ---------- Chart (vanilla) ----------
-    function drawRevenue(){
-      // last 7 days buckets
-      const today = new Date(); today.setHours(0,0,0,0);
-      const buckets = Array.from({length:7},(_,i)=>{
-        const d = new Date(today); d.setDate(today.getDate()- (6-i));
-        return { key:d.toISOString().slice(0,10), label:`${d.getDate()}/${d.getMonth()+1}`, total:0 };
-      });
-      const map = buckets.reduce((a,b)=> (a[b.key]=b, a), {});
-      invoices.forEach(inv=>{
-        const iso = toISO(inv.invoice_date);
-        if (map[iso]) map[iso].total += Number(inv.total||0);
-      });
-      const ctx = document.getElementById('revChart').getContext('2d');
-      // Tiny, dependency-free bar chart
-      const W = ctx.canvas.clientWidth, H = ctx.canvas.clientHeight;
-      ctx.canvas.width = W * devicePixelRatio; ctx.canvas.height = H * devicePixelRatio;
-      ctx.scale(devicePixelRatio, devicePixelRatio);
+    // ================= Charts (lightweight canvas) =================
+    function drawBars(canvasId, labels, values){
+      const cvs = document.getElementById(canvasId), ctx=cvs.getContext('2d');
+      const W = cvs.clientWidth || 540, H = 260; cvs.width=W*devicePixelRatio; cvs.height=H*devicePixelRatio; ctx.scale(devicePixelRatio,devicePixelRatio);
       ctx.clearRect(0,0,W,H);
-      const pad=24, bw=(W-pad*2)/buckets.length-10, max=Math.max(...buckets.map(b=>b.total), 1);
-      buckets.forEach((b, i)=>{
-        const x = pad + i*(bw+10);
-        const h = Math.round((b.total/max)*(H-70));
-        const y = H-40 - h;
-        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent') || '#2563eb';
-        ctx.fillRect(x, y, bw, h);
-        ctx.fillStyle = getComputedStyle(document.body).style.color || '#0f172a';
-        ctx.globalAlpha = .85; ctx.font = '12px Inter, sans-serif';
-        ctx.fillText(b.label, x, H-20);
-        ctx.globalAlpha = 1;
+      const pad=28, gap=10, n=values.length||1, bw=(W-pad*2-gap*(n-1))/n;
+      const max=Math.max(1, ...values.map(v=>+v||0));
+      const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent') || '#2563eb';
+      ctx.font='12px Inter, system-ui, sans-serif'; ctx.fillStyle='currentColor';
+      values.forEach((v,i)=>{
+        const h=Math.round((v/max)*(H-70)), x=pad+i*(bw+gap), y=H-40-h;
+        ctx.fillStyle=accent; ctx.fillRect(x,y,bw,h);
+        ctx.globalAlpha=.85; ctx.fillStyle='currentColor'; ctx.fillText(labels[i]||'', x, H-20); ctx.globalAlpha=1;
       });
     }
+    function drawLine(canvasId, labels, values){
+      const cvs = document.getElementById(canvasId), ctx=cvs.getContext('2d');
+      const W = cvs.clientWidth || 540, H = 260; cvs.width=W*devicePixelRatio; cvs.height=H*devicePixelRatio; ctx.scale(devicePixelRatio,devicePixelRatio);
+      ctx.clearRect(0,0,W,H);
+      const pad=28, n=values.length||1;
+      const max=Math.max(1, ...values.map(v=>+v||0));
+      const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent') || '#2563eb';
+      const innerW = W - pad*2, step = innerW / Math.max(1,n-1);
+      ctx.strokeStyle = accent; ctx.lineWidth = 2;
+      ctx.beginPath();
+      values.forEach((v,i)=>{
+        const x = pad + i*step;
+        const y = (H-40) - (v/max)*(H-70);
+        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      });
+      ctx.stroke();
+      // labels
+      ctx.font='12px Inter, system-ui, sans-serif'; ctx.fillStyle='currentColor'; ctx.globalAlpha=.85;
+      labels.forEach((t,i)=>{ const x=pad + i*step; ctx.fillText(t, x-8, H-20); });
+      ctx.globalAlpha=1;
+    }
 
-    // ---------- Alerts ----------
-    function setupAlerts(mode){
-      const body = document.getElementById('alertsBody');
-      const title = document.getElementById('alertsTitle');
-      body.innerHTML='';
-      const now = new Date();
-      if(mode==='near'){
-        title.textContent='Near Expiry (next 60 days)';
-        const lim = new Date(); lim.setDate(now.getDate()+60);
-        stock
-          .filter(s => s.expiry && !isNaN(new Date(toISO(s.expiry))) )
-          .filter(s => {
-            const d=new Date(toISO(s.expiry));
-            return d>=now && d<=lim;
-          })
-          .slice(0,20)
-          .forEach(s=>{
-            body.insertAdjacentHTML('beforeend',
-              `<tr>
-                <td>${s.item_name||s.item||'-'}</td>
-                <td>${s.batch||'-'}</td>
-                <td>${toISO(s.expiry)}</td>
-                <td>${s.qty||s.stock||0}</td>
-              </tr>`);
-          });
-      } else {
-        title.textContent='Low Stock (below min level)';
-        stock
-          .filter(s => Number(s.qty||s.stock||0) <= Number(s.min_level||s.min||5))
-          .slice(0,20)
-          .forEach(s=>{
-            body.insertAdjacentHTML('beforeend',
-              `<tr>
-                <td>${s.item_name||s.item||'-'}</td>
-                <td>${s.batch||'-'}</td>
-                <td>${toISO(s.expiry)||'—'}</td>
-                <td>${s.qty||s.stock||0}</td>
-              </tr>`);
-          });
+    // ================= Data & rendering =================
+    function run(){
+      const invsAll = ERP.load('invoices', []);
+      const itemsAll = ERP.load('invoice_items', []);
+      const invs = ERP.filterInvoicesByDate(invsAll, fromEl.value, toEl.value);
+      const ids = new Set(invs.map(i => i.id || i.invoice_id));
+      const items = itemsAll.filter(x => ids.has(x.invoice_id));
+
+      // KPIs
+      const k = ERP.buildSalesKPIs(invs, items);
+      $('kTotal').textContent = k.total.toFixed(2);
+      $('kPaid').textContent  = k.paid.toFixed(2);
+      $('kInv').textContent   = String(k.invoices);
+      const days = Math.max(1, Math.ceil((new Date(toEl.value) - new Date(fromEl.value))/86400000) + 1);
+      $('kAvg').textContent   = (k.total/days).toFixed(2);
+
+      // Revenue series (line)
+      const byId = new Map(invs.map(i => [(i.id||i.invoice_id), i]));
+      const series = ERP.dailyRevenue(items, byId); // [{date, amount}]
+      // Fill missing dates within range
+      const dFrom = new Date(fromEl.value), dTo = new Date(toEl.value);
+      const labels=[], values=[];
+      for(let d=new Date(dFrom); d<=dTo; d.setDate(d.getDate()+1)){
+        const key = d.toISOString().slice(0,10);
+        const found = series.find(s => s.date === key)?.amount || 0;
+        labels.push(`${key.slice(8,10)}/${key.slice(5,7)}`);
+        values.push(+found.toFixed(2));
       }
-      if(!body.children.length){
-        body.innerHTML = `<tr><td colspan="4" class="muted">No records</td></tr>`;
-      }
-    }
-    document.getElementById('tabNear').onclick = ()=>setupAlerts('near');
-    document.getElementById('tabLow').onclick  = ()=>setupAlerts('low');
+      drawLine('revChart', labels, values);
 
-    // ---------- Invoice Search / Export ----------
-    function within(dateStr, fromStr, toStr){
-      const d = new Date(toISO(dateStr)||''); if(isNaN(d)) return false;
-      const from = fromStr ? new Date(fromStr) : null;
-      const to   = toStr   ? new Date(toStr)   : null;
-      if(from && d < from) return false;
-      if(to){ to.setHours(23,59,59,999); if(d > to) return false; }
-      return true;
-    }
-    function search(){
-      const q = (document.getElementById('qInvoice').value||'').toLowerCase();
-      const from = document.getElementById('qFrom').value;
-      const to   = document.getElementById('qTo').value;
-      const tbody = document.getElementById('tbodyResults');
-      tbody.innerHTML = '';
-      let rows=0, sum=0, paid=0;
-      invoices.forEach(inv=>{
-        const hit = (!q || (inv.invoice_id||'').toLowerCase().includes(q) || (inv.patient_name||'').toLowerCase().includes(q));
-        const inRange = within(inv.invoice_date, from, to);
-        if(hit && inRange){
-          const count = items.filter(it=>it.invoice_id===inv.invoice_id).length;
-          rows++; sum += Number(inv.total||0); paid += Number(inv.paid||0);
-          tbody.insertAdjacentHTML('beforeend', `
-            <tr>
-              <td>${toISO(inv.invoice_date)}</td>
-              <td>${inv.invoice_id}</td>
-              <td>${inv.patient_name||'-'}</td>
-              <td>${count}</td>
-              <td>${fmt(inv.total)}</td>
-              <td>${fmt(inv.paid||0)}</td>
-            </tr>`);
-        }
-      });
-      if(!rows) tbody.innerHTML=`<tr><td colspan="6" class="muted">No results</td></tr>`;
-      // surface to Z-report pills for quick review
-      document.getElementById('zSales').textContent = fmt(sum);
-      document.getElementById('zPaid').textContent  = fmt(paid);
-      document.getElementById('zBal').textContent   = fmt(sum-paid);
-    }
-    document.getElementById('btnSearch').onclick = search;
+      // Top items (table + bars)
+      const top = ERP.topItems(items, 10);
+      const body = $('topBody');
+      body.innerHTML = top.length
+        ? top.map((r,i)=> `<tr><td>${i+1}</td><td>${r.name}</td><td>${r.qty}</td><td>₹ ${r.amount.toFixed(2)}</td></tr>`).join('')
+        : '<tr><td class="muted" colspan="4">—</td></tr>';
+      drawBars('topChart', top.map(t=>t.name.slice(0,8)), top.map(t=>t.amount));
 
-    function exportCSV(){
-      const rows = [['date','invoice_id','patient','items','total','paid']];
-      const from = document.getElementById('qFrom').value;
-      const to   = document.getElementById('qTo').value;
-      invoices.forEach(inv=>{
-        if(!within(inv.invoice_date, from, to)) return;
-        const count = items.filter(it=>it.invoice_id===inv.invoice_id).length;
-        rows.push([toISO(inv.invoice_date), inv.invoice_id, inv.patient_name||'', count, inv.total||0, inv.paid||0]);
-      });
-      const csv = rows.map(r=>r.join(',')).join('\n');
-      const blob = new Blob([csv], {type:'text/csv'});
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'supervisor-export.csv';
-      a.click(); URL.revokeObjectURL(a.href);
+      // Recent invoices (latest 12)
+      const invBody = $('invBody');
+      const recent = [...invs].sort((a,b)=> new Date(b.date||b.invoice_date) - new Date(a.date||a.invoice_date)).slice(0,12);
+      invBody.innerHTML = recent.length
+        ? recent.map(r => `<tr>
+            <td>${(r.date||r.invoice_date)||''}</td>
+            <td>${r.id||r.invoice_id||''}</td>
+            <td>${(r.patient_name||'')}${r.patient_id?` (${r.patient_id})`:''}</td>
+            <td>₹ ${(Number(r.total||0)).toFixed(2)}</td>
+            <td>₹ ${(Number(r.paid||0)).toFixed(2)}</td>
+          </tr>`).join('')
+        : '<tr><td class="muted" colspan="5">—</td></tr>';
     }
-    document.getElementById('btnExport').onclick = exportCSV;
 
-    // ---------- Approvals demo counters ----------
-    // If you later store real approvals in localStorage or a CSV, wire here.
-    const approvalsKey = 'erp:approvals:count';
-    const getCnt = () => Number(localStorage.getItem(approvalsKey)||0);
-    const setCnt = n => localStorage.setItem(approvalsKey, String(n));
-    function refreshApprovals(){ document.getElementById('cntApprovals').textContent = getCnt(); }
-    document.getElementById('btnApproveAll').onclick = ()=>{ setCnt(0); refreshApprovals(); alert('All overrides approved.'); };
-
-    // ---------- Day close ----------
-    document.getElementById('btnCloseDay').onclick = ()=>{
-      alert('Day closed. Z-report totals locked for today.');
-      // place to persist a “closed” flag by date if you need hard locks
+    // Export buttons
+    $('btnExportInvoices').onclick = ()=> ERP.downloadCSV('invoices_filtered.csv', ERP.filterInvoicesByDate(ERP.load('invoices', []), fromEl.value, toEl.value));
+    $('btnExportItems').onclick = ()=>{
+      const invs = ERP.filterInvoicesByDate(ERP.load('invoices', []), fromEl.value, toEl.value);
+      const ids = new Set(invs.map(i=> i.id||i.invoice_id));
+      const items = ERP.load('invoice_items', []).filter(x=> ids.has(x.invoice_id));
+      ERP.downloadCSV('invoice_items_filtered.csv', items);
     };
 
-    // ---------- Logout / Clear cache ----------
-    document.getElementById('btnLogout').onclick = ()=>{
-      localStorage.removeItem('erp:auth');
-      location.href = './login.html';
-    };
-    document.getElementById('btnClearCache').onclick = async ()=>{
-      try{
-        if('caches' in window){
-          const keys = await caches.keys();
-          await Promise.all(keys.map(k=>caches.delete(k)));
-        }
-        if('serviceWorker' in navigator){
-          const regs = await navigator.serviceWorker.getRegistrations();
-          await Promise.all(regs.map(r=>r.unregister()));
-        }
-        // Keep theme, wipe the rest lightly
-        const theme = localStorage.getItem('theme');
-        localStorage.clear();
-        if(theme) localStorage.setItem('theme', theme);
-        alert('Cache cleared. Reloading…'); location.reload();
-      }catch(e){ alert('Could not clear cache: '+e.message); }
-    };
-
-    // Kickoff
-    refreshApprovals();
-    initData();
+    // Init
+    (async function init(){
+      // Load CSVs to LS on first run (best-effort)
+      if(!ERP.load('invoices').length){ try{ await ERP.loadAllCSVs(); }catch(e){} }
+      // default range = last 7 days
+      setRange(7);
+      $('btnRun').onclick = run;
+      run();
+    })();
   </script>
 </body>
 </html>
