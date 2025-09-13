@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Supervisor · Dashboard</title>
+  <link rel="stylesheet" href="../styles/styles.css" />
+</head>
+<body>
+  <header class="app-topbar">
+    <nav class="nav">
+      <a class="link-back" href="./login.html">← Login</a>
+      <div class="spacer"></div>
+      <button class="pill" id="themeToggle">🌗</button>
+      <button class="pill" id="btnLogout">Logout</button>
+      <button class="pill" id="btnClearCache">Clear Cache</button>
+    </nav>
+  </header>
+
+  <main class="container">
+    <!-- Feature cards -->
+    <section class="grid-cards">
+      <a class="card gradient-purple" href="./booking-status.html">
+        <h3>Bookings</h3><p>Create tokens & manage appointments</p>
+      </a>
+
+      <a class="card gradient-green" href="./pharmacy.html">
+        <h3>Pharmacy – Billing</h3><p>Multi-item invoices, discounts, payments</p>
+      </a>
+
+      <a class="card gradient-amber" href="./analytics.html">
+        <h3>Pharmacy – Reports</h3><p>Daily / Weekly / Monthly / Yearly sales & items</p>
+      </a>
+
+      <a class="card gradient-pink" href="./staff.html">
+        <h3>Staff – Attendance & Roster</h3><p>Create day sheet, mark, edit, export</p>
+      </a>
+    </section>
+
+    <!-- Snapshot -->
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Today Snapshot</h2>
+        <div class="segmented" id="supRange">
+          <button class="seg active" data-range="today">Today</button>
+          <button class="seg" data-range="month">This Month</button>
+          <button class="seg" data-range="year">This Year</button>
+        </div>
+      </div>
+
+      <div class="kpi-row">
+        <div class="kpi gradient-sky"><span>Today (₹)</span><strong id="kpiToday">0.00</strong></div>
+        <div class="kpi gradient-green"><span>This Month (₹)</span><strong id="kpiMonth">0.00</strong></div>
+        <div class="kpi gradient-purple"><span>Invoices</span><strong id="kpiInv">0</strong></div>
+        <div class="kpi gradient-slate"><span>Top Item</span><strong id="kpiTop">—</strong></div>
+        <div class="kpi gradient-lavender"><span>Appointments</span><strong id="kpiAppt">0</strong></div>
+      </div>
+
+      <div class="chart-block"><h4>Revenue by Day</h4><div class="chart-placeholder" id="supRev"></div></div>
+    </section>
+  </main>
+
+  <footer class="footer">Supervisor · Warangal OneStop</footer>
+
+  <script type="module">
+    import {parseCSV, renderBars} from '../scripts/utils.js';
+
+    // Guard: only allow supervisor
+    const role = sessionStorage.getItem('role');
+    if (role !== 'supervisor') location.replace('./login.html');
+
+    // Theme + actions
+    const root = document.documentElement;
+    const saved = localStorage.getItem('theme');
+    if (saved) root.setAttribute('data-theme', saved);
+    else if (window.matchMedia('(prefers-color-scheme: light)').matches) root.setAttribute('data-theme','light');
+    document.getElementById('themeToggle').onclick = () => {
+      const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next); localStorage.setItem('theme', next);
+    };
+    document.getElementById('btnLogout').onclick = () => { sessionStorage.clear(); location.href='./login.html'; };
+    document.getElementById('btnClearCache').onclick = () => {
+      localStorage.clear(); sessionStorage.clear();
+      if ('caches' in window) caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+      location.reload();
+    };
+
+    // Range toggle
+    document.querySelectorAll('#supRange .seg').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        document.querySelectorAll('#supRange .seg').forEach(x=>x.classList.remove('active'));
+        btn.classList.add('active');
+        load(btn.dataset.range);
+      });
+    });
+
+    async function load(range='today') {
+      const inv = await fetch('../data/invoices.csv').then(r=>r.text()).then(parseCSV);
+      const items = await fetch('../data/invoice_items.csv').then(r=>r.text()).then(parseCSV);
+      const today = new Date();
+      const y = today.getFullYear(), m = today.getMonth();
+
+      const isSameDay = (s) => new Date(s.replace(/-/g,'/')).toDateString() === today.toDateString();
+      const isSameMonth = (s) => { const d=new Date(s.replace(/-/g,'/')); return d.getFullYear()===y && d.getMonth()===m; };
+      const isSameYear = (s) => new Date(s.replace(/-/g,'/')).getFullYear()===y;
+
+      const f = range==='today' ? isSameDay : range==='month' ? isSameMonth : isSameYear;
+      const rows = inv.filter(r=>f(r.date));
+
+      const total = rows.reduce((a,b)=>a+Number(b.total||0),0);
+      document.getElementById('kpiToday').textContent = (inv.filter(r=>isSameDay(r.date)).reduce((a,b)=>a+Number(b.total||0),0)).toFixed(2);
+      document.getElementById('kpiMonth').textContent = (inv.filter(r=>isSameMonth(r.date)).reduce((a,b)=>a+Number(b.total||0),0)).toFixed(2);
+      document.getElementById('kpiInv').textContent = rows.length.toString();
+
+      // top item
+      const idSet = new Set(rows.map(r=>r.invoice_id));
+      const filteredItems = items.filter(it=>idSet.has(it.invoice_id));
+      const byItem = {};
+      filteredItems.forEach(it=>{
+        const val = Number(it.qty||0)*Number(it.price||0);
+        byItem[it.item]=(byItem[it.item]||0)+val;
+      });
+      let top='—', topVal=0; Object.entries(byItem).forEach(([k,v])=>{ if(v>topVal){top=k;topVal=v;} });
+      document.getElementById('kpiTop').textContent = top||'—';
+
+      // stub count for appointments (will wire later)
+      document.getElementById('kpiAppt').textContent = '0';
+
+      // chart
+      const map = new Map();
+      rows.forEach(r=> map.set(r.date,(map.get(r.date)||0)+Number(r.total||0)));
+      const series = Array.from(map.entries()).sort((a,b)=>a[0].localeCompare(b[0])).map(([label,value])=>({label,value}));
+      renderBars(document.getElementById('supRev'), series.length?series:[{label:'—',value:0}]);
+    }
+    load('today');
+  </script>
+</body>
+</html>
