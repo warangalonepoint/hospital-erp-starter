@@ -1,168 +1,56 @@
 <!doctype html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="dark">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Dashboard • Hospital ERP</title>
-  <link rel="stylesheet" href="../styles/styles.css"/>
-  <link rel="icon" href="../public/assets/icon-192.png"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Doctor Dashboard</title>
+  <link rel="stylesheet" href="../styles/styles.css" />
 </head>
 <body>
-  <!-- Banner -->
-  <header class="banner">
-    <button id="themeToggle" class="toggle" title="Toggle theme">🌙</button>
+  <header class="app-topbar">
+    <nav class="nav">
+      <a class="link-back" href="./login.html">← Login</a>
+      <div class="spacer"></div>
+      <button class="pill" id="themeToggle">🌗</button>
+      <button class="pill" id="btnLogout">Logout</button>
+    </nav>
   </header>
 
-  <!-- Top actions -->
-  <div class="toolbar">
-    <a class="chip" href="./login.html">↪ Login</a>
-    <button class="chip" id="btnLogout">Logout</button>
-    <button class="chip" id="btnClear">Clear Cache</button>
-    <div style="flex:1"></div>
-    <a class="chip" href="./settings.html">Settings</a>
-    <a class="chip admin-only" href="./admin.html">Admin</a>
-  </div>
-
-  <!-- Main navigation panels -->
-  <section class="section">
-    <div class="card-grid">
-      <a class="card panel--lilac" href="./booking-status.html">
-        <h3>Bookings</h3>
-        <p>Create tokens & manage appointments</p>
+  <main class="container">
+    <section class="grid-cards">
+      <a class="card grad-blue" href="./booking-status.html">
+        <h3>Appointments</h3><p>Check patient queue</p>
       </a>
-      <a class="card panel--mint" href="./pharmacy.html">
-        <h3>Pharmacy – Billing</h3>
-        <p>Multi-item invoices, discounts, payments</p>
+      <a class="card grad-mint" href="./pharmacy.html">
+        <h3>Pharmacy</h3><p>Billing & stock</p>
       </a>
-      <a class="card panel--peach" href="./pharmacy.html#tab-reports">
-        <h3>Pharmacy – Reports</h3>
-        <p>Daily / Weekly / Monthly / Yearly sales & items</p>
+      <a class="card grad-amber" href="./analytics.html">
+        <h3>Reports</h3><p>Sales & daily stats</p>
       </a>
-      <a class="card panel--rose" href="./staff.html">
-        <h3>Staff – Attendance & Roster</h3>
-        <p>Create day sheet, mark, edit, export</p>
+      <a class="card grad-violet" href="./staff.html">
+        <h3>Staff</h3><p>Attendance & roster</p>
       </a>
-    </div>
-  </section>
+      <a class="card grad-slate" href="./supervisor.html">
+        <h3>Supervisor View</h3><p>Snapshots & KPIs</p>
+      </a>
+      <a class="card grad-pink" href="./settings.html">
+        <h3>Settings</h3><p>Admin tools</p>
+      </a>
+    </section>
+  </main>
 
-  <!-- Snapshot -->
-  <section class="section">
-    <h2 class="muted">Today Snapshot</h2>
-    <div class="kpi-grid mt12">
-      <div class="kpi" style="background:var(--t-blue);color:var(--c-blue)">
-        <h4>Total (₹)</h4><div class="num" id="kpiTotal">0.00</div>
-      </div>
-      <div class="kpi" style="background:var(--t-lilac);color:var(--c-lilac)">
-        <h4>Invoices</h4><div class="num" id="kpiInvoices">0</div>
-      </div>
-      <div class="kpi" style="background:var(--t-mint);color:var(--c-mint)">
-        <h4>Paid (₹)</h4><div class="num" id="kpiPaid">0.00</div>
-      </div>
-      <div class="kpi" style="background:var(--t-peach);color:var(--c-peach)">
-        <h4>Top Item</h4><div class="num" id="kpiTop">—</div>
-      </div>
-    </div>
+  <footer class="footer">Doctor Dashboard · Hospital ERP</footer>
 
-    <div class="chart-wrap mt16">
-      <div class="chart-title">Daily Revenue (Last 7 days)</div>
-      <canvas id="revChart" aria-label="Daily revenue chart"></canvas>
-    </div>
-  </section>
-
-  <!-- Quick links -->
-  <section class="section">
-    <h2 class="muted">Quick Links</h2>
-    <div class="chips mt12">
-      <a class="chip" href="./pharmacy.html#tab-sell">Open POS (Sell)</a>
-      <a class="chip" href="./pharmacy.html#tab-purchase">Purchase / Stock-in</a>
-      <a class="chip" href="./pharmacy.html#tab-stock">Stock List</a>
-      <a class="chip" href="./analytics.html">Sales Analytics</a>
-      <a class="chip admin-only" href="./admin.html">Admin Settings</a>
-    </div>
-  </section>
-
-  <script src="../scripts/utils.js"></script>
   <script>
-    // Theme
-    (function(){
-      const key='theme', root=document.documentElement, btn=document.getElementById('themeToggle');
-      const saved=localStorage.getItem(key)||'light'; root.dataset.theme=saved; btn.textContent=saved==='dark'?'🌙':'🌞';
-      btn.onclick=()=>{ const next=root.dataset.theme==='dark'?'light':'dark'; root.dataset.theme=next; localStorage.setItem(key,next); btn.textContent=next==='dark'?'🌙':'🌞'; };
-    })();
-
-    // Role-based link visibility
-    (function hideAdminLinks(){
-      const role = localStorage.getItem('erp:role') || sessionStorage.getItem('role');
-      if (role !== 'admin') document.querySelectorAll('.admin-only').forEach(el => el.remove());
-    })();
-
-    // Logout / Clear
-    document.getElementById('btnLogout').onclick = ()=>{
-      localStorage.removeItem('erp:auth'); localStorage.removeItem('erp:role'); sessionStorage.clear();
-      location.href='./login.html';
+    const root = document.documentElement;
+    const saved = localStorage.getItem('theme');
+    if (saved) root.setAttribute('data-theme', saved);
+    else if (matchMedia('(prefers-color-scheme: light)').matches) root.setAttribute('data-theme','light');
+    document.getElementById('themeToggle').onclick = () => {
+      const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next); localStorage.setItem('theme', next);
     };
-    document.getElementById('btnClear').onclick = async ()=>{
-      const keep=['theme','erp:pin_doctor','erp:pin_supervisor','erp:pin_admin'];
-      Object.keys(localStorage).forEach(k=>{ if(!keep.includes(k)) localStorage.removeItem(k); });
-      if('caches' in window){ const keys=await caches.keys(); await Promise.all(keys.map(k=>caches.delete(k))); }
-      alert('Cache cleared (PINs preserved).');
-      location.reload();
-    };
-
-    // Seed demo data on first load (optional)
-    (async function seed(){
-      if(!ERP.load('invoices').length){ try{ await ERP.loadAllCSVs(); }catch(e){} }
-      computeSnapshot(); drawRevenue();
-    })();
-
-    // Snapshot KPIs
-    function isTodayISO(iso){
-      const d = new Date(iso||''); if(isNaN(d)) return false;
-      const t=new Date(); return d.getFullYear()===t.getFullYear() && d.getMonth()===t.getMonth() && d.getDate()===t.getDate();
-    }
-    function computeSnapshot(){
-      const invoices = ERP.load('invoices', []);
-      const items = ERP.load('invoice_items', []);
-      let total=0, paid=0, cnt=0;
-      invoices.forEach(inv=>{
-        const iso = inv.date || inv.invoice_date;
-        if(isTodayISO(iso)){ cnt++; total+=Number(inv.total||0); paid+=Number(inv.paid||0); }
-      });
-      document.getElementById('kpiTotal').textContent = (total||0).toFixed(2);
-      document.getElementById('kpiPaid').textContent  = (paid||0).toFixed(2);
-      document.getElementById('kpiInvoices').textContent = cnt;
-
-      // top item by qty
-      const ct = {};
-      items.forEach(it => { const n=it.item_name||it.name||'—'; ct[n]=(ct[n]||0)+Number(it.qty||0); });
-      const top = Object.entries(ct).sort((a,b)=>b[1]-a[1])[0];
-      document.getElementById('kpiTop').textContent = top ? top[0] : '—';
-    }
-
-    // Mini bar chart (no deps)
-    function drawRevenue(){
-      const invoices = ERP.load('invoices', []);
-      const items = ERP.load('invoice_items', []);
-      const byId = new Map(invoices.map(i => [(i.id||i.invoice_id), i]));
-      const series = ERP.dailyRevenue(items, byId); // [{date, amount}]
-
-      // build last 7 days buckets
-      const today = new Date(); today.setHours(0,0,0,0);
-      const keys = Array.from({length:7},(_,i)=>{const d=new Date(today);d.setDate(today.getDate()- (6-i));return d.toISOString().slice(0,10);});
-      const data = keys.map(k => ({ key:k, label:`${k.slice(8,10)}/${k.slice(5,7)}`, amount: (series.find(s=>s.date===k)?.amount || 0) }));
-
-      const cvs = document.getElementById('revChart'), ctx=cvs.getContext('2d');
-      const W = cvs.clientWidth || 680, H = 220; cvs.width=W*devicePixelRatio; cvs.height=H*devicePixelRatio; ctx.scale(devicePixelRatio,devicePixelRatio);
-      ctx.clearRect(0,0,W,H);
-      const pad=24, gap=10, bw=(W-pad*2-gap*(data.length-1))/data.length, max=Math.max(1, ...data.map(d=>d.amount));
-      const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent') || '#2563eb';
-      ctx.font='12px Inter, system-ui, sans-serif'; ctx.fillStyle='#888';
-      data.forEach((d,i)=>{
-        const x=pad+i*(bw+gap), h=Math.round((d.amount/max)*(H-70)), y=H-40-h;
-        ctx.fillStyle=accent; ctx.fillRect(x,y,bw,h);
-        ctx.fillStyle='currentColor'; ctx.globalAlpha=.85; ctx.fillText(d.label, x, H-20); ctx.globalAlpha=1;
-      });
-    }
+    document.getElementById('btnLogout').onclick = () => { sessionStorage.clear(); location.href='./login.html'; };
   </script>
 </body>
 </html>
