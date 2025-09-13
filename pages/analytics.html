@@ -1,317 +1,67 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="en" data-theme="dark">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Hospital ERP • Analytics</title>
-
-  <link rel="stylesheet" href="../styles/styles.css" />
-  <link rel="manifest" href="../manifest.json" />
-
-  <script>
-    // Apply saved theme (or system) BEFORE paint to avoid flash
-    (function () {
-      const stored = localStorage.getItem('erp_theme');
-      const prefersDark = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches;
-      const theme = stored || (prefersDark ? 'dark' : 'light');
-      document.documentElement.setAttribute('data-theme', theme);
-    })();
-  </script>
-
-  <style>
-    /* Small page-local tweaks to align with dashboard look */
-    .container{max-width:1100px;margin:0 auto}
-    .row{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
-    .btn{padding:.55rem .85rem;border-radius:12px;border:1px solid var(--border);background:var(--chip-bg);color:var(--fg);font-weight:700;box-shadow:var(--soft-shadow)}
-    .btn.primary{background:var(--brand-chip);color:#fff;border-color:transparent}
-    .btn.ghost{background:transparent}
-    .chip{padding:.5rem .8rem;border-radius:14px;background:var(--chip-bg);box-shadow:var(--soft-shadow);font-weight:800}
-    .card{background:var(--card-bg);border-radius:18px;padding:16px;box-shadow:var(--card-shadow)}
-    .kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.75rem}
-    .kpi{padding:14px;border-radius:16px;background:var(--chip-bg);box-shadow:var(--soft-shadow)}
-    .kpi .label{opacity:.75;font-size:.9rem}
-    .kpi .value{font-weight:900;font-variant-numeric:tabular-nums;font-size:1.25rem}
-    .tabs{display:flex;gap:.4rem}
-    .tab{padding:.45rem .8rem;border-radius:999px;background:var(--chip-bg);box-shadow:var(--soft-shadow);font-weight:700}
-    .tab.active{background:var(--brand-chip);color:#fff}
-    table{width:100%;border-collapse:separate;border-spacing:0 8px}
-    th,td{padding:.6rem .7rem;text-align:left}
-    thead th{opacity:.8}
-    .right{text-align:right}
-    .muted{opacity:.75}
-    canvas{width:100%;height:200px;display:block}
-    @media (max-width:900px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
-  </style>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Analytics • Hospital ERP</title>
+  <link rel="stylesheet" href="../styles/styles.css"/>
+  <script defer src="../scripts/utils.js"></script>
 </head>
-
 <body>
-  <header class="container" style="padding:14px 12px 0">
-    <div class="row" style="justify-content:space-between">
-      <div class="row">
-        <a href="./dashboard.html" class="btn ghost">← Dashboard</a>
-        <button id="btn-logout" class="btn ghost">Logout</button>
-        <button id="btn-clear" class="btn ghost">Clear Cache</button>
-      </div>
-      <div class="chip">Analytics</div>
-    </div>
-    <h1 style="margin:8px 0 0">Sales Reports</h1>
+  <header class="banner">
+    <button class="toggle" id="themeToggle" title="Toggle theme">🌙</button>
   </header>
 
-  <main class="container" style="padding:8px 12px 32px">
-    <!-- Range controls -->
-    <div class="card" style="margin-bottom:12px">
-      <div class="row" style="justify-content:space-between;align-items:center">
-        <div class="row">
-          <label class="muted" style="margin-right:.4rem">From</label>
-          <input id="from" type="date" class="input" style="max-width:160px">
-          <label class="muted" style="margin:.2rem .4rem 0">To</label>
-          <input id="to" type="date" class="input" style="max-width:160px">
-          <button id="apply" class="btn primary">Apply</button>
-        </div>
-        <div class="tabs">
-          <button class="tab active" data-range="7d">Last 7D</button>
-          <button class="tab" data-range="30d">Last 30D</button>
-          <button class="tab" data-range="mtd">MTD</button>
-          <button class="tab" data-range="ytd">YTD</button>
-        </div>
+  <div class="toolbar">
+    <a class="chip" href="../index.html">← Dashboard</a>
+    <button class="chip" id="clearCacheBtn">Clear Cache</button>
+  </div>
+
+  <section class="section">
+    <div class="panel grad-lilac"><h2>Sales Analytics</h2></div>
+
+    <div class="section" style="margin-top:12px">
+      <div class="row">
+        <input type="date" id="from" style="max-width:200px"/>
+        <input type="date" id="to" style="max-width:200px"/>
+        <button id="run" class="chip chip--primary">Run</button>
+        <button class="chip" data-q="today">Today</button>
+        <button class="chip" data-q="7d">7D</button>
+        <button class="chip" data-q="30d">30D</button>
+        <button class="chip" data-q="ytd">YTD</button>
+      </div>
+
+      <div class="kpi-grid" style="margin-top:12px">
+        <div class="kpi grad-sky"><div class="label">Total (₹)</div><div class="num" id="kTotal">0.00</div></div>
+        <div class="kpi grad-lilac"><div class="label">Avg / Day (₹)</div><div class="num" id="kAvg">0.00</div></div>
+        <div class="kpi grad-mint"><div class="label">Invoices</div><div class="num" id="kInv">0</div></div>
+        <div class="kpi grad-rose"><div class="label">Top Item</div><div class="num" id="kTop">—</div></div>
       </div>
     </div>
 
-    <!-- KPIs -->
-    <section class="kpis" style="margin-bottom:12px">
-      <div class="kpi">
-        <div class="label">Total (₹)</div>
-        <div id="kpi-total" class="value">0.00</div>
-      </div>
-      <div class="kpi">
-        <div class="label">Avg / Day (₹)</div>
-        <div id="kpi-avg" class="value">0.00</div>
-      </div>
-      <div class="kpi">
-        <div class="label">Invoices</div>
-        <div id="kpi-bills" class="value">0</div>
-      </div>
-      <div class="kpi">
-        <div class="label">Top Item</div>
-        <div id="kpi-top" class="value">—</div>
-      </div>
-      <div class="kpi">
-        <div class="label">Items sold</div>
-        <div id="kpi-items" class="value">0</div>
-      </div>
-    </section>
+    <div class="section">
+      <h3 style="margin:0 0 8px">Daily Revenue</h3>
+      <div style="height:220px;border-radius:14px;background:linear-gradient(180deg,rgba(255,255,255,.06),transparent);box-shadow:var(--shadow);display:grid;place-items:center;color:var(--muted)">Chart placeholder</div>
+    </div>
 
-    <!-- Revenue by day -->
-    <section class="card" style="margin-bottom:12px">
-      <h3 style="margin:0 0 8px">Revenue by Day</h3>
-      <canvas id="rev-canvas" width="900" height="220"></canvas>
-      <table>
-        <thead><tr><th>Date</th><th class="right">Amount (₹)</th></tr></thead>
-        <tbody id="rev-by-day"><tr><td class="muted" colspan="2">—</td></tr></tbody>
-      </table>
-    </section>
-
-    <!-- Top items -->
-    <section class="card">
+    <div class="section">
       <h3 style="margin:0 0 8px">Top Items</h3>
-      <table>
-        <thead><tr><th>Item</th><th class="right">Qty</th></tr></thead>
-        <tbody id="top-items"><tr><td class="muted" colspan="2">—</td></tr></tbody>
+      <table class="table" id="topItems">
+        <thead><tr><th>Item</th><th>Qty</th><th>Amount</th></tr></thead>
+        <tbody><tr><td class="muted" colspan="3">No items</td></tr></tbody>
       </table>
-    </section>
-  </main>
+    </div>
+  </section>
 
   <script>
-    // Session actions
-    document.getElementById('btn-logout').onclick = () => { localStorage.removeItem('erp_active_role'); location.href = './login.html'; };
-    document.getElementById('btn-clear').onclick = () => {
-      localStorage.clear();
-      if (window.caches?.keys) caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
-      alert('Cache cleared. Reloading…'); location.reload();
-    };
-
-    // CSV loader (no external libs) — tolerant of quoted commas
-    async function loadCSV(path) {
-      const txt = await fetch(path, { cache: 'no-store' }).then(r => r.text());
-      const lines = txt.trim().split(/\r?\n/);
-      if (!lines.length) return [];
-      const headers = lines[0].split(',').map(h => h.trim());
-      return lines.slice(1).map(line => {
-        const cells = []; let cur = '', inQ = false;
-        for (let i = 0; i < line.length; i++) {
-          const ch = line[i];
-          if (ch === '"') { inQ = !inQ; continue; }
-          if (ch === ',' && !inQ) { cells.push(cur); cur = ''; continue; }
-          cur += ch;
-        }
-        cells.push(cur);
-        const row = {};
-        headers.forEach((h, i) => row[h] = (cells[i] ?? '').trim());
-        return row;
-      });
-    }
-
-    // Date parsing across common header names
-    function parseDate(row) {
-      const cand = row.date || row.Date || row.txn_date || row.invoice_date || row.created_at || row.day;
-      if (!cand) return null;
-      const ymd = /^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/;
-      const dmy = /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/;
-      if (ymd.test(cand)) { const [,y,m,d]=cand.match(ymd); return new Date(+y, +m-1, +d); }
-      if (dmy.test(cand)) { const [,d,m,y]=cand.match(dmy); return new Date(+y, +m-1, +d); }
-      const t = Date.parse(cand); return Number.isNaN(t) ? null : new Date(t);
-    }
-    const num = v => Number(String(v ?? '').replace(/[₹,\s]/g,'')) || 0;
-    const money = n => (n||0).toLocaleString('en-IN',{minimumFractionDigits:2, maximumFractionDigits:2});
-    const $ = sel => document.querySelector(sel);
-
-    // Ranges
-    const ranges = {
-      '7d' () { const to = new Date(); to.setHours(23,59,59,999); const from = new Date(to); from.setDate(from.getDate()-6); from.setHours(0,0,0,0); return [from,to]; },
-      '30d'() { const to = new Date(); to.setHours(23,59,59,999); const from = new Date(to); from.setDate(from.getDate()-29); from.setHours(0,0,0,0); return [from,to]; },
-      'mtd' () { const now = new Date(); const from = new Date(now.getFullYear(), now.getMonth(), 1); const to = new Date(now.getFullYear(), now.getMonth()+1, 0, 23,59,59,999); return [from,to]; },
-      'ytd' () { const now = new Date(); const from = new Date(now.getFullYear(),0,1); const to = new Date(now.getFullYear(),11,31,23,59,59,999); return [from,to]; }
-    };
-    function toISODate(d){ return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10); }
-
-    // Simple chart
-    function drawChart(canvas, points, maxY) {
-      const ctx = canvas.getContext('2d');
-      const w = canvas.width, h = canvas.height;
-      ctx.clearRect(0,0,w,h);
-      // grid
-      ctx.globalAlpha = 0.15;
-      ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--border') || '#ccc';
-      for (let i=0;i<5;i++){ const y = 10 + (h-30)*i/4; ctx.beginPath(); ctx.moveTo(40,y); ctx.lineTo(w-10,y); ctx.stroke(); }
-      ctx.globalAlpha = 1;
-      // axes
-      ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--fg') || '#000';
-      ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(40,10); ctx.lineTo(40,h-20); ctx.lineTo(w-10,h-20); ctx.stroke();
-
-      if (!points.length || maxY<=0) return;
-      const xStep = (w-60)/Math.max(1, points.length-1);
-      ctx.beginPath();
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--fg') || '#000';
-      points.forEach((p,i)=>{
-        const x = 40 + i*xStep;
-        const y = h-20 - (p.value/maxY)*(h-30);
-        if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-      });
-      ctx.stroke();
-    }
-
-    async function run(rangeFrom, rangeTo) {
-      // Load CSVs
-      const invoices = await loadCSV('../data/invoices.csv');
-      const items    = await loadCSV('../data/invoice_items.csv');
-
-      // Key detection
-      const invIdKey = ['invoice_id','invoiceId','bill_no','bill','id'].find(k => invoices[0]?.hasOwnProperty(k)) || 'invoice_id';
-      const partyKey = ['patient','patient_name','party','customer','name'].find(k => invoices[0]?.hasOwnProperty(k)) || 'patient';
-      const amountKey = ['grand_total','amount','total','value'].find(k => invoices[0]?.hasOwnProperty(k)) || 'grand_total';
-
-      const linkKey = ['invoice_id','invoiceId','bill_no','bill','id'].find(k => items[0]?.hasOwnProperty(k)) || invIdKey;
-      const qtyKey = ['qty','quantity','qnty'].find(k => items[0]?.hasOwnProperty(k)) || 'qty';
-      const itemNameKey = ['item','item_name','name','product'].find(k => items[0]?.hasOwnProperty(k)) || 'item';
-
-      // Filter by date
-      const inRange = (row) => {
-        const d = parseDate(row); return d && d >= rangeFrom && d <= rangeTo;
-      };
-      const inv = invoices.filter(inRange);
-
-      // Build indexes
-      const invSet = new Set(inv.map(r => r[invIdKey]));
-      const its = items.filter(r => invSet.has(r[linkKey]));
-
-      // KPIs
-      const total = inv.reduce((s,r)=> s + num(r[amountKey]), 0);
-      const invoiceCount = inv.length;
-      const days = Math.max(1, Math.round((rangeTo - rangeFrom)/86400000) + 1);
-      const avgPerDay = total / days;
-      const itemsSold = its.reduce((s,r)=> s + num(r[qtyKey]), 0);
-
-      // Top item (by qty)
-      const byItem = new Map();
-      its.forEach(r => {
-        const key = (r[itemNameKey] || '').toUpperCase().trim();
-        if (!key) return;
-        byItem.set(key, (byItem.get(key) || 0) + num(r[qtyKey]));
-      });
-      let topItem = '—', topQty = 0;
-      for (const [k,v] of byItem.entries()) if (v > topQty) { topItem = k; topQty = v; }
-
-      // Write KPIs
-      document.getElementById('kpi-total').textContent = '₹' + money(total);
-      document.getElementById('kpi-avg').textContent   = '₹' + money(avgPerDay);
-      document.getElementById('kpi-bills').textContent = String(invoiceCount);
-      document.getElementById('kpi-top').textContent   = topItem;
-      document.getElementById('kpi-items').textContent = String(itemsSold);
-
-      // Revenue by day
-      const byDay = new Map();
-      inv.forEach(r => {
-        const d = parseDate(r); if (!d) return;
-        const key = d.toISOString().slice(0,10);
-        byDay.set(key, (byDay.get(key)||0) + num(r[amountKey]));
-      });
-      const dayTbody = document.getElementById('rev-by-day');
-      const rows = Array.from(byDay.entries()).sort((a,b)=> a[0].localeCompare(b[0]));
-      dayTbody.innerHTML = rows.length
-        ? rows.map(([d,v])=> `<tr><td>${d}</td><td class="right">₹${money(v)}</td></tr>`).join('')
-        : `<tr><td class="muted" colspan="2">No data in selected range</td></tr>`;
-
-      // Draw chart
-      const points = rows.map(([d,v]) => ({ date:d, value:v }));
-      const maxY = Math.max(0, ...points.map(p=>p.value));
-      drawChart(document.getElementById('rev-canvas'), points, maxY);
-
-      // Top Items table
-      const topTbody = document.getElementById('top-items');
-      const topRows = Array.from(byItem.entries()).sort((a,b)=> b[1]-a[1]).slice(0,10);
-      topTbody.innerHTML = topRows.length
-        ? topRows.map(([name,qty])=> `<tr><td>${name}</td><td class="right">${qty}</td></tr>`).join('')
-        : `<tr><td class="muted" colspan="2">No items</td></tr>`;
-    }
-
-    // Wire range controls
-    (function initUI(){
-      const rFrom = document.getElementById('from');
-      const rTo   = document.getElementById('to');
-      const applyBtn = document.getElementById('apply');
-
-      function applyRange([from, to]) {
-        if (rFrom) rFrom.value = toISODate(from);
-        if (rTo)   rTo.value   = toISODate(to);
-        run(from, to);
-      }
-
-      // quick ranges
-      document.querySelectorAll('[data-range]').forEach(btn=>{
-        btn.addEventListener('click', ()=>{
-          document.querySelectorAll('[data-range]').forEach(b=> b.classList.toggle('active', b===btn));
-          const val = btn.dataset.range;
-          const fn = ranges[val] || ranges['7d'];
-          applyRange(fn());
-        });
-      });
-
-      // manual apply
-      if (applyBtn) {
-        applyBtn.addEventListener('click', ()=>{
-          const from = new Date(rFrom.value + 'T00:00:00');
-          const to = new Date(rTo.value + 'T23:59:59');
-          run(from, to);
-        });
-      }
-
-      // Initial: last 7D
-      const to = new Date(); to.setHours(23,59,59,999);
-      const from = new Date(to); from.setDate(from.getDate()-6); from.setHours(0,0,0,0);
-      applyRange([from,to]);
-    })();
+    // theme
+    const html=document.documentElement, t=document.getElementById('themeToggle');
+    function sync(){t.textContent=html.dataset.theme==='dark'?'🌙':'🌞'}; t.onclick=()=>{html.dataset.theme=html.dataset.theme==='dark'?'light':'dark'; localStorage.setItem('theme',html.dataset.theme); sync();}; html.dataset.theme=localStorage.getItem('theme')||'dark'; sync();
+    // quick range helpers
+    const setRange = (days)=>{ const to=new Date(), from=new Date(); from.setDate(to.getDate()-days+1); document.getElementById('from').value=from.toISOString().slice(0,10); document.getElementById('to').value=to.toISOString().slice(0,10); };
+    document.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{ const q=b.dataset.q; if(q==='today') setRange(1); if(q==='7d') setRange(7); if(q==='30d') setRange(30); if(q==='ytd'){ const d=new Date(); document.getElementById('from').value=`${d.getFullYear()}-01-01`; document.getElementById('to').value=new Date().toISOString().slice(0,10);} });
+    setRange(7);
+    document.getElementById('clearCacheBtn')?.addEventListener('click',()=>{localStorage.clear(); alert('Cache cleared');});
   </script>
 </body>
 </html>
