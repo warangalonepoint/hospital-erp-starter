@@ -3,330 +3,53 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Settings • Hospital ERP (Admin)</title>
+  <title>Settings • Hospital ERP</title>
   <link rel="stylesheet" href="../styles/styles.css" />
-  <!-- If you also use ui.css + compat, include after styles.css -->
-  <!-- <link rel="stylesheet" href="../styles/ui.css" /> -->
-  <script src="../scripts/utils.js"></script>
-  <style>
-    /* local helpers only */
-    .grid-cards{display:grid;gap:16px;grid-template-columns:1fr}
-    @media (min-width: 860px){ .grid-cards{grid-template-columns:repeat(2,1fr)} }
-    .tile{padding:18px;border-radius:22px;border:1px solid #22324a;box-shadow:var(--shadow-lg);position:relative;color:#eef2ff}
-    .tile h3{margin:0 0 6px;font-weight:800}
-    .tile p{margin:4px 0 0;color:#d7deea}
-    .grad-mint { background: var(--grad-mint); }
-    .grad-blue { background: var(--grad-blue); }
-    .grad-amber{ background: linear-gradient(135deg,#6f3b1e 0%,#e7a16a 55%,#ffe0bf 100%); }
-    .grad-pink { background: var(--grad-rose); }
-  </style>
 </head>
 <body>
-  <!-- Banner -->
-  <header class="banner">
-    <button id="themeToggle" class="toggle" title="Toggle theme">🌙</button>
+  <!-- Topbar -->
+  <header class="app-topbar">
+    <nav class="nav">
+      <a class="link-back" href="./dashboard.html">← Dashboard</a>
+      <div class="spacer"></div>
+      <button class="pill" id="themeToggle">🌗</button>
+    </nav>
   </header>
 
-  <!-- Top actions -->
-  <nav class="toolbar">
-    <a class="chip" href="./dashboard.html">← Dashboard</a>
-    <button id="btnLogout" class="chip">Logout</button>
-    <button id="btnClear" class="chip">Clear Cache</button>
-  </nav>
-
-  <!-- Admin-only guard -->
-  <script>
-    // Ensure utils is loaded, then guard
-    document.addEventListener('DOMContentLoaded', () => {
-      if (window.ERP && ERP.requireRole) {
-        ERP.requireRole('admin', './login.html');
-      } else {
-        // Fallback guard if utils failed to load
-        const role = localStorage.getItem('role') || localStorage.getItem('erp:role');
-        if (role !== 'admin') location.replace('./login.html');
-      }
-    });
-  </script>
-
   <!-- Main -->
-  <main class="section">
-    <div class="panel grad-lilac">
-      <h2>Admin Settings</h2>
-      <p class="muted">Manage clinic info, users & roles, PINs, and backups.</p>
-    </div>
-
-    <div class="grid-cards mt16">
-      <a class="tile grad-mint" href="#clinic">
-        <h3>Clinic Info</h3>
-        <p>Hospital name, address, contact & branding</p>
-      </a>
-
-      <a class="tile grad-blue" href="#users">
-        <h3>Manage Users</h3>
-        <p>Add/remove staff, assign roles & permissions</p>
-      </a>
-
-      <a class="tile grad-amber" href="#pins">
-        <h3>PIN & Access</h3>
-        <p>Reset Doctor / Supervisor / Admin PINs</p>
-      </a>
-
-      <a class="tile grad-pink" href="#backup">
-        <h3>Backup & Export</h3>
-        <p>Export CSV data and download backups</p>
-      </a>
-    </div>
+  <main class="container">
+    <section class="panel">
+      <h2>Settings</h2>
+      <div class="grid-cards mt16">
+        <div class="card grad-mint">
+          <h3>Clinic Info</h3>
+          <p>Update hospital name, address, contact</p>
+        </div>
+        <div class="card grad-blue">
+          <h3>Manage Users</h3>
+          <p>Add/remove staff, assign roles</p>
+        </div>
+        <div class="card grad-amber">
+          <h3>Data & Backup</h3>
+          <p>Export CSV data, download backups</p>
+        </div>
+      </div>
+    </section>
   </main>
 
-  <!-- Sections -->
-  <section id="clinic" class="section">
-    <div class="card">
-      <h3>Clinic Info</h3>
-      <div class="row mt12">
-        <input id="clinicName" class="input" placeholder="Hospital / Clinic Name" style="max-width:340px">
-        <input id="clinicPhone" class="input" placeholder="Phone" style="max-width:220px">
-        <input id="clinicEmail" class="input" placeholder="Email" style="max-width:260px">
-      </div>
-      <div class="row mt8">
-        <input id="clinicAddr1" class="input" placeholder="Address line 1" style="flex:1">
-        <input id="clinicAddr2" class="input" placeholder="Address line 2" style="flex:1">
-      </div>
-      <div class="row mt8">
-        <input id="clinicCity" class="input" placeholder="City" style="max-width:220px">
-        <input id="clinicState" class="input" placeholder="State" style="max-width:220px">
-        <input id="clinicZip" class="input" placeholder="PIN Code" style="max-width:160px">
-      </div>
-      <div class="row mt12">
-        <button id="btnSaveClinic" class="btn primary">Save Clinic Info</button>
-        <span id="clinicMsg" class="muted">—</span>
-      </div>
-    </div>
-  </section>
-
-  <section id="users" class="section">
-    <div class="card">
-      <h3>Manage Users</h3>
-      <p class="muted">Quick add of staff with role.</p>
-      <div class="row mt8">
-        <input id="userName" class="input" placeholder="Full name" style="max-width:260px">
-        <select id="userRole" class="input" style="max-width:220px">
-          <option value="doctor">Doctor</option>
-          <option value="supervisor">Supervisor</option>
-          <option value="admin">Admin</option>
-        </select>
-        <button id="btnAddUser" class="btn">Add</button>
-      </div>
-      <div class="mt12">
-        <table class="table" id="tblUsers">
-          <thead><tr><th>Name</th><th>Role</th><th class="right">Actions</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
-  </section>
-
-  <section id="pins" class="section">
-    <div class="card">
-      <h3>PIN & Access</h3>
-      <p class="muted">Change or reset PINs. Admin PIN required to save changes.</p>
-
-      <div class="row mt8">
-        <label class="chip">Show PINs
-          <input id="showPins" type="checkbox" style="margin-left:8px">
-        </label>
-      </div>
-
-      <div class="grid-2 mt12">
-        <div class="card">
-          <h4>Admin PIN</h4>
-          <input id="pinAdminCurrent" class="input" type="password" inputmode="numeric" placeholder="Current Admin PIN">
-          <div class="row mt8">
-            <input id="pinAdminNew" class="input" type="password" inputmode="numeric" placeholder="New Admin PIN (4–6 digits)">
-            <input id="pinAdminConfirm" class="input" type="password" inputmode="numeric" placeholder="Confirm Admin PIN">
-          </div>
-        </div>
-        <div class="card">
-          <h4>Doctor & Supervisor PINs</h4>
-          <div class="row">
-            <input id="pinDoctorNew" class="input" type="password" inputmode="numeric" placeholder="Doctor PIN (4–6 digits)">
-            <input id="pinSupervisorNew" class="input" type="password" inputmode="numeric" placeholder="Supervisor PIN (4–6 digits)">
-          </div>
-        </div>
-      </div>
-
-      <div class="row mt12">
-        <button id="btnSavePins" class="btn primary">Save PINs</button>
-        <button id="btnResetPins" class="btn">Reset to Defaults</button>
-        <span id="pinMsg" class="muted">—</span>
-      </div>
-    </div>
-  </section>
-
-  <section id="backup" class="section">
-    <div class="card">
-      <h3>Backup & Export</h3>
-      <div class="row mt8">
-        <button id="btnExportPatients" class="chip">Export Patients.csv</button>
-        <button id="btnExportInvoices" class="chip">Export Invoices.csv</button>
-        <button id="btnExportInvItems" class="chip">Export Invoice_Items.csv</button>
-        <button id="btnExportInventory" class="chip">Export Inventory.csv</button>
-      </div>
-    </div>
-  </section>
-
-  <footer class="section center muted">Settings · Hospital ERP</footer>
+  <footer class="footer">Settings · Hospital ERP</footer>
 
   <script>
-    // ===== Theme toggle (unified) =====
-    (function theme(){
-      const root = document.documentElement;
-      const btn  = document.getElementById('themeToggle');
-      const saved = localStorage.getItem('theme') || 'light';
-      root.dataset.theme = saved;
-      btn.textContent = saved === 'dark' ? '🌙' : '🌞';
-      btn.onclick = () => {
-        const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
-        root.dataset.theme = next;
-        localStorage.setItem('theme', next);
-        btn.textContent = next === 'dark' ? '🌙' : '🌞';
-      };
-    })();
-
-    // ===== Logout / Clear Cache =====
-    document.getElementById('btnLogout').onclick = () => {
-      localStorage.removeItem('role'); // our unified key
-      localStorage.removeItem('erp:role'); // legacy safeguard
-      location.href = './login.html';
+    // Theme toggle
+    const root = document.documentElement;
+    const btn = document.getElementById('themeToggle');
+    const saved = localStorage.getItem('theme') || 'light';
+    root.setAttribute('data-theme', saved);
+    btn.onclick = () => {
+      const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
     };
-    document.getElementById('btnClear').onclick = async () => {
-      const keep = new Set(['theme','pins']); // keep theme & pins
-      for (const k of Object.keys(localStorage)) if (!keep.has(k)) localStorage.removeItem(k);
-      if ('caches' in window) { const names = await caches.keys(); await Promise.all(names.map(n => caches.delete(n))); }
-      alert('Cleared local data (kept theme & PINs).');
-    };
-
-    // ===== Clinic Info storage =====
-    (function clinicInfo(){
-      const $ = id => document.getElementById(id);
-      const key = 'clinicInfo';
-      const saved = JSON.parse(localStorage.getItem(key) || '{}');
-
-      ['clinicName','clinicPhone','clinicEmail','clinicAddr1','clinicAddr2','clinicCity','clinicState','clinicZip'].forEach(id=>{
-        if (saved[id]) $(id).value = saved[id];
-      });
-
-      document.getElementById('btnSaveClinic').onclick = () => {
-        const data = {
-          clinicName: $('clinicName').value.trim(),
-          clinicPhone: $('clinicPhone').value.trim(),
-          clinicEmail: $('clinicEmail').value.trim(),
-          clinicAddr1: $('clinicAddr1').value.trim(),
-          clinicAddr2: $('clinicAddr2').value.trim(),
-          clinicCity:  $('clinicCity').value.trim(),
-          clinicState: $('clinicState').value.trim(),
-          clinicZip:   $('clinicZip').value.trim(),
-        };
-        localStorage.setItem(key, JSON.stringify(data));
-        const m = document.getElementById('clinicMsg');
-        m.textContent = 'Saved ✓'; m.style.color = 'var(--accent)';
-        setTimeout(()=> m.textContent = '—', 1500);
-      };
-    })();
-
-    // ===== Users (lightweight list) =====
-    (function users(){
-      const $ = s => document.querySelector(s);
-      const key = 'staff';
-      const load = () => JSON.parse(localStorage.getItem(key) || '[]');
-      const save = (rows) => localStorage.setItem(key, JSON.stringify(rows));
-      const tbody = $('#tblUsers tbody');
-
-      function render() {
-        const rows = load();
-        tbody.innerHTML = rows.map((r,i)=>`
-          <tr>
-            <td>${r.name||''}</td>
-            <td>${r.role||''}</td>
-            <td class="right"><button data-i="${i}" class="chip">Remove</button></td>
-          </tr>
-        `).join('');
-        tbody.querySelectorAll('button[data-i]').forEach(b => {
-          b.onclick = () => { const i = +b.dataset.i; const rows = load(); rows.splice(i,1); save(rows); render(); };
-        });
-      }
-
-      $('#btnAddUser').onclick = () => {
-        const name = document.getElementById('userName').value.trim();
-        const role = document.getElementById('userRole').value;
-        if (!name) return alert('Enter a name');
-        const rows = load(); rows.push({name, role}); save(rows);
-        document.getElementById('userName').value = '';
-        render();
-      };
-
-      render();
-    })();
-
-    // ===== PIN Management (unified pins store) =====
-    (function pinSettings(){
-      const $ = id => document.getElementById(id);
-      const msg = (t, ok=false) => { const el=$('pinMsg'); el.textContent=t; el.style.color = ok ? 'var(--accent)' : 'var(--ink)'; };
-
-      const defaults = { doctor:'4321', supervisor:'1111', admin:'9999' };
-      const pins = Object.assign({}, defaults, JSON.parse(localStorage.getItem('pins') || '{}'));
-      localStorage.setItem('pins', JSON.stringify(pins));
-
-      // show/hide pin fields
-      const fields = ['pinAdminCurrent','pinAdminNew','pinAdminConfirm','pinDoctorNew','pinSupervisorNew'].map($);
-      $('showPins').addEventListener('change', (e)=>{
-        const type = e.target.checked ? 'text' : 'password';
-        fields.forEach(f => { if (f) f.type = type; });
-      });
-
-      const isValid = (p) => /^\d{4,6}$/.test(String(p||''));
-
-      $('btnSavePins').onclick = ()=>{
-        const cur  = $('pinAdminCurrent').value.trim();
-        const newA = $('pinAdminNew').value.trim();
-        const newC = $('pinAdminConfirm').value.trim();
-        const newD = $('pinDoctorNew').value.trim();
-        const newS = $('pinSupervisorNew').value.trim();
-
-        if (cur !== String(pins.admin)) { msg('Current Admin PIN incorrect'); return; }
-
-        const next = {...pins};
-        if (newA || newC) {
-          if (newA !== newC) { msg('Admin PIN mismatch'); return; }
-          if (!isValid(newA)) { msg('Admin PIN must be 4–6 digits'); return; }
-          next.admin = newA;
-        }
-        if (newD) {
-          if (!isValid(newD)) { msg('Doctor PIN must be 4–6 digits'); return; }
-          next.doctor = newD;
-        }
-        if (newS) {
-          if (!isValid(newS)) { msg('Supervisor PIN must be 4–6 digits'); return; }
-          next.supervisor = newS;
-        }
-
-        localStorage.setItem('pins', JSON.stringify(next));
-        ['pinAdminNew','pinAdminConfirm','pinDoctorNew','pinSupervisorNew'].forEach(id => { const el=$(id); if(el) el.value=''; });
-        msg('PINs updated ✓', true);
-      };
-
-      $('btnResetPins').onclick = ()=>{
-        if (!confirm('Reset to defaults? Admin(9999), Doctor(4321), Supervisor(1111)')) return;
-        localStorage.setItem('pins', JSON.stringify(defaults));
-        ['pinAdminCurrent','pinAdminNew','pinAdminConfirm','pinDoctorNew','pinSupervisorNew'].forEach(id => { const el=$(id); if(el) el.value=''; });
-        msg('PINs reset ✓', true);
-      };
-    })();
-
-    // ===== Exports =====
-    document.getElementById('btnExportPatients').onclick  = ()=> ERP.downloadCSV('patients.csv', ERP.load('patients', []));
-    document.getElementById('btnExportInvoices').onclick  = ()=> ERP.downloadCSV('invoices.csv', ERP.load('invoices', []));
-    document.getElementById('btnExportInvItems').onclick  = ()=> ERP.downloadCSV('invoice_items.csv', ERP.load('invoice_items', []));
-    document.getElementById('btnExportInventory').onclick = ()=> ERP.downloadCSV('inventory.csv', ERP.load('inventory', []));
   </script>
 </body>
 </html>
