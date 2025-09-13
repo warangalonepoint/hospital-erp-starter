@@ -2,158 +2,150 @@
 <html lang="en" data-theme="light">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Doctor Dashboard · Hospital ERP</title>
-  <link rel="stylesheet" href="../styles.css" />
-  <link rel="icon" href="../assets/icon.png" />
-  <script src="../utils.js"></script>
-  <script>
-    // --- Gate: require a logged-in user (doctor / supervisor / admin) ---
-    document.addEventListener('DOMContentLoaded', () => {
-      const role = localStorage.getItem('role'); // 'doctor' | 'supervisor' | 'admin'
-      const pinOK = !!localStorage.getItem('pin_ok');
-      if (!pinOK || !role) {
-        location.href = "../pages/login.html";
-        return;
-      }
-      // Theme boot
-      if (localStorage.getItem('theme') === 'dark') {
-        document.documentElement.setAttribute('data-theme', 'dark');
-      }
-      // Role-aware chips
-      document.querySelectorAll('[data-role]').forEach(el => {
-        const allow = el.getAttribute('data-role').split(',').map(s=>s.trim());
-        if (!allow.includes(role)) el.remove();
-      });
-    });
-
-    function go(p){ location.href = p; }
-    function toggleTheme(){
-      const html = document.documentElement;
-      const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-      html.setAttribute('data-theme', next);
-      localStorage.setItem('theme', next);
-      document.getElementById('theme-emoji').textContent = next === 'dark' ? '🌙' : '🌞';
-    }
-    function clearCache(){
-      localStorage.clear();
-      caches?.keys?.().then(keys => keys.forEach(k => caches.delete(k)));
-      alert('Local cache cleared.');
-    }
-    function logout(){
-      localStorage.removeItem('pin_ok');
-      localStorage.removeItem('role');
-      location.href = "../pages/login.html";
-    }
-  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard • Hospital ERP</title>
+  <!-- unified styles -->
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="manifest-icon-192.png">
 </head>
-
 <body>
-  <!-- Banner -->
+  <!-- Banner / Theme -->
   <header class="banner">
-    <!-- If you have a banner image, the CSS will show it via background -->
-    <button class="floating-toggle" onclick="toggleTheme()" title="Dark / Light">
-      <span id="theme-emoji">🌞</span>
-    </button>
+    <div class="brand">
+      <!-- keep simple text brand to avoid logo mismatch -->
+      <span class="brand-mark">🏥</span>
+      <span class="brand-title">Hospital ERP</span>
+    </div>
+    <button id="themeToggle" class="toggle" title="Toggle theme">🌙</button>
   </header>
 
-  <!-- Top actions -->
-  <div class="fixed-actions">
-    <button class="chip" onclick="go('../pages/login.html')">↩︎ Login</button>
-    <button class="chip" onclick="logout()">Logout</button>
-    <button class="chip" onclick="clearCache()">Clear Cache</button>
-  </div>
+  <!-- Toolbar -->
+  <nav class="toolbar">
+    <a class="chip" href="index.html">← Home</a>
+    <button id="btnLogout" class="chip">Logout</button>
+    <button id="btnClear" class="chip">Clear Cache</button>
+  </nav>
 
-  <!-- Main Sections -->
+  <!-- Section: tiles -->
   <main class="section">
-    <h1 style="margin-bottom:10px">Welcome</h1>
-    <p class="muted">Quick access to bookings, pharmacy and daily operations.</p>
+    <!-- Analytics -->
+    <a class="panel grad-lilac card" href="analytics.html">
+      <h2>Analytics</h2>
+      <p class="muted">KPIs & weekly sales</p>
+    </a>
 
-    <div class="card-grid mt16">
-      <!-- Bookings -->
-      <a class="card panel--lilac" href="../pages/booking-status.html">
-        <h3>Bookings</h3>
-        <p>Create tokens & manage appointments</p>
-      </a>
+    <!-- Pharmacy -->
+    <a class="panel grad-sky card" href="pharmacy.html">
+      <h2>Pharmacy</h2>
+      <p class="muted">
+        Today <b id="phToday">₹0.00</b> ·
+        MTD <b id="phMTD">₹0.00</b> ·
+        Top: <b id="phTop">—</b>
+      </p>
+    </a>
 
-      <!-- Pharmacy – Billing -->
-      <a class="card panel--mint" href="../pages/pharmacy.html">
-        <h3>Pharmacy — Billing</h3>
-        <p>Multi-item invoices, discounts, payments</p>
-      </a>
+    <!-- Booking Status -->
+    <a class="panel grad-mint card" href="booking-status.html">
+      <h2>Booking Status</h2>
+      <p class="muted">Today / Week / Month counts</p>
+    </a>
 
-      <!-- Pharmacy – Reports -->
-      <a class="card panel--peach" href="../pages/analytics.html">
-        <h3>Pharmacy — Reports</h3>
-        <p>Daily / Weekly / Monthly / Yearly sales & items</p>
-      </a>
+    <!-- Patients -->
+    <a class="panel grad-rose card" href="admin.html#patients">
+      <h2>Patients</h2>
+      <p class="muted">Reminders & history • <b id="dueToday">0 due today</b></p>
+    </a>
 
-      <!-- Staff -->
-      <a class="card panel--rose" href="../pages/staff.html">
-        <h3>Staff — Attendance & Roster</h3>
-        <p>Create day sheet, mark, edit, export</p>
-      </a>
+    <!-- Staff -->
+    <a class="panel grad-peach card" href="staff.html">
+      <h2>Staff</h2>
+      <p class="muted">Roster & attendance (view-only)</p>
+    </a>
 
-      <!-- Supervisor Snapshot (visible to supervisor & admin only) -->
-      <a class="card panel--blue" href="../pages/supervisor.html" data-role="supervisor,admin">
-        <h3>Supervisor — KPIs</h3>
-        <p>Snapshots & performance metrics</p>
-      </a>
-
-      <!-- Settings (visible to doctor/supervisor) -->
-      <a class="card panel--lilac" href="../pages/settings.html" data-role="doctor,supervisor,admin">
-        <h3>Settings</h3>
-        <p>PINs, staff, patients</p>
-      </a>
-
-      <!-- Admin tools (admin PIN only) -->
-      <a class="card panel--mint" href="../pages/admin.html" data-role="admin">
-        <h3>Admin Tools</h3>
-        <p>Inventory upload, camera scan import, master data</p>
-      </a>
-    </div>
+    <!-- Settings -->
+    <a class="panel grad-lavender card" href="settings.html">
+      <h2>Settings</h2>
+      <p class="muted">PINs, Staff, Patients</p>
+    </a>
   </main>
 
-  <!-- Today snapshot (placeholder – wire to analytics later if you want) -->
-  <section class="section">
-    <h2 class="mt8">Today Snapshot</h2>
-    <div class="kpi-grid mt12">
-      <div class="kpi" style="background:var(--t-blue);color:var(--c-blue)">
-        <h4>Total (₹)</h4><div class="num" id="snap-total">0.00</div>
-      </div>
-      <div class="kpi" style="background:var(--t-lilac);color:var(--c-lilac)">
-        <h4>Invoices</h4><div class="num" id="snap-invoices">0</div>
-      </div>
-      <div class="kpi" style="background:var(--t-mint);color:var(--c-mint)">
-        <h4>Items sold</h4><div class="num" id="snap-items">0</div>
-      </div>
-      <div class="kpi" style="background:var(--t-peach);color:var(--c-peach)">
-        <h4>GST (₹)</h4><div class="num" id="snap-gst">0.00</div>
-      </div>
-    </div>
-  </section>
-
+  <script src="utils.js"></script>
   <script>
-    // Optional: lightweight snapshot from cached CSVs (if present)
-    (async function bootSnapshot(){
-      try{
-        const invs = ERP.load('invoices', []);
-        const items = ERP.load('invoice_items', []);
-        // Keep only "today"
-        const today = ERP.todayISO();
-        const todayInvs = invs.filter(x => (x.date||'').slice(0,10) === today);
-        const ids = new Set(todayInvs.map(x => x.invoice_id || x.id));
-        const todayItems = items.filter(it => ids.has(it.invoice_id));
+    // ====== auth guard (any logged-in role) ======
+    ERP.requireRole('*', 'login.html'); // redirects to login if not signed in
 
-        const k = ERP.buildSalesKPIs(todayInvs, todayItems);
-        const f = (n)=> new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR'}).format(n||0);
-        const S = (id,v)=>{const el=document.getElementById(id); if(el) el.textContent=v;};
+    // ====== theme toggle ======
+    (function theme(){
+      const root = document.documentElement;
+      const btn  = document.getElementById('themeToggle');
+      const saved = localStorage.getItem('theme') || 'light';
+      root.dataset.theme = saved;
+      btn.textContent = saved === 'dark' ? '🌙' : '🌞';
+      btn.onclick = () => {
+        const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+        root.dataset.theme = next;
+        localStorage.setItem('theme', next);
+        btn.textContent = next === 'dark' ? '🌙' : '🌞';
+      };
+    })();
 
-        S('snap-total', f(k.total));
-        S('snap-invoices', k.invoices);
-        S('snap-items', k.itemsSold);
-        S('snap-gst', f(k.gst));
-      }catch(e){ /* silent */ }
+    // ====== toolbar actions ======
+    document.getElementById('btnLogout').onclick = () => {
+      localStorage.removeItem('role');
+      localStorage.removeItem('erp:auth');
+      localStorage.removeItem('erp:role');
+      location.href = 'login.html';
+    };
+    document.getElementById('btnClear').onclick = async () => {
+      await ERP.hardClear();
+    };
+
+    // ====== dashboard data (Pharmacy + Patients) ======
+    (async function hydrate() {
+      // If CSVs were loaded earlier, they’re in LS; otherwise show zeros gracefully.
+      const invoices = ERP.load('invoices', []);
+      const items    = ERP.load('invoice_items', []);
+      const patients = ERP.load('patients', []);
+
+      // Pharmacy KPIs
+      const todayISO = ERP.todayISO();
+      const firstOfMTD = new Date(); firstOfMTD.setDate(1);
+
+      const invToday  = ERP.filterInvoicesByDate(invoices, todayISO, todayISO);
+      const invMTD    = ERP.filterInvoicesByDate(invoices, firstOfMTD, new Date());
+
+      // Map for quick item→invoice lookup
+      const invById = new Map(invoices.map(i => [String(i.id || i.invoice_id), i]));
+
+      // Today totals via items that belong to today's invoices
+      const itemsToday = items.filter(it => {
+        const inv = invById.get(String(it.invoice_id));
+        return inv && ERP.ymd(inv.date || inv.invoice_date) === todayISO;
+      });
+      const kpiToday = ERP.buildSalesKPIs(invToday, itemsToday);
+
+      // MTD totals (items whose invoice date is this month)
+      const firstYMD = ERP.ymd(firstOfMTD);
+      const itemsMTD = items.filter(it => {
+        const inv = invById.get(String(it.invoice_id));
+        const d = inv ? ERP.ymd(inv.date || inv.invoice_date) : null;
+        return d && d >= firstYMD && d <= todayISO;
+      });
+      const kpiMTD = ERP.buildSalesKPIs(invMTD, itemsMTD);
+
+      document.getElementById('phToday').textContent = ERP.formatMoney(kpiToday.total);
+      document.getElementById('phMTD').textContent   = ERP.formatMoney(kpiMTD.total);
+
+      // Top item overall (fast & useful)
+      const top = ERP.topItems(items, 1)[0];
+      document.getElementById('phTop').textContent = top ? (top.name || '—') : '—';
+
+      // Patients due today (looks for fields like next_followup / next_visit)
+      const due = patients.filter(p => {
+        const d = p.next_followup || p.next_visit || p.followup || '';
+        return d && ERP.ymd(d) === todayISO;
+      }).length;
+      document.getElementById('dueToday').textContent = `${due} due today`;
     })();
   </script>
 </body>
