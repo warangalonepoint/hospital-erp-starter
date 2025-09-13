@@ -16,9 +16,12 @@
     <button id="themeToggle" class="toggle" title="Toggle theme">🌙</button>
   </header>
 
-  <!-- Top actions -->
+  <!-- Toolbar -->
   <nav class="toolbar">
     <a class="chip" href="./dashboard.html">← Dashboard</a>
+    <a class="chip" href="./settings.html">Settings</a>
+    <span style="flex:1"></span>
+    <a class="chip" href="./login.html">Logout</a>
     <button id="btnClear" class="chip">Clear Cache</button>
   </nav>
 
@@ -34,7 +37,7 @@
         <h3>Clinic Info</h3><p>Branding, address, contact</p>
       </a>
       <a class="card panel--rose" href="./settings.html#users">
-        <h3>Staff</h3><p>Add/remove staff & roles</p>
+        <h3>Staff</h3><p>Add/remove staff</p>
       </a>
       <a class="card panel--peach" href="./pharmacy.html#tab-stock">
         <h3>Inventory</h3><p>Stock, batches & expiry</p>
@@ -106,7 +109,7 @@
   <script src="../scripts/utils.js"></script>
   <script src="../scripts/scanner.js"></script>
   <script>
-    // Theme toggle
+    // Theme
     (function(){
       const root=document.documentElement, btn=document.getElementById('themeToggle');
       const saved=localStorage.getItem('theme')||'light';
@@ -125,7 +128,7 @@
       alert('Cleared local data (kept theme).');
     };
 
-    // --- Scan to Upload Stock ---
+    // Scanner (if scanner.js present)
     const scanEls = {
       result: document.getElementById('admin-scan-result'),
       name:   document.getElementById('admin-name'),
@@ -136,7 +139,6 @@
       gst:    document.getElementById('admin-gst'),
       qty:    document.getElementById('admin-qty'),
     };
-
     const scan = (function(){
       let stopFn=null;
       async function start(){
@@ -159,19 +161,19 @@
               }
             });
           } else {
-            alert('Scanner not loaded. Check ../scripts/scanner.js');
+            // optional: no-op if library missing
           }
         }catch(e){ alert('Scanner failed: '+e.message); }
       }
       function stop(){ try{ stopFn && stopFn(); }catch(e){} stopFn=null; }
       return { start, stop };
     })();
-
     document.getElementById('admin-start-scan')?.addEventListener('click', scan.start);
     document.getElementById('admin-stop-scan')?.addEventListener('click', scan.stop);
 
-    // Save scanned/typed stock into inventory
+    // Save stock
     document.getElementById('admin-save-stock').onclick = ()=>{
+      if(!window.ERP){ alert('utils.js not loaded'); return; }
       const pl = {
         name: scanEls.name.value.trim(),
         barcode: scanEls.barcode.value.trim(),
@@ -191,6 +193,7 @@
 
     // CSV import/export
     document.getElementById('btnImportCSV').onclick = async ()=>{
+      if(!window.ERP){ alert('utils.js not loaded'); return; }
       const f = document.getElementById('invCSVFile').files?.[0];
       if(!f) return alert('Choose a CSV file first');
       const text = await f.text();
