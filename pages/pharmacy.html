@@ -4,13 +4,20 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Pharmacy • Hospital ERP</title>
+
+  <!-- Global styles/manifest (already in your repo) -->
   <link rel="stylesheet" href="../styles/styles.css" />
   <link rel="manifest" href="../manifest.json" />
-  <!-- Libraries for scanner + barcode -->
+
+  <!-- Camera scanner + barcode render (UMD builds) -->
   <script src="https://unpkg.com/@zxing/browser@0.1.5/umd/index.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+
+  <!-- Project scripts -->
   <script defer src="../scripts/utils.js"></script>
   <script defer src="../scripts/scanner.js"></script>
+
+  <!-- Page-local micro styles (rest lives in styles.css for theme consistency) -->
   <style>
     .tabs{display:flex;gap:.5rem;flex-wrap:wrap;margin:.5rem 0 1rem}
     .tab{padding:.6rem .9rem;border-radius:999px;font-weight:600;background:var(--chip-bg,#f4f6ff);box-shadow:var(--soft-shadow)}
@@ -24,19 +31,19 @@
     @media (min-width:800px){.kpis{grid-template-columns:repeat(4,1fr)}}
     .kpi{padding:1rem;border-radius:16px;background:var(--chip-bg);font-weight:700}
     .actions{display:flex;gap:.5rem;flex-wrap:wrap}
-    .btn{padding:.7rem 1rem;border-radius:12px;font-weight:700;background:var(--btn-bg);color:var(--btn-fg);box-shadow:var(--soft-shadow);border:none}
+    .btn{padding:.7rem 1rem;border-radius:12px;font-weight:700;background:var(--btn-bg);color:var(--btn-fg);box-shadow:var(--soft-shadow);border:none;cursor:pointer}
     .btn.secondary{background:var(--chip-bg);color:var(--fg)}
     .btn.ghost{background:transparent;border:1px solid var(--border);color:var(--fg)}
     .input, select{width:100%;padding:.7rem .9rem;border-radius:12px;border:1px solid var(--border);background:var(--input-bg);color:var(--fg)}
     table{width:100%;border-collapse:separate;border-spacing:0 8px}
     th,td{padding:.6rem .7rem;text-align:left}
     tbody tr{background:var(--table-row-bg);border-radius:12px}
-    .right{text-align:right}
-    .mono{font-variant-numeric:tabular-nums}
+    .right{text-align:right}.mono{font-variant-numeric:tabular-nums}
     .badge{padding:.25rem .5rem;border-radius:999px;background:var(--chip-bg);font-size:.8rem;font-weight:700}
     .hide{display:none !important}
   </style>
 </head>
+
 <body>
   <header class="container" style="padding:1rem 1rem 0">
     <nav class="actions" style="justify-content:space-between;align-items:center">
@@ -50,6 +57,7 @@
     <h1 style="margin:.6rem 0 0">Pharmacy</h1>
     <p class="muted">Sell • Purchase • Stock • Reports</p>
 
+    <!-- Tabs -->
     <div class="tabs" role="tablist" aria-label="Pharmacy tabs">
       <button class="tab active" data-tab="sell" role="tab" aria-selected="true">Sell</button>
       <button class="tab" data-tab="purchase" role="tab">Purchase</button>
@@ -78,7 +86,7 @@
         </div>
 
         <div class="grid" style="grid-template-columns:1fr auto;align-items:center">
-          <input id="sell-search" class="input" placeholder="Search item name / SKU / barcode…" autofocus />
+          <input id="sell-search" class="input" placeholder="Search item name / SKU / barcode…" />
           <div class="actions">
             <button id="btn-scan" class="btn">📷 Scan Item</button>
             <button id="btn-load-demo" class="btn secondary">Load Demo</button>
@@ -123,9 +131,7 @@
               <div><div class="muted">Grand Total</div><div id="t-grand" class="mono" style="font-weight:800">0.00</div></div>
             </div>
             <div class="actions" style="margin-top:.75rem">
-              <select id="pay-mode" class="input" style="max-width:160px">
-                <option>Cash</option><option>Card</option><option>UPI</option>
-              </select>
+              <select id="pay-mode" class="input" style="max-width:160px"><option>Cash</option><option>Card</option><option>UPI</option></select>
               <button id="btn-save" class="btn">Save Invoice</button>
               <button id="btn-print" class="btn secondary">Print</button>
               <button id="btn-export-bill" class="btn secondary">Export CSV</button>
@@ -139,9 +145,7 @@
         <p class="muted">Live results (placeholder)</p>
         <table>
           <thead><tr><th>Item</th><th class="right">Batch</th><th class="right">Expiry</th><th class="right">MRP</th><th class="right">Stock</th><th></th></tr></thead>
-          <tbody id="sell-results">
-            <tr><td class="muted" colspan="6">Start typing to see results…</td></tr>
-          </tbody>
+          <tbody id="sell-results"><tr><td class="muted" colspan="6">Start typing to see results…</td></tr></tbody>
         </table>
       </div>
     </section>
@@ -160,9 +164,7 @@
 
         <div class="card" style="margin-top:1rem">
           <h3>Add Line</h3>
-          <div class="actions">
-            <button id="btn-scan-purchase" class="btn">📷 Scan to Add</button>
-          </div>
+          <div class="actions"><button id="btn-scan-purchase" class="btn">📷 Scan to Add</button></div>
           <div class="grid" style="grid-template-columns:repeat(6,1fr)">
             <input id="p-item" class="input" placeholder="Item name" />
             <input id="p-batch" class="input" placeholder="Batch" />
@@ -219,7 +221,7 @@
 
         <table>
           <thead><tr><th>Item</th><th class="right">Batch</th><th class="right">Expiry</th><th class="right">MRP</th><th class="right">GST%</th><th class="right">Qty</th><th class="right">Min</th></tr></thead>
-        <tbody id="stock-table"><tr><td class="muted" colspan="7">Inventory will appear here…</td></tr></tbody>
+          <tbody id="stock-table"><tr><td class="muted" colspan="7">Inventory will appear here…</td></tr></tbody>
         </table>
       </div>
     </section>
@@ -259,177 +261,165 @@
   </main>
 
   <script>
-    // Quick access to utils
-    const { ERP } = window;
-    const money = ERP.money;
-
-    // Session buttons
+    // ---- Session actions ----
     document.getElementById('btn-logout').onclick = () => { localStorage.removeItem('erp_active_role'); location.href = './login.html'; };
-    document.getElementById('btn-clear').onclick = () => { localStorage.clear(); alert('Cache cleared. Reloading…'); location.reload(); };
+    document.getElementById('btn-clear').onclick = () => {
+      localStorage.clear();
+      if (window.caches?.keys) caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+      alert('Cache cleared. Reloading…'); location.reload();
+    };
 
-    // Tabs
-    const tabButtons = document.querySelectorAll('.tab[data-tab]');
-    const sections = { sell: '#tab-sell', purchase: '#tab-purchase', stock: '#tab-stock', reports: '#tab-reports' };
-    tabButtons.forEach(b=>{
-      b.addEventListener('click', ()=>{
-        tabButtons.forEach(x=>x.classList.remove('active')); b.classList.add('active');
-        const t=b.dataset.tab; Object.entries(sections).forEach(([k,sel])=> document.querySelector(sel).classList.toggle('hide', k!==t));
-      });
-    });
-
-    // ---------- Patient link ----------
+    // ---- Tabs (robust) ----
     (function(){
-      const chip = document.getElementById('patient-chip');
-      const barcodeEl = document.getElementById('patient-barcode');
-      let currentPatientId = localStorage.getItem('pharmacy_current_patient') || null;
-
-      function setPatient(pid){
-        currentPatientId = pid;
-        chip.textContent = `Patient: ${pid}`;
-        ERP.renderBarcode(barcodeEl, pid);
-        localStorage.setItem('pharmacy_current_patient', pid);
+      const btns = Array.from(document.querySelectorAll('.tab[data-tab]'));
+      const sections = {
+        sell: document.getElementById('tab-sell'),
+        purchase: document.getElementById('tab-purchase'),
+        stock: document.getElementById('tab-stock'),
+        reports: document.getElementById('tab-reports'),
+      };
+      function show(t){
+        Object.entries(sections).forEach(([k,el])=> el.classList.toggle('hide', k!==t));
+        btns.forEach(b=> b.classList.toggle('active', b.dataset.tab===t));
       }
-      if(currentPatientId){ setPatient(currentPatientId); }
-
-      document.getElementById('btn-scan-patient').onclick = ()=>{
-        if (typeof window.startScanner === 'function') {
-          startScanner(code => setPatient(String(code).trim()));
-        } else alert('Scanner not available');
-      };
-      document.getElementById('btn-new-patient').onclick = ()=>{
-        const pid = ERP.generatePatientId();
-        setPatient(pid);
-        alert(`New Patient ID created: ${pid}\nPrint this barcode from the screen and use as patient card.`);
-      };
-
-      // expose for save hook
-      window._getLinkedPatient = () => currentPatientId || '';
+      btns.forEach(b => b.addEventListener('click', () => show(b.dataset.tab)));
+      show('sell');
     })();
 
-    // ---------- SELL (demo cart) ----------
-    const cartTbody = document.getElementById('sell-cart');
-    const resultsTbody = document.getElementById('sell-results');
-    const state = { cart: [] };
+    // ---- Patient link ----
+    (function(){
+      const ERP = window.ERP;
+      const chip = document.getElementById('patient-chip');
+      const svg  = document.getElementById('patient-barcode');
+      let pid = localStorage.getItem('pharmacy_current_patient') || null;
 
-    function renderCart(){
-      if(state.cart.length===0){
-        cartTbody.innerHTML = `<tr><td class="muted" colspan="7">Cart is empty</td></tr>`;
-      } else {
-        cartTbody.innerHTML = state.cart.map((r,i)=>`
-          <tr>
-            <td>${r.name}</td>
-            <td class="right">${r.batch||'-'}</td>
-            <td class="right"><input type="number" min="1" value="${r.qty}" style="width:70px" oninput="updateQty(${i}, this.value)" class="input"></td>
-            <td class="right mono">₹${money(r.mrp)}</td>
-            <td class="right mono">${r.gst||0}%</td>
-            <td class="right mono">₹${money(r.qty*r.mrp)}</td>
-            <td class="right"><button class="btn secondary" onclick="removeLine(${i})">✕</button></td>
-          </tr>
-        `).join('');
+      function setPatient(val){
+        pid = val; chip.textContent = `Patient: ${val}`;
+        ERP.renderBarcode(svg, val);
+        localStorage.setItem('pharmacy_current_patient', val);
       }
-      recomputeTotals();
-    }
-    window.updateQty=(i,v)=>{ state.cart[i].qty=Math.max(1,Number(v)||1); renderCart(); };
-    window.removeLine=i=>{ state.cart.splice(i,1); renderCart(); };
+      if (pid) setPatient(pid);
 
-    function recomputeTotals(){
-      const sub = state.cart.reduce((s,r)=> s+r.qty*r.mrp, 0);
-      const gst = state.cart.reduce((s,r)=> s + ((r.qty*r.mrp) - (r.qty*r.mrp/(1+(r.gst||0)/100))), 0);
-      const val = Number(document.getElementById('discount-value').value||0);
-      const typ = document.getElementById('discount-type').value||'INR';
-      const disc = typ==='PCT' ? (sub*(val/100)) : val;
-      const grand = Math.max(0, sub - disc);
-      document.getElementById('t-sub').textContent = money(sub);
-      document.getElementById('t-gst').textContent = money(gst);
-      document.getElementById('t-grand').textContent = money(grand);
-    }
-    document.getElementById('discount-value').addEventListener('input', recomputeTotals);
-    document.getElementById('discount-type').addEventListener('change', recomputeTotals);
-
-    document.getElementById('btn-load-demo').onclick = ()=>{
-      state.cart = [
-        {name:'PARACETAMOL 500MG TAB', batch:'B23', qty:1, mrp:28.00, gst:12},
-        {name:'CETIRIZINE 10MG TAB', batch:'C17', qty:2, mrp:22.50, gst:12},
-      ];
-      renderCart();
-      resultsTbody.innerHTML = `<tr><td class="muted" colspan="6">Demo loaded</td></tr>`;
-    };
-    document.getElementById('btn-clear-cart').onclick = ()=>{ state.cart = []; renderCart(); };
-
-    document.getElementById('btn-scan').onclick = ()=>{
-      if(typeof window.startScanner === 'function'){
-        startScanner(code=>{
-          state.cart.push({name:`Scanned ${code}`, batch:'—', qty:1, mrp:10.00, gst:12});
-          renderCart();
-        });
-      } else alert('Scanner not available');
-    };
-
-    document.getElementById('btn-save').onclick = ()=>{
-      const pid = (window._getLinkedPatient && window._getLinkedPatient()) || '';
-      alert(`Save Invoice (placeholder) with patient_id: ${pid}\nNext step will write to invoices.csv & invoice_items.csv.`);
-    };
-    document.getElementById('btn-print').onclick = ()=> window.print();
-    document.getElementById('btn-export-bill').onclick = ()=> alert('Export current bill as CSV (placeholder).');
-
-    // ---------- PURCHASE ----------
-    const pLines = [];
-    const purchaseTbody = document.getElementById('purchase-lines');
-    function renderPurchase(){
-      if(pLines.length===0){ purchaseTbody.innerHTML = `<tr><td class="muted" colspan="7">No lines yet</td></tr>`; return; }
-      purchaseTbody.innerHTML = pLines.map((r,i)=>`
-        <tr>
-          <td>${r.name}</td><td class="right">${r.batch}</td><td class="right">${r.exp||'-'}</td>
-          <td class="right">${r.qty}</td><td class="right">₹${money(r.mrp)}</td>
-          <td class="right">${r.gst}%</td>
-          <td class="right"><button class="btn secondary" onclick="delP(${i})">✕</button></td>
-        </tr>
-      `).join('');
-    }
-    window.delP=i=>{ pLines.splice(i,1); renderPurchase(); };
-
-    document.getElementById('btn-add-purchase').onclick = ()=>{
-      const r = {
-        name: val('p-item'), batch: val('p-batch'), exp: val('p-exp'),
-        qty: Number(val('p-qty')||0), mrp: Number(val('p-mrp')||0), gst: Number(val('p-gst')||0)
+      document.getElementById('btn-scan-patient').onclick = () => {
+        if (typeof window.startScanner === 'function') startScanner(code => setPatient(String(code).trim()));
+        else alert('Scanner not available');
       };
-      if(!r.name || !r.qty){ alert('Item name and qty are required'); return; }
-      pLines.push(r); renderPurchase(); clearPInputs();
-    };
-    document.getElementById('btn-clear-purchase').onclick = ()=>{ pLines.length=0; renderPurchase(); };
+      document.getElementById('btn-new-patient').onclick = () => setPatient(ERP.generatePatientId());
 
-    document.getElementById('btn-save-purchase').onclick = ()=>{
-      alert('Save Purchase (placeholder). Next step will update inventory.csv & localStorage.');
-    };
-    document.getElementById('btn-export-purchase').onclick = ()=> alert('Export purchase lines as CSV (placeholder).');
+      window._getLinkedPatient = () => pid || '';
+    })();
 
-    document.getElementById('btn-scan-purchase').onclick = ()=>{
-      if(typeof window.startScanner === 'function'){
-        startScanner(code=>{
-          // Basic auto-fill demo
-          document.getElementById('p-item').value = `Item ${code}`;
-          document.getElementById('p-batch').value = 'B' + Math.floor(Math.random()*100);
-          document.getElementById('p-qty').value = 1;
-          document.getElementById('p-mrp').value = 50;
-          document.getElementById('p-gst').value = 12;
-        });
-      } else alert('Scanner not available');
-    };
+    // ---- POS demo cart (kept simple; persistence lands in next step) ----
+    (function(){
+      const ERP = window.ERP, money = ERP.money;
+      const cartTbody = document.getElementById('sell-cart');
+      const resultsTbody = document.getElementById('sell-results');
+      const state = { cart: [] };
 
-    function val(id){ return document.getElementById(id).value.trim(); }
-    function clearPInputs(){ ['p-item','p-batch','p-exp','p-qty','p-mrp','p-gst'].forEach(id=> document.getElementById(id).value=''); }
+      function renderCart(){
+        if(state.cart.length===0){
+          cartTbody.innerHTML = `<tr><td class="muted" colspan="7">Cart is empty</td></tr>`;
+        } else {
+          cartTbody.innerHTML = state.cart.map((r,i)=>`
+            <tr>
+              <td>${r.name}</td>
+              <td class="right">${r.batch||'-'}</td>
+              <td class="right"><input type="number" min="1" value="${r.qty}" style="width:70px" oninput="updateQty(${i}, this.value)" class="input"></td>
+              <td class="right mono">₹${money(r.mrp)}</td>
+              <td class="right mono">${r.gst||0}%</td>
+              <td class="right mono">₹${money(r.qty*r.mrp)}</td>
+              <td class="right"><button class="btn secondary" onclick="removeLine(${i})">✕</button></td>
+            </tr>`).join('');
+        }
+        recomputeTotals();
+      }
+      window.updateQty=(i,v)=>{ state.cart[i].qty=Math.max(1,Number(v)||1); renderCart(); };
+      window.removeLine=i=>{ state.cart.splice(i,1); renderCart(); };
 
-    // ---------- STOCK / REPORTS placeholders ----------
-    document.getElementById('btn-scan-stock').onclick = ()=>{
-      if(typeof window.startScanner === 'function'){
-        startScanner(code=> alert(`Stock scanned: ${code}\n(Next: update inventory qty)`));
-      } else alert('Scanner not available');
-    };
-    document.getElementById('btn-export-stock').onclick = ()=> alert('Export inventory.csv (placeholder).');
-    document.getElementById('btn-export-reports').onclick = ()=> alert('Export report rows (placeholder).');
+      function recomputeTotals(){
+        const sub = state.cart.reduce((s,r)=> s+r.qty*r.mrp, 0);
+        const gst = state.cart.reduce((s,r)=> s + ((r.qty*r.mrp) - (r.qty*r.mrp/(1+(r.gst||0)/100))), 0);
+        const val = Number(document.getElementById('discount-value').value||0);
+        const typ = document.getElementById('discount-type').value||'INR';
+        const disc = typ==='PCT' ? (sub*(val/100)) : val;
+        const grand = Math.max(0, sub - disc);
+        document.getElementById('t-sub').textContent = money(sub);
+        document.getElementById('t-gst').textContent = money(gst);
+        document.getElementById('t-grand').textContent = money(grand);
+      }
+      document.getElementById('discount-value').addEventListener('input', recomputeTotals);
+      document.getElementById('discount-type').addEventListener('change', recomputeTotals);
 
-    // Init
-    renderCart(); renderPurchase();
+      document.getElementById('btn-load-demo').onclick = ()=>{
+        state.cart = [
+          {name:'PARACETAMOL 500MG TAB', batch:'B23', qty:1, mrp:28.00, gst:12},
+          {name:'CETIRIZINE 10MG TAB', batch:'C17', qty:2, mrp:22.50, gst:12},
+        ];
+        renderCart(); resultsTbody.innerHTML = `<tr><td class="muted" colspan="6">Demo loaded</td></tr>`;
+      };
+      document.getElementById('btn-clear-cart').onclick = ()=>{ state.cart = []; renderCart(); };
+
+      document.getElementById('btn-scan').onclick = ()=>{
+        if(typeof window.startScanner === 'function'){
+          startScanner(code=>{
+            state.cart.push({name:`Scanned ${code}`, batch:'—', qty:1, mrp:10.00, gst:12});
+            renderCart();
+          });
+        } else alert('Scanner not available');
+      };
+
+      document.getElementById('btn-save').onclick = ()=>{
+        const pid = (window._getLinkedPatient && window._getLinkedPatient()) || '';
+        alert(`Save Invoice (placeholder) with patient_id: ${pid}\nNext step: write to invoices.csv & invoice_items.csv.`);
+      };
+      document.getElementById('btn-print').onclick = ()=> window.print();
+      document.getElementById('btn-export-bill').onclick = ()=> alert('Export current bill as CSV (placeholder).');
+
+      // Purchase quick hooks
+      const pLines = []; const purchaseTbody = document.getElementById('purchase-lines');
+      function renderPurchase(){
+        if(pLines.length===0){ purchaseTbody.innerHTML = `<tr><td class="muted" colspan="7">No lines yet</td></tr>`; return; }
+        purchaseTbody.innerHTML = pLines.map((r,i)=>`
+          <tr>
+            <td>${r.name}</td><td class="right">${r.batch}</td><td class="right">${r.exp||'-'}</td>
+            <td class="right">${r.qty}</td><td class="right">₹${money(r.mrp)}</td>
+            <td class="right">${r.gst}%</td>
+            <td class="right"><button class="btn secondary" onclick="delP(${i})">✕</button></td>
+          </tr>`).join('');
+      }
+      window.delP=i=>{ pLines.splice(i,1); renderPurchase(); };
+      document.getElementById('btn-add-purchase').onclick = ()=>{
+        const r = {
+          name: g('p-item'), batch: g('p-batch'), exp: g('p-exp'),
+          qty: Number(g('p-qty')||0), mrp: Number(g('p-mrp')||0), gst: Number(g('p-gst')||0)
+        };
+        if(!r.name || !r.qty){ alert('Item name and qty are required'); return; }
+        pLines.push(r); renderPurchase(); ['p-item','p-batch','p-exp','p-qty','p-mrp','p-gst'].forEach(id=> s(id,''));
+      };
+      document.getElementById('btn-clear-purchase').onclick = ()=>{ pLines.length=0; renderPurchase(); };
+      document.getElementById('btn-save-purchase').onclick = ()=> alert('Save Purchase (placeholder). Next: update inventory.csv.');
+      document.getElementById('btn-export-purchase').onclick = ()=> alert('Export purchase lines as CSV (placeholder).');
+
+      document.getElementById('btn-scan-purchase').onclick = ()=>{
+        if(typeof window.startScanner === 'function'){
+          startScanner(code=>{
+            s('p-item',`Item ${code}`); s('p-batch','B'+Math.floor(Math.random()*100));
+            s('p-qty','1'); s('p-mrp','50'); s('p-gst','12');
+          });
+        } else alert('Scanner not available');
+      };
+
+      document.getElementById('btn-scan-stock').onclick = ()=>{
+        if(typeof window.startScanner === 'function') startScanner(code=> alert(`Stock scanned: ${code} (wire to inventory update next)`));
+        else alert('Scanner not available');
+      };
+
+      function g(id){ return document.getElementById(id).value.trim(); }
+      function s(id,val){ document.getElementById(id).value = val; }
+
+      // init
+      renderCart(); renderPurchase();
+    })();
   </script>
 </body>
 </html>
