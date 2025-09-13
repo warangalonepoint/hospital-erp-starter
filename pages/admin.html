@@ -5,111 +5,111 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Admin • Hospital ERP</title>
   <link rel="stylesheet" href="../styles/styles.css" />
-  <link rel="icon" href="../public/manifest-icon-192.png" />
+  <link rel="stylesheet" href="../styles/ui.css" />
+  <link rel="icon" href="../public/assets/icon-192.png">
 </head>
 <body>
   <!-- Banner -->
   <header class="banner">
-    <div style="font-weight:900;display:flex;align-items:center;gap:8px">
-      <span>🛠️</span><span>Admin</span>
+    <div class="brand">
+      <span class="brand-mark">🛠️</span>
+      <span class="brand-title">Admin</span>
     </div>
     <button id="themeToggle" class="toggle" title="Toggle theme">🌙</button>
   </header>
 
   <!-- Toolbar -->
   <nav class="toolbar">
-    <a class="chip" href="./dashboard.html">← Dashboard</a>
-    <a class="chip" href="./settings.html">Settings</a>
-    <span style="flex:1"></span>
-    <a class="chip" href="./login.html">Logout</a>
+    <a class="chip" href="./login.html">← Login</a>
+    <a class="chip" href="./dashboard.html">Dashboard</a>
     <button id="btnClear" class="chip">Clear Cache</button>
   </nav>
 
-  <!-- Admin Hub -->
   <main class="section">
-    <div class="panel grad-lilac">
-      <h2>Admin & Setup</h2>
-      <p class="muted">Data tools, inventory utilities, quick exports.</p>
+    <!-- Quick links -->
+    <div class="card-grid" style="margin-bottom:18px">
+      <a class="card grad-sky" href="./pharmacy.html">
+        <h2>Pharmacy</h2>
+        <p>Sell • Purchase • Stock • Reports</p>
+      </a>
+      <a class="card grad-lavender" href="./settings.html">
+        <h2>Settings</h2>
+        <p>Patients & Staff tools</p>
+      </a>
     </div>
 
-    <div class="card-grid mt12">
-      <a class="card panel--mint" href="./settings.html#clinic">
-        <h3>Clinic Info</h3><p>Branding, address, contact</p>
-      </a>
-      <a class="card panel--rose" href="./settings.html#users">
-        <h3>Staff</h3><p>Add/remove staff</p>
-      </a>
-      <a class="card panel--peach" href="./pharmacy.html#tab-stock">
-        <h3>Inventory</h3><p>Stock, batches & expiry</p>
-      </a>
-      <a class="card panel--blue" href="./analytics.html">
-        <h3>Analytics</h3><p>Sales KPIs & top items</p>
-      </a>
-    </div>
+    <!-- Inventory Tools -->
+    <section class="panel" aria-label="Inventory Tools">
+      <h2 style="margin-top:0">Inventory Tools</h2>
+
+      <div class="card-grid" style="margin-top:12px">
+        <!-- Scan to upload -->
+        <div class="card" style="background:var(--panel); color:var(--fg); border:1px solid var(--line)">
+          <h3>📷 Scan to Upload Stock</h3>
+          <p class="muted">Use the camera to scan an item barcode, then save/update stock.</p>
+
+          <div class="row" style="margin-top:10px">
+            <button id="scanStart" class="chip">Start Scanner</button>
+            <button id="scanStop" class="chip">Stop</button>
+            <span class="muted" id="scanStatus">—</span>
+          </div>
+
+          <div id="scanVideo" style="height:260px;border-radius:12px;background:#000;margin-top:10px;overflow:hidden"></div>
+
+          <div class="row" style="margin-top:12px">
+            <input id="iName" placeholder="Item name" style="flex:1">
+            <input id="iBarcode" placeholder="Barcode" style="max-width:220px">
+            <input id="iBatch" placeholder="Batch" style="max-width:160px">
+            <input id="iExpiry" placeholder="YYYY-MM" style="max-width:140px">
+          </div>
+          <div class="row" style="margin-top:10px">
+            <input id="iMRP" type="number" step="0.01" placeholder="MRP" style="max-width:160px">
+            <input id="iGST" type="number" step="0.01" placeholder="GST %" style="max-width:160px">
+            <input id="iQty" type="number" step="1" placeholder="Qty" style="max-width:160px">
+            <button id="btnSaveStock" class="chip" style="background:#0ea5e9;border-color:transparent;color:#06121f;font-weight:700">Save to Stock</button>
+          </div>
+        </div>
+
+        <!-- CSV import/export -->
+        <div class="card" style="background:var(--panel); color:var(--fg); border:1px solid var(--line)">
+          <h3>⬆ Import Inventory (CSV)</h3>
+          <p class="muted">Columns flexible: code/name/batch/qty/mrp/gst/expiry (barcode/code merged).</p>
+          <input type="file" id="invCSVFile" accept=".csv" />
+          <div class="row" style="margin-top:10px">
+            <button id="btnImportCSV" class="chip">Import</button>
+            <button id="btnExportInv" class="chip">Export Inventory</button>
+            <span id="importStatus" class="muted">—</span>
+          </div>
+          <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
+          <h4>Quick Exports</h4>
+          <div class="row">
+            <button id="btnExportPatients" class="chip">Patients.csv</button>
+            <button id="btnExportInvoices" class="chip">Invoices.csv</button>
+            <button id="btnExportInvItems" class="chip">Invoice_Items.csv</button>
+          </div>
+        </div>
+
+        <!-- Backup / Restore -->
+        <div class="card" style="background:var(--panel); color:var(--fg); border:1px solid var(--line)">
+          <h3>🗄️ Backup & Restore</h3>
+          <p class="muted">Download a JSON snapshot of local data, or restore from a JSON file.</p>
+          <div class="row" style="margin-top:10px">
+            <button id="btnBackup" class="chip">Download Backup (JSON)</button>
+            <input type="file" id="restoreFile" accept=".json" />
+            <button id="btnRestore" class="chip">Restore</button>
+          </div>
+          <p id="backupMsg" class="muted">—</p>
+        </div>
+      </div>
+    </section>
   </main>
 
-  <!-- Inventory Tools -->
-  <section class="section">
-    <h2>Inventory Tools</h2>
-
-    <div class="card-grid mt12">
-      <!-- Scan to upload stock -->
-      <div class="card panel--mint">
-        <h3>Scan to Upload Stock</h3>
-        <p class="muted">Use camera to scan item barcode and add/update stock.</p>
-
-        <div class="chips mt12">
-          <button id="admin-start-scan" class="chip action">📷 Start Scanner</button>
-          <button id="admin-stop-scan"  class="chip">■ Stop</button>
-        </div>
-
-        <div id="admin-scan-video" style="height:260px;border-radius:12px;background:#000;margin-top:10px;overflow:hidden"></div>
-        <div id="admin-scan-result" class="muted mt8">No scans yet…</div>
-
-        <div class="row" style="margin-top:12px">
-          <input id="admin-name"   class="input" placeholder="Item name" style="max-width:240px">
-          <input id="admin-barcode" class="input" placeholder="Barcode"  style="max-width:200px">
-          <input id="admin-batch"  class="input" placeholder="Batch"     style="max-width:160px">
-          <input id="admin-expiry" class="input" placeholder="YYYY-MM"   style="max-width:140px">
-        </div>
-        <div class="row mt8">
-          <input id="admin-mrp" type="number" step="0.01" class="input" placeholder="MRP" style="max-width:140px">
-          <input id="admin-gst" type="number" step="0.01" class="input" placeholder="GST %" style="max-width:140px">
-          <input id="admin-qty" type="number" step="1" class="input" placeholder="Qty" style="max-width:120px">
-          <button id="admin-save-stock" class="btn primary">Save to Stock</button>
-        </div>
-      </div>
-
-      <!-- CSV import / export -->
-      <div class="card panel--blue">
-        <h3>Import Inventory (CSV)</h3>
-        <p class="muted">Columns flexible: code/name/batch/qty/mrp/gst/expiry</p>
-        <input type="file" id="invCSVFile" accept=".csv" />
-        <div class="chips mt12">
-          <button id="btnImportCSV" class="chip action">⬆ Import</button>
-          <button id="btnExportInv" class="chip">⬇ Export Inventory</button>
-        </div>
-        <div id="importStatus" class="muted mt8">—</div>
-      </div>
-
-      <!-- Quick export pack -->
-      <div class="card panel--peach">
-        <h3>Quick Exports</h3>
-        <div class="chips mt12">
-          <button id="btnExportPatients" class="chip">Patients.csv</button>
-          <button id="btnExportInvoices" class="chip">Invoices.csv</button>
-          <button id="btnExportInvItems" class="chip">Invoice_Items.csv</button>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <footer class="section center muted">Admin · Hospital ERP</footer>
+  <footer class="footer">Admin · Hospital ERP</footer>
 
   <script src="../scripts/utils.js"></script>
   <script src="../scripts/scanner.js"></script>
   <script>
-    // Theme
+    // Theme toggle
     (function(){
       const root=document.documentElement, btn=document.getElementById('themeToggle');
       const saved=localStorage.getItem('theme')||'light';
@@ -120,90 +120,110 @@
       };
     })();
 
-    // Clear cache (keep theme)
+    // Clear cache (preserve theme)
     document.getElementById('btnClear').onclick = async ()=>{
-      const keep=new Set(['theme']);
-      Object.keys(localStorage).forEach(k=>{ if(!keep.has(k)) localStorage.removeItem(k); });
-      if('caches' in window){ const keys=await caches.keys(); await Promise.all(keys.map(k=>caches.delete(k))); }
-      alert('Cleared local data (kept theme).');
+      try{ if('caches' in window){ const ks=await caches.keys(); await Promise.all(ks.map(k=>caches.delete(k))); } }catch{}
+      const keepTheme = localStorage.getItem('theme');
+      localStorage.clear(); if(keepTheme) localStorage.setItem('theme', keepTheme);
+      location.reload();
     };
 
-    // Scanner (if scanner.js present)
-    const scanEls = {
-      result: document.getElementById('admin-scan-result'),
-      name:   document.getElementById('admin-name'),
-      barcode:document.getElementById('admin-barcode'),
-      batch:  document.getElementById('admin-batch'),
-      expiry: document.getElementById('admin-expiry'),
-      mrp:    document.getElementById('admin-mrp'),
-      gst:    document.getElementById('admin-gst'),
-      qty:    document.getElementById('admin-qty'),
+    // ===== Scan to Upload Stock =====
+    const scanUI = {
+      box: document.getElementById('scanVideo'),
+      status: document.getElementById('scanStatus'),
+      name: document.getElementById('iName'),
+      barcode: document.getElementById('iBarcode'),
+      batch: document.getElementById('iBatch'),
+      expiry: document.getElementById('iExpiry'),
+      mrp: document.getElementById('iMRP'),
+      gst: document.getElementById('iGST'),
+      qty: document.getElementById('iQty'),
     };
-    const scan = (function(){
-      let stopFn=null;
-      async function start(){
-        try{
-          if(typeof window.startScanner==='function'){
-            stopFn = await startScanner({
-              containerId: 'admin-scan-video',
-              onDetected: (code)=>{
-                scanEls.result.textContent = 'Scanned: '+code;
-                scanEls.barcode.value = String(code).trim();
-              },
-              onError: (e)=> alert('Scanner error: '+e.message)
-            });
-          } else if (window.Scanner?.start) {
-            stopFn = await window.Scanner.start({
-              containerId: 'admin-scan-video',
-              onDecode: (code)=>{
-                scanEls.result.textContent = 'Scanned: '+code;
-                scanEls.barcode.value = String(code).trim();
-              }
-            });
-          } else {
-            // optional: no-op if library missing
-          }
-        }catch(e){ alert('Scanner failed: '+e.message); }
+    let stopScan = null;
+
+    document.getElementById('scanStart').onclick = async ()=>{
+      try{
+        if (stopScan) stopScan();
+        stopScan = await startScanner({
+          containerId: 'scanVideo',
+          onDetected: (code)=>{
+            scanUI.status.textContent = 'Scanned: ' + code;
+            scanUI.barcode.value = String(code).trim();
+          },
+          onError: (e)=> { scanUI.status.textContent = 'Scanner error: ' + e.message; }
+        });
+        scanUI.status.textContent = 'Scanner running…';
+      }catch(e){
+        scanUI.status.textContent = 'Start failed: ' + e.message;
       }
-      function stop(){ try{ stopFn && stopFn(); }catch(e){} stopFn=null; }
-      return { start, stop };
-    })();
-    document.getElementById('admin-start-scan')?.addEventListener('click', scan.start);
-    document.getElementById('admin-stop-scan')?.addEventListener('click', scan.stop);
+    };
+    document.getElementById('scanStop').onclick = ()=>{ try{ stopScan && stopScan(); }catch{} stopScan=null; scanUI.status.textContent='Stopped'; };
 
-    // Save stock
-    document.getElementById('admin-save-stock').onclick = ()=>{
-      if(!window.ERP){ alert('utils.js not loaded'); return; }
-      const pl = {
-        name: scanEls.name.value.trim(),
-        barcode: scanEls.barcode.value.trim(),
-        code: scanEls.barcode.value.trim(),
-        batch: scanEls.batch.value.trim(),
-        expiry: scanEls.expiry.value.trim(),
-        mrp: Number(scanEls.mrp.value || 0),
-        gst: Number(scanEls.gst.value || 0),
-        qty: Number(scanEls.qty.value || 0),
+    document.getElementById('btnSaveStock').onclick = ()=>{
+      const row = {
+        name: scanUI.name.value.trim(),
+        barcode: scanUI.barcode.value.trim(),
+        code: scanUI.barcode.value.trim(),
+        batch: scanUI.batch.value.trim(),
+        expiry: scanUI.expiry.value.trim(),
+        mrp: Number(scanUI.mrp.value || 0),
+        gst: Number(scanUI.gst.value || 0),
+        qty: Number(scanUI.qty.value || 0),
       };
-      if(!pl.barcode){ alert('Barcode required'); return; }
+      if(!row.barcode){ alert('Barcode required'); return; }
       const inv = ERP.load('inventory', []);
-      ERP.applyPurchaseRows(inv, [pl]);
-      scanEls.result.textContent = 'Saved to stock ✓';
-      scanEls.qty.value = '';
+      ERP.applyPurchaseRows(inv, [row]);
+      scanUI.status.textContent = 'Saved ✓  (Inventory rows: ' + ERP.load('inventory',[]).length + ')';
+      scanUI.qty.value = '';
     };
 
-    // CSV import/export
+    // ===== CSV Import / Export =====
     document.getElementById('btnImportCSV').onclick = async ()=>{
-      if(!window.ERP){ alert('utils.js not loaded'); return; }
       const f = document.getElementById('invCSVFile').files?.[0];
-      if(!f) return alert('Choose a CSV file first');
+      if(!f) return alert('Choose a CSV file.');
       const text = await f.text();
       const count = await ERP.mergeInventoryCSVText(text);
-      document.getElementById('importStatus').textContent = `Merged ${count} rows ✅`;
+      document.getElementById('importStatus').textContent = `Merged ${count} rows ✓`;
     };
-    document.getElementById('btnExportInv').onclick = ()=> ERP.downloadCSV('inventory.csv', ERP.load('inventory', []));
-    document.getElementById('btnExportPatients').onclick = ()=> ERP.downloadCSV('patients.csv', ERP.load('patients', []));
-    document.getElementById('btnExportInvoices').onclick = ()=> ERP.downloadCSV('invoices.csv', ERP.load('invoices', []));
+    document.getElementById('btnExportInv').onclick      = ()=> ERP.downloadCSV('inventory.csv', ERP.load('inventory', []));
+    document.getElementById('btnExportPatients').onclick = ()=> ERP.downloadCSV('patients.csv',  ERP.load('patients',  []));
+    document.getElementById('btnExportInvoices').onclick = ()=> ERP.downloadCSV('invoices.csv',  ERP.load('invoices',  []));
     document.getElementById('btnExportInvItems').onclick = ()=> ERP.downloadCSV('invoice_items.csv', ERP.load('invoice_items', []));
+
+    // ===== Backup / Restore =====
+    document.getElementById('btnBackup').onclick = ()=>{
+      const dump = {
+        inventory: ERP.load('inventory', []),
+        patients: ERP.load('patients', []),
+        invoices: ERP.load('invoices', []),
+        invoice_items: ERP.load('invoice_items', []),
+        staff: ERP.load('staff', []),
+      };
+      const blob = new Blob([JSON.stringify(dump,null,2)], {type:'application/json'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'erp-backup-' + ERP.todayISO() + '.json';
+      a.click(); URL.revokeObjectURL(a.href);
+      document.getElementById('backupMsg').textContent = 'Backup downloaded ✓';
+    };
+
+    document.getElementById('btnRestore').onclick = async ()=>{
+      const f = document.getElementById('restoreFile').files?.[0];
+      if(!f) return alert('Choose a JSON backup file.');
+      const text = await f.text();
+      try{
+        const data = JSON.parse(text);
+        if (data.inventory) ERP.save('inventory', data.inventory);
+        if (data.patients) ERP.save('patients', data.patients);
+        if (data.invoices) ERP.save('invoices', data.invoices);
+        if (data.invoice_items) ERP.save('invoice_items', data.invoice_items);
+        if (data.staff) ERP.save('staff', data.staff);
+        document.getElementById('backupMsg').textContent = 'Restore complete ✓  (reload recommended)';
+      } catch(e){
+        document.getElementById('backupMsg').textContent = 'Restore failed: ' + e.message;
+      }
+    };
   </script>
 </body>
 </html>
