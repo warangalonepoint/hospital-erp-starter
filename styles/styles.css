@@ -1,55 +1,78 @@
 /* ===========================
    Hospital ERP – Universal UI
-   (light/dark via [data-theme])
-   =========================== */
+   Color-coded & page-safe
+   ===========================
+   HOW TO TUNE COLORS:
+   (Light)
+     Background        #F8FAFC
+     Card              #FFFFFF
+     Text              #0B0C0F
+     Muted Text        #6B7280
+     Border            #E5E7EB
+     Chip/Surface      #F3F4F6
+     Button (solid)    #111827  (text #FFFFFF)
+     Brand Accent      #2563EB  (used only for .btn.primary / .tab.active)
+   (Dark)
+     Background        #0B0C0F
+     Card              #111214
+     Text              #E6E7EB
+     Muted Text        #9AA0A6
+     Border            #1F2937
+     Chip/Surface      #15171A
+     Button (solid)    #E6E7EB  (text #0B0C0F)
+     Brand Accent      #4F86FF
+*/
 
-/* ----- Color tokens (Light) ----- */
+/* ---------- Light tokens ---------- */
 :root {
-  /* surface */
-  --bg: #f7f7f8;
-  --card-bg: #ffffff;
+  --bg:        #F8FAFC;
+  --card-bg:   #FFFFFF;
 
-  /* text */
-  --fg: #0b0c0f;
-  --muted: #6b7280;
+  --fg:        #0B0C0F;
+  --muted:     #6B7280;
 
-  /* borders / shadows */
-  --border: #e6e8ec;
+  --border:    #E5E7EB;
   --soft-shadow: 0 1px 0 rgba(0,0,0,.05);
   --card-shadow: 0 1px 0 rgba(0,0,0,.06), 0 0 0 1px var(--border);
 
-  /* components */
-  --chip-bg: #f3f4f6;
-  --input-bg: transparent;
+  --chip-bg:   #F3F4F6;
+  --input-bg:  transparent;
 
-  /* brand accent (very subtle; used only when needed) */
-  --brand-chip: #3b82f6; /* button highlight; not used as background blocks */
+  /* Buttons */
+  --btn-bg:    #111827;
+  --btn-fg:    #FFFFFF;
+
+  /* Accent (tabs selected / primary button) */
+  --brand-chip:#2563EB;
 }
 
-/* ----- Color tokens (Dark) ----- */
+/* ---------- Dark tokens ---------- */
 html[data-theme="dark"] {
-  --bg: #0b0c0f;
-  --card-bg: #111214;
+  --bg:        #0B0C0F;
+  --card-bg:   #111214;
 
-  --fg: #e6e7eb;
-  --muted: #9aa0a6;
+  --fg:        #E6E7EB;
+  --muted:     #9AA0A6;
 
-  --border: #21242a;
+  --border:    #1F2937;
   --soft-shadow: 0 1px 0 rgba(255,255,255,.04);
   --card-shadow: 0 0 0 1px var(--border);
 
-  --chip-bg: #15171a;
-  --input-bg: transparent;
+  --chip-bg:   #15171A;
+  --input-bg:  transparent;
 
-  --brand-chip: #4f86ff;
+  --btn-bg:    #E6E7EB;
+  --btn-fg:    #0B0C0F;
+
+  --brand-chip:#4F86FF;
 }
 
-/* Respect system preference if app hasn't set anything yet */
+/* Respect system preference if no explicit theme set */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) { color-scheme: dark; }
 }
 
-/* ----- Base ----- */
+/* ---------- Base ---------- */
 * { box-sizing: border-box; }
 html, body { height: 100%; }
 body {
@@ -61,15 +84,20 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ----- Layout helpers ----- */
+/* ---------- Layout helpers ---------- */
 .container { max-width: 1100px; margin: 0 auto; }
-.section { padding: 8px 12px 32px; }
-.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.right { text-align: right; }
-.mono { font-variant-numeric: tabular-nums; }
-.muted { color: var(--muted); }
+.section   { padding: 8px 12px 32px; }
+.row       { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.grid      { display: grid; gap: 12px; }
+.grid-2    { grid-template-columns: 1fr; }
+@media (min-width: 860px) { .grid-2 { grid-template-columns: 1fr 1fr; } }
 
-/* ----- Cards ----- */
+.right { text-align: right; }
+.mono  { font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+.hide  { display: none !important; }
+
+/* ---------- Cards ---------- */
 .card {
   background: var(--card-bg);
   border-radius: 18px;
@@ -77,7 +105,7 @@ body {
   box-shadow: var(--card-shadow);
 }
 
-/* ----- Buttons ----- */
+/* ---------- Buttons ---------- */
 .btn {
   appearance: none;
   border: 1px solid var(--border);
@@ -89,32 +117,46 @@ body {
   cursor: pointer;
   box-shadow: var(--soft-shadow);
 }
-.btn:hover { filter: brightness(0.98); }
+.btn:hover  { filter: brightness(0.985); }
 .btn:active { transform: translateY(1px); }
 
+/* Primary → uses brand accent (limited to CTA) */
 .btn.primary {
   background: var(--brand-chip);
   color: #fff;
   border-color: transparent;
 }
-.btn.ghost {
-  background: transparent;
-  border-color: var(--border);
+
+/* Solid neutral button (used widely in Pharmacy plain UI) */
+.btn.solid {
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  border-color: transparent;
 }
+
+/* Muted/secondary chip-like */
 .btn.muted {
   background: var(--chip-bg);
   color: var(--fg);
 }
 
-/* Icon-only button (for theme toggle) */
+/* Ghost outline */
+.btn.ghost {
+  background: transparent;
+  color: var(--fg);
+  border: 1px solid var(--border);
+}
+
+/* Icon button (theme toggle etc.) */
 .btn.icon {
-  width: 42px; height: 42px; display: inline-grid; place-items: center;
+  width: 42px; height: 42px;
+  display: inline-grid; place-items: center;
   padding: 0;
   border-radius: 999px;
 }
 
-/* ----- Tabs (chips) ----- */
-.tabs { display: flex; gap: .45rem; }
+/* ---------- Tabs (chip style) ---------- */
+.tabs { display: flex; gap: .45rem; flex-wrap: wrap; }
 .tab {
   padding: .45rem .8rem;
   border-radius: 999px;
@@ -130,8 +172,8 @@ body {
   border-color: transparent;
 }
 
-/* ----- Chips / badges ----- */
-.chip {
+/* ---------- Badges / Chips ---------- */
+.badge, .chip {
   display: inline-block;
   padding: .45rem .75rem;
   border-radius: 14px;
@@ -141,8 +183,10 @@ body {
   border: 1px solid var(--border);
 }
 
-/* ----- Inputs ----- */
-.input, input[type="text"], input[type="number"], input[type="date"], input[type="month"], select, textarea {
+/* ---------- Inputs ---------- */
+.input,
+input[type="text"], input[type="number"], input[type="date"], input[type="month"],
+input[type="tel"], input[type="search"], select, textarea {
   width: 100%;
   padding: .6rem .8rem;
   border-radius: 10px;
@@ -153,32 +197,27 @@ body {
 }
 .input:focus, input:focus, select:focus, textarea:focus {
   box-shadow: 0 0 0 3px color-mix(in oklab, var(--brand-chip) 20%, transparent);
-  border-color: color-mix(in oklab, var(--brand-chip) 40%, var(--border));
+  border-color: color-mix(in oklab, var(--brand-chip) 35%, var(--border));
 }
 
-/* ----- Tables ----- */
+/* ---------- Tables ---------- */
 table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
 thead th { font-weight: 700; color: var(--muted); }
 th, td { padding: .6rem .7rem; border-bottom: 1px solid var(--border); }
 tbody tr:last-child td { border-bottom: 0; }
 
-/* ----- Grids ----- */
-.grid { display: grid; gap: 12px; }
-.grid-2 { grid-template-columns: 1fr; }
-@media (min-width: 860px) {
-  .grid-2 { grid-template-columns: 1fr 1fr; }
-}
+/* ---------- KPI blocks (analytics) ---------- */
+.kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .75rem; }
+.kpi  { padding: 14px; border-radius: 16px; background: var(--chip-bg); box-shadow: var(--soft-shadow); }
+.kpi .label { color: var(--muted); font-size: .9rem; }
+.kpi .value { font-weight: 900; font-variant-numeric: tabular-nums; font-size: 1.25rem; }
+@media (max-width: 900px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
-/* ----- Header bar pattern (optional) ----- */
-.header {
-  padding: 14px 12px 0;
-}
+/* ---------- Header pattern (optional) ---------- */
+.header     { padding: 14px 12px 0; }
 .header .title { font-size: 1.6rem; margin: 8px 0 0; font-weight: 900; }
 
-/* ----- Theme toggle visual (uses .btn.icon) ----- */
+/* ---------- Theme toggle visibility ---------- */
 .theme-toggle .sun, .theme-toggle .moon { display: none; }
 html[data-theme="light"] .theme-toggle .sun { display: block; }
 html[data-theme="dark"]  .theme-toggle .moon { display: block; }
-
-/* Small utility hide */
-.hide { display: none !important; }
