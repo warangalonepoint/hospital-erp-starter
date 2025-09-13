@@ -4,12 +4,31 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Dashboard • Hospital ERP</title>
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="icon" href="manifest-icon-192.png">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="../styles/styles.css" />
+  <style>
+    /* Layout overrides for dashboard */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .chart-block {
+      background: var(--card);
+      border-radius: var(--radius-xl);
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow-soft);
+    }
+    .dashboard-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px,1fr));
+      gap: 1rem;
+    }
+  </style>
 </head>
 <body>
-  <!-- Banner -->
+  <!-- Header -->
   <header class="banner">
     <div class="brand">
       <span class="brand-mark">🏥</span>
@@ -18,93 +37,81 @@
     <button id="themeToggle" class="toggle" title="Toggle theme">🌙</button>
   </header>
 
-  <!-- Toolbar -->
+  <!-- Top toolbar -->
   <nav class="toolbar">
     <button id="btnLogout" class="chip">Logout</button>
     <button id="btnClear" class="chip">Clear Cache</button>
   </nav>
 
-  <!-- ===== Analytics first ===== -->
-  <section class="section">
-    <h2>📊 Sales Analytics</h2>
-    <div class="kpi-grid">
-      <div class="kpi"><div class="label">Total Sales</div><div class="value" id="kpiTotal">₹0</div></div>
-      <div class="kpi"><div class="label">Items Sold</div><div class="value" id="kpiItems">0</div></div>
-      <div class="kpi"><div class="label">GST</div><div class="value" id="kpiGST">₹0</div></div>
-      <div class="kpi"><div class="label">Balance</div><div class="value" id="kpiBal">₹0</div></div>
-    </div>
-    <canvas id="revChart" style="margin-top:18px;max-height:280px"></canvas>
-  </section>
+  <main class="container">
+    <!-- === Sales Analytics Section === -->
+    <section class="panel">
+      <h2>📊 Sales Analytics</h2>
 
-  <!-- ===== Cards below ===== -->
-  <main class="grid-cards">
-    <a class="card grad-purple" href="analytics.html">
-      <h2>Analytics</h2><p>KPIs & weekly sales</p>
-    </a>
+      <!-- KPIs -->
+      <div class="kpi-row">
+        <div class="kpi grad-sky"><span>Today</span><strong id="kpiToday">₹0</strong></div>
+        <div class="kpi grad-mint"><span>MTD</span><strong id="kpiMTD">₹0</strong></div>
+        <div class="kpi grad-amber"><span>Invoices</span><strong id="kpiInv">0</strong></div>
+        <div class="kpi grad-violet"><span>Top Item</span><strong id="kpiTop">—</strong></div>
+      </div>
 
-    <a class="card grad-sky" href="pharmacy.html">
-      <h2>Pharmacy</h2><p>Billing & Inventory</p>
-    </a>
+      <!-- Charts -->
+      <div class="chart-block">
+        <h4>Revenue (Last 7 Days)</h4>
+        <canvas id="chartRevenue" height="140"></canvas>
+      </div>
+      <div class="chart-block">
+        <h4>Top 5 Items</h4>
+        <canvas id="chartItems" height="140"></canvas>
+      </div>
+    </section>
 
-    <a class="card grad-mint" href="booking-status.html">
-      <h2>Booking Status</h2><p>Today / Week / Month</p>
-    </a>
-
-    <a class="card grad-rose" href="patients.html">
-      <h2>Patients</h2><p>Reminders & history</p>
-    </a>
-
-    <a class="card grad-peach" href="staff.html">
-      <h2>Staff</h2><p>Roster & attendance</p>
-    </a>
-
-    <a class="card grad-lavender" href="settings.html">
-      <h2>Settings</h2><p>PINs, Staff, Patients</p>
-    </a>
+    <!-- === Bottom Cards Section === -->
+    <section>
+      <div class="dashboard-cards">
+        <a class="card grad-purple" href="analytics.html"><h3>Analytics</h3><p>Reports & KPIs</p></a>
+        <a class="card grad-mint" href="booking-status.html"><h3>Bookings</h3><p>Status & tokens</p></a>
+        <a class="card grad-sky" href="pharmacy.html"><h3>Pharmacy</h3><p>Stock & billing</p></a>
+        <a class="card grad-rose" href="patients.html"><h3>Patients</h3><p>History & reminders</p></a>
+        <a class="card grad-peach" href="staff.html"><h3>Staff</h3><p>Attendance & roster</p></a>
+        <a class="card grad-lavender" href="settings.html"><h3>Settings</h3><p>System setup</p></a>
+      </div>
+    </section>
   </main>
 
-  <footer class="footer">Dashboard · Hospital ERP</footer>
-
-  <script src="utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
-    // Theme
-    (function(){
-      const root=document.documentElement, btn=document.getElementById('themeToggle');
-      const saved=localStorage.getItem('theme')||'light';
-      root.dataset.theme=saved; btn.textContent=saved==='dark'?'🌙':'🌞';
-      btn.onclick=()=>{ const next=root.dataset.theme==='dark'?'light':'dark';
-        root.dataset.theme=next; localStorage.setItem('theme',next);
-        btn.textContent=next==='dark'?'🌙':'🌞';
-      };
-    })();
+    // Simple demo charts (replace with real data wiring later)
+    const revCtx = document.getElementById('chartRevenue');
+    new Chart(revCtx, {
+      type: 'line',
+      data: { labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+              datasets:[{label:'Revenue', data:[2000,3000,2500,4000,3500,2800,5000],
+              borderColor:'#2563eb', fill:false}] },
+      options:{ responsive:true, plugins:{legend:{display:false}} }
+    });
 
-    // Toolbar
-    btnLogout.onclick=()=>{ localStorage.clear(); sessionStorage.clear(); location.href='login.html'; };
-    btnClear.onclick=async()=>{ localStorage.clear(); sessionStorage.clear();
-      if('caches'in window){ const ks=await caches.keys(); await Promise.all(ks.map(k=>caches.delete(k))); }
-      location.reload();
-    };
+    const itemCtx = document.getElementById('chartItems');
+    new Chart(itemCtx, {
+      type: 'bar',
+      data: { labels:['Med A','Med B','Med C','Med D','Med E'],
+              datasets:[{label:'Sales', data:[1200,900,750,500,300],
+              backgroundColor:['#60a5fa','#34d399','#fbbf24','#a78bfa','#f472b6']}] },
+      options:{ responsive:true, plugins:{legend:{display:false}} }
+    });
 
-    // Analytics hydrate
-    (function(){
-      const invoices = ERP.load('invoices', []);
-      const items    = ERP.load('invoice_items', []);
-      const kpi      = ERP.buildSalesKPIs(invoices, items);
-      document.getElementById('kpiTotal').textContent = ERP.formatMoney(kpi.total);
-      document.getElementById('kpiItems').textContent = kpi.itemsSold;
-      document.getElementById('kpiGST').textContent   = ERP.formatMoney(kpi.gst);
-      document.getElementById('kpiBal').textContent   = ERP.formatMoney(kpi.balance);
+    // Theme toggle
+    const root=document.documentElement, btn=document.getElementById('themeToggle');
+    const saved=localStorage.getItem('theme')||'light'; root.dataset.theme=saved;
+    btn.textContent=saved==='dark'?'🌙':'🌞';
+    btn.onclick=()=>{ const next=root.dataset.theme==='dark'?'light':'dark';
+      root.dataset.theme=next; localStorage.setItem('theme',next);
+      btn.textContent=next==='dark'?'🌙':'🌞'; };
 
-      const invById = new Map(invoices.map(i => [String(i.id||i.invoice_id), i]));
-      const daily   = ERP.dailyRevenue(items, invById);
-      new Chart(document.getElementById('revChart'),{
-        type:'line',
-        data:{ labels: daily.map(r=>r.date),
-               datasets:[{ label:'Revenue', data: daily.map(r=>r.amount), borderColor:'#2563eb', tension:.35, pointRadius:2 }]},
-        options:{ responsive:true, plugins:{ legend:{display:false}},
-                  scales:{ y:{ ticks:{ callback:v=>'₹ '+v }}}}
-      });
-    })();
+    // Logout / Clear
+    document.getElementById('btnLogout').onclick=()=>{localStorage.clear();location.href='login.html'};
+    document.getElementById('btnClear').onclick=()=>{localStorage.clear();caches.keys().then(keys=>keys.forEach(k=>caches.delete(k)));alert('Cache cleared')};
   </script>
 </body>
 </html>
