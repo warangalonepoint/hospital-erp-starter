@@ -1,99 +1,95 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>PIN Login · Hospital ERP</title>
   <link rel="stylesheet" href="../styles/styles.css" />
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #f5f7fb;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
-    }
-    .login-card {
-      background: #fff;
-      border-radius: 16px;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.1);
-      padding: 2rem;
-      width: 100%;
-      max-width: 360px;
-    }
-    .login-card h2 {
-      text-align: center;
-      margin-bottom: 1.5rem;
-      color: #222;
-    }
-    .input-group {
-      display: flex;
-      align-items: center;
-      background: #f0f4ff;
-      border-radius: 8px;
-      padding: 0.75rem;
-      margin-bottom: 1rem;
-    }
-    .input-group input {
-      border: none;
-      outline: none;
-      background: transparent;
-      flex: 1;
-      font-size: 1rem;
-      padding-left: 0.5rem;
-    }
-    button {
-      border: none;
-      padding: 0.7rem 1.5rem;
-      border-radius: 8px;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: 0.2s;
-      width: 100%;
-      margin-top: 0.5rem;
-    }
-    .btn-primary { background: #2563eb; color: #fff; }
-    .btn-primary:hover { background: #1e4ed8; }
-    .demo-pins {
-      font-size: 0.9rem;
-      color: #555;
-      text-align: center;
-      margin-top: 1rem;
-    }
-    .demo-pins span { font-weight: 600; }
+    :root { --radius:16px; }
+    body { font-family: system-ui, Segoe UI, Roboto, sans-serif; background:#f5f7fb; min-height:100vh; margin:0; display:grid; place-items:center; }
+    .wrap { width:min(92vw, 420px); }
+    .login-card { background:#fff; border-radius:var(--radius); box-shadow:0 10px 30px rgba(2,6,23,.12), 0 3px 10px rgba(2,6,23,.06); padding:24px 22px; }
+    .title { margin:2px 0 14px; text-align:center; font-weight:800; font-size:1.6rem; color:#0b1220; }
+    .hint { color:#6b7280; font-size:.95rem; text-align:center; margin-bottom:14px; }
+    .input-group { display:flex; align-items:center; gap:10px; border-radius:12px; padding:12px 14px; background:#eef2ff; border:1px solid #dbe4ff; }
+    .input-group input { border:0; outline:0; background:transparent; flex:1; font-size:1.05rem; letter-spacing:.08em; }
+    .eye { cursor:pointer; user-select:none; opacity:.7 }
+    .row { display:flex; gap:12px; justify-content:center; margin:16px 0 10px }
+    .btn { border:0; border-radius:12px; padding:11px 18px; font-size:1rem; cursor:pointer; transition: transform .05s ease, background .15s ease, box-shadow .15s ease; }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background:#2563eb; color:#fff; box-shadow:0 6px 16px rgba(37,99,235,.35) }
+    .btn-primary:hover { background:#1e4ed8; }
+    .btn-ghost { background:#f3f4f6; color:#111827; }
+    .btn-ghost:hover { background:#e5e7eb; }
+    .demo { text-align:center; color:#374151; font-size:.95rem; margin-top:6px; }
+    .demo b { font-weight:800; }
   </style>
 </head>
 <body>
-  <div class="login-card">
-    <h2>🔒 PIN Login</h2>
+  <div class="wrap">
+    <div class="login-card">
+      <div class="title">🔒 PIN Login</div>
+      <div class="hint">Enter your 4–6 digit PIN to continue</div>
 
-    <div class="input-group">
-      <span>🔑</span>
-      <input id="pinInput" type="password" maxlength="6" placeholder="Enter 4–6 digit PIN" />
-    </div>
+      <div class="input-group">
+        <span aria-hidden="true">🔑</span>
+        <input id="pinInput" type="password" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" maxlength="6" placeholder="4–6 digits" />
+        <span id="toggleEye" class="eye" title="Show/Hide PIN">👁️</span>
+      </div>
 
-    <button class="btn-primary" onclick="handleLogin()">Login</button>
+      <div class="row">
+        <button id="btnLogin" class="btn btn-primary">Login</button>
+        <button id="btnClear" class="btn btn-ghost">Clear Cache</button>
+      </div>
 
-    <div class="demo-pins">
-      PINs → <span>4321</span> Dashboard · <span>9876</span> Supervisor · <span>9999</span> Admin
+      <div class="demo">PINs → <b>4321</b> Dashboard · <b>9876</b> Supervisor · <b>9999</b> Admin</div>
     </div>
   </div>
 
   <script>
-    function handleLogin() {
-      const pin = document.getElementById("pinInput").value.trim();
-      if (pin === "4321") {
-        window.location.href = "dashboard.html";
-      } else if (pin === "9876") {
-        window.location.href = "supervisor.html";
-      } else if (pin === "9999") {
-        window.location.href = "admin.html";
-      } else {
-        alert("Invalid PIN. Try 4321, 9876, or 9999.");
-      }
+    // Safer redirect helper (works regardless of /pages/ depth)
+    function goto(file){
+      const base = location.pathname.replace(/[^/]+$/,''); // e.g., /pages/
+      location.href = base + file;
     }
+
+    // Show/hide PIN
+    document.getElementById('toggleEye').addEventListener('click', () => {
+      const i = document.getElementById('pinInput');
+      i.type = i.type === 'password' ? 'text' : 'password';
+    });
+
+    // Digits only
+    document.getElementById('pinInput').addEventListener('input', (e) => {
+      e.target.value = e.target.value.replace(/\D+/g, '').slice(0, 6);
+    });
+
+    function handleLogin(){
+      const pin = (document.getElementById('pinInput').value || '').trim();
+      if (!/^\d{4,6}$/.test(pin)) { alert('Enter a 4–6 digit PIN'); return; }
+      if (pin === '4321') goto('dashboard.html');
+      else if (pin === '9876') goto('supervisor.html');
+      else if (pin === '9999') goto('admin.html');
+      else alert('Invalid PIN. Try 4321, 9876, or 9999.');
+    }
+
+    document.getElementById('btnLogin').addEventListener('click', handleLogin);
+    document.getElementById('pinInput').addEventListener('keydown', (e)=>{ if(e.key==='Enter') handleLogin(); });
+
+    // Clear cache (keep nothing except theme)
+    document.getElementById('btnClear').addEventListener('click', async ()=>{
+      const keep = new Set(['theme']);
+      for (const k of Object.keys(localStorage)) if (!keep.has(k)) localStorage.removeItem(k);
+      if ('caches' in window) {
+        const names = await caches.keys(); await Promise.all(names.map(n => caches.delete(n)));
+      }
+      alert('Cache cleared (kept theme).');
+      location.reload();
+    });
+
+    // Autofocus
+    setTimeout(()=> document.getElementById('pinInput')?.focus(), 50);
   </script>
 </body>
 </html>
