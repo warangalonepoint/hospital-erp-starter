@@ -1,210 +1,67 @@
 <!doctype html>
 <html lang="en" data-theme="dark">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Supervisor · Snapshot</title>
-  <link rel="stylesheet" href="../styles/styles.css" />
-  <style>
-    /* page-specific polish */
-    .kpi strong{ font-weight:800; letter-spacing:.2px }
-    .kpi span{ font-weight:700; opacity:.9 }
-    .panel-head h2{ font-weight:900 }
-    .chart-placeholder.loading::after{
-      content:"Loading…"; position:absolute; inset:auto 0 10px 0; text-align:center; font-weight:700; opacity:.6;
-    }
-  </style>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Supervisor • Hospital ERP</title>
+  <link rel="stylesheet" href="../styles/styles.css"/>
+  <script defer src="../scripts/utils.js"></script>
 </head>
 <body>
-  <header class="app-topbar">
-    <nav class="nav">
-      <a class="link-back" href="./login.html">← Login</a>
-      <div class="spacer"></div>
-      <button class="pill" id="themeToggle">🌗</button>
-      <button class="pill" id="btnLogout">Logout</button>
-      <button class="pill" id="btnClearCache">Clear Cache</button>
-    </nav>
+  <header class="banner">
+    <button class="toggle" id="themeToggle" title="Toggle theme">🌙</button>
   </header>
 
-  <main class="container">
-    <!-- Feature cards -->
-    <section class="grid-cards">
-      <a class="card grad-purple" href="./booking-status.html">
-        <h3>Tokens & appointments</h3><p>Queue, time slots</p>
-      </a>
-      <a class="card grad-mint" href="./pharmacy.html">
-        <h3>Pharmacy – Billing</h3><p>Invoices, discounts, payments</p>
-      </a>
-      <a class="card grad-amber" href="./analytics.html">
-        <h3>Reports</h3><p>Daily / Weekly / Monthly / Yearly</p>
-      </a>
-      <a class="card grad-pink" href="./staff.html">
-        <h3>Staff – Attendance & Roster</h3><p>Day sheet, mark, export</p>
-      </a>
-    </section>
+  <div class="toolbar">
+    <a class="chip" href="../index.html">← Dashboard</a>
+    <button class="chip" id="clearCacheBtn">Clear Cache</button>
+  </div>
 
-    <!-- Snapshot -->
-    <section class="panel">
-      <div class="panel-head">
-        <h2>Supervisor Snapshot</h2>
-        <div class="segmented" id="supRange">
-          <button class="seg active" data-range="today">Today</button>
-          <button class="seg" data-range="7d">7D</button>
-          <button class="seg" data-range="30d">30D</button>
+  <section class="section">
+    <div class="panel grad-lilac"><h2>Patients & Follow-ups</h2></div>
+
+    <div class="grid-2" style="margin-top:12px">
+      <div class="section">
+        <label>Search</label>
+        <input id="q" placeholder="Name or phone" style="margin:6px 0 14px"/>
+        <div class="row">
+          <select id="filter" style="max-width:220px">
+            <option value="today">Due today</option>
+            <option value="thisweek">This week</option>
+            <option value="overdue">Overdue</option>
+            <option value="all">All</option>
+          </select>
+          <input type="date" id="ondate" style="max-width:190px" placeholder="On (optional)"/>
+          <button class="chip chip--primary" id="run">Run</button>
         </div>
-        <button class="pill" id="btnExport" style="margin-left:.5rem">Export (CSV)</button>
+        <p class="muted" id="count" style="margin-top:8px">0 patients</p>
       </div>
 
-      <!-- Filters -->
-      <div class="controls" style="margin:.5rem 0 .75rem">
-        <label>From <input class="input" type="date" id="fromDate"></label>
-        <label>To <input class="input" type="date" id="toDate"></label>
-        <button class="btn" id="applyRange">Apply</button>
-      </div>
-
-      <!-- KPIs -->
-      <div class="kpi-row">
-        <div class="kpi grad-sky">
-          <span>Total (₹)</span>
-          <strong id="kpiTotal">0.00</strong>
-        </div>
-        <div class="kpi grad-violet">
-          <span>Avg / Day (₹)</span>
-          <strong id="kpiAvg">0.00</strong>
-        </div>
-        <div class="kpi grad-green">
-          <span>Invoices</span>
-          <strong id="kpiInv">0</strong>
-        </div>
-        <div class="kpi grad-slate">
-          <span>Top item</span>
-          <strong id="kpiTop">—</strong>
-        </div>
-        <div class="kpi grad-lav">
-          <span>Appointments</span>
-          <strong id="kpiAppt">0</strong>
+      <div class="section">
+        <h3 style="margin:0 0 8px">Summary</h3>
+        <div class="kpi-grid">
+          <div class="kpi grad-sky"><div class="label">Total</div><div class="num" id="pTotal">0</div></div>
+          <div class="kpi grad-mint"><div class="label">Due Today</div><div class="num" id="pToday">0</div></div>
+          <div class="kpi grad-amber"><div class="label">Overdue</div><div class="num" id="pOverdue">0</div></div>
+          <div class="kpi grad-rose"><div class="label">Next 7 Days</div><div class="num" id="pNext">0</div></div>
         </div>
       </div>
+    </div>
 
-      <!-- Charts -->
-      <div class="chart-block">
-        <h4>Revenue by Day</h4>
-        <div class="chart-placeholder loading" id="supRev" style="position:relative"></div>
-      </div>
+    <div class="section" style="margin-top:12px">
+      <table class="table" id="pTable">
+        <thead>
+          <tr><th>Name</th><th>Phone</th><th>Last Visit</th><th>Next Visit</th><th>Status</th><th>Notes</th></tr>
+        </thead>
+        <tbody><tr><td class="muted" colspan="6">No patients</td></tr></tbody>
+      </table>
+    </div>
+  </section>
 
-      <div class="chart-block">
-        <h4>Top Items (Share)</h4>
-        <div class="chart-placeholder loading" id="supTop" style="position:relative"></div>
-      </div>
-    </section>
-  </main>
-
-  <footer class="footer">Supervisor · Hospital ERP</footer>
-
-  <script type="module">
-    import {fetchCSV, renderBars, sumBy, formatINR, downloadCSV} from '../scripts/utils.js';
-
-    // role guard
-    const role = sessionStorage.getItem('role');
-    if (role !== 'supervisor') location.replace('./login.html');
-
-    // theme + controls
-    const root = document.documentElement;
-    const saved = localStorage.getItem('theme');
-    if (saved) root.setAttribute('data-theme', saved);
-    else if (matchMedia('(prefers-color-scheme: light)').matches) root.setAttribute('data-theme','light');
-    themeToggle.onclick = () => {
-      const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-      root.setAttribute('data-theme', next); localStorage.setItem('theme', next);
-    };
-    btnLogout.onclick = () => { sessionStorage.clear(); location.href='./login.html'; };
-    btnClearCache.onclick = () => {
-      localStorage.clear(); sessionStorage.clear();
-      if ('caches' in window) caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
-      location.reload();
-    };
-
-    // helpers
-    const fromEl = document.getElementById('fromDate');
-    const toEl   = document.getElementById('toDate');
-    const apply  = document.getElementById('applyRange');
-    const btnExport = document.getElementById('btnExport');
-    const revEl = document.getElementById('supRev');
-    const topEl = document.getElementById('supTop');
-
-    function parseD(s){ return new Date(s.replace(/-/g,'/')); }
-    function fmtDate(d){ const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
-    function clampDay(d){ const x=new Date(d); x.setHours(0,0,0,0); return x; }
-
-    // presets
-    document.querySelectorAll('#supRange .seg').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        document.querySelectorAll('#supRange .seg').forEach(x=>x.classList.remove('active'));
-        btn.classList.add('active'); setPreset(btn.dataset.range);
-      });
-    });
-
-    // apply custom range
-    apply.addEventListener('click', ()=>{
-      const f=fromEl.value, t=toEl.value;
-      if(!f||!t) return alert('Pick From and To dates');
-      const from=clampDay(new Date(f)), to=clampDay(new Date(t));
-      if(to<from) return alert('To date cannot be earlier than From date');
-      document.querySelectorAll('#supRange .seg').forEach(x=>x.classList.remove('active'));
-      load(from,to);
-    });
-
-    // export
-    let lastRows = [];
-    btnExport.onclick = ()=> downloadCSV(`supervisor-sales-${new Date().toISOString().slice(0,10)}.csv`, lastRows);
-
-    function setPreset(preset){
-      const today = clampDay(new Date());
-      let from = new Date(today), to = new Date(today);
-      if (preset==='7d')  from.setDate(today.getDate()-6);
-      if (preset==='30d') from.setDate(today.getDate()-29);
-      fromEl.value = fmtDate(from);
-      toEl.value   = fmtDate(to);
-      load(from,to);
-    }
-
-    async function load(from, to){
-      revEl.classList.add('loading'); topEl.classList.add('loading');
-
-      const inv   = await fetchCSV('../data/invoices.csv');
-      const items = await fetchCSV('../data/invoice_items.csv');
-
-      const rows = inv.filter(r=>{
-        const d = clampDay(parseD(r.date));
-        return d>=from && d<=to;
-      });
-      lastRows = rows;
-
-      const total = rows.reduce((a,b)=>a+Number(b.total||0),0);
-      const days  = Math.max(1, Math.round((to-from)/86400000)+1);
-      kpiTotal.textContent = formatINR(total);
-      kpiAvg.textContent   = formatINR(total/days);
-      kpiInv.textContent   = String(rows.length);
-
-      const idSet = new Set(rows.map(r=>r.invoice_id));
-      const filteredItems = items.filter(it=> idSet.has(it.invoice_id));
-      const byItem = sumBy(filteredItems, it=>it.item, it=> Number(it.qty||0)*Number(it.price||0));
-      let top='—', topVal=0; for (const [k,v] of byItem.entries()) { if (v>topVal) { top=k; topVal=v; } }
-      kpiTop.textContent = top||'—';
-      kpiAppt.textContent = '0'; // TODO: wire appointments.csv
-
-      // charts
-      const map = sumBy(rows, r=>r.date, r=>r.total);
-      const series=[]; const cur = new Date(from);
-      while (cur <= to) { const key = fmtDate(cur); series.push({label:key, value:Number(map.get(key)||0)}); cur.setDate(cur.getDate()+1); }
-      renderBars(revEl, series, {});   revEl.classList.remove('loading');
-
-      const topSeries = Array.from(byItem.entries()).map(([label,value])=>({label,value})).sort((a,b)=>b.value-a.value).slice(0,8);
-      renderBars(topEl, topSeries, {}); topEl.classList.remove('loading');
-    }
-
-    // init
-    setPreset('today');
+  <script>
+    const html=document.documentElement, t=document.getElementById('themeToggle');
+    function sync(){t.textContent=html.dataset.theme==='dark'?'🌙':'🌞'}; t.onclick=()=>{html.dataset.theme=html.dataset.theme==='dark'?'light':'dark'; localStorage.setItem('theme',html.dataset.theme); sync();}; html.dataset.theme=localStorage.getItem('theme')||'dark'; sync();
+    document.getElementById('clearCacheBtn')?.addEventListener('click',()=>{localStorage.clear(); alert('Cache cleared');});
   </script>
 </body>
 </html>
