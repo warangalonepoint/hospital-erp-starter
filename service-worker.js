@@ -1,6 +1,6 @@
 // service-worker.js — static PWA caching for Hospital ERP Starter
 // Bump CACHE_VERSION whenever you ship new JS/HTML to force refresh.
-const CACHE_VERSION = 'erp-cache-v5';
+const CACHE_VERSION = 'erp-cache-v6';
 const CACHE_NAME = `${CACHE_VERSION}`;
 
 // Try to infer the repo base path (works on GitHub Pages subpaths)
