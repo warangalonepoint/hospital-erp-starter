@@ -1,183 +1,99 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PIN Login · Hospital ERP</title>
   <link rel="stylesheet" href="../styles/styles.css" />
   <style>
-    :root { --radius:16px; }
     body {
-      font-family: system-ui, Segoe UI, Roboto, sans-serif;
+      font-family: 'Segoe UI', sans-serif;
       background: #f5f7fb;
-      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
       margin: 0;
-      display: grid;
-      place-items: center;
-    }
-    .wrap {
-      width: min(92vw, 420px);
     }
     .login-card {
       background: #fff;
-      border-radius: var(--radius);
-      box-shadow: 0 10px 30px rgba(2,6,23,.12), 0 3px 10px rgba(2,6,23,.06);
-      padding: 24px 22px;
+      border-radius: 16px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+      padding: 2rem;
+      width: 100%;
+      max-width: 360px;
     }
-    .title {
-      margin: 2px 0 14px;
+    .login-card h2 {
       text-align: center;
-      font-weight: 800;
-      font-size: 1.6rem;
-      color: #0b1220;
+      margin-bottom: 1.5rem;
+      color: #222;
     }
-    .hint { color:#6b7280; font-size:.95rem; text-align:center; margin-bottom:14px; }
     .input-group {
-      display:flex; align-items:center; gap:10px;
-      border-radius: 12px; padding: 12px 14px;
-      background: #eef2ff; border: 1px solid #dbe4ff;
+      display: flex;
+      align-items: center;
+      background: #f0f4ff;
+      border-radius: 8px;
+      padding: 0.75rem;
+      margin-bottom: 1rem;
     }
     .input-group input {
-      border:0; outline:0; background:transparent; flex:1;
-      font-size:1.05rem; letter-spacing:.08em;
+      border: none;
+      outline: none;
+      background: transparent;
+      flex: 1;
+      font-size: 1rem;
+      padding-left: 0.5rem;
     }
-    .eye { cursor:pointer; user-select:none; opacity:.7 }
-    .row { display:flex; gap:12px; justify-content:center; margin:16px 0 10px }
-    .btn {
-      border:0; border-radius: 12px; padding: 11px 18px; font-size:1rem; cursor:pointer;
-      transition: transform .05s ease, background .15s ease, box-shadow .15s ease;
+    button {
+      border: none;
+      padding: 0.7rem 1.5rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: 0.2s;
+      width: 100%;
+      margin-top: 0.5rem;
     }
-    .btn:active { transform: translateY(1px); }
-    .btn-primary { background:#2563eb; color:#fff; box-shadow:0 6px 16px rgba(37,99,235,.35) }
-    .btn-primary:hover { background:#1e4ed8; }
-    .btn-ghost { background:#f3f4f6; color:#111827; }
-    .btn-ghost:hover { background:#e5e7eb; }
-    .demo {
-      text-align:center; color:#374151; font-size:.95rem; margin-top:6px;
+    .btn-primary { background: #2563eb; color: #fff; }
+    .btn-primary:hover { background: #1e4ed8; }
+    .demo-pins {
+      font-size: 0.9rem;
+      color: #555;
+      text-align: center;
+      margin-top: 1rem;
     }
-    .demo b { font-weight:800; }
-    .foot {
-      display:flex; justify-content:center; gap:10px; margin-top:14px;
-    }
-    .foot a { color:#6b7280; font-size:.9rem; text-decoration:none }
-    .foot a:hover { text-decoration:underline }
+    .demo-pins span { font-weight: 600; }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="login-card">
-      <div class="title">🔒 PIN Login</div>
-      <div class="hint">Enter your 4–6 digit PIN to continue</div>
+  <div class="login-card">
+    <h2>🔒 PIN Login</h2>
 
-      <div class="input-group">
-        <span aria-hidden="true">🔑</span>
-        <input
-          id="pinInput"
-          type="password"
-          inputmode="numeric"
-          pattern="[0-9]*"
-          autocomplete="one-time-code"
-          maxlength="6"
-          placeholder="4–6 digits"
-        />
-        <span id="toggleEye" class="eye" title="Show/Hide PIN">👁️</span>
-      </div>
+    <div class="input-group">
+      <span>🔑</span>
+      <input id="pinInput" type="password" maxlength="6" placeholder="Enter 4–6 digit PIN" />
+    </div>
 
-      <div class="row">
-        <button id="btnLogin" class="btn btn-primary">Login</button>
-        <button id="btnClear" class="btn btn-ghost">Clear Cache</button>
-      </div>
+    <button class="btn-primary" onclick="handleLogin()">Login</button>
 
-      <div class="demo" id="demoPins">Demo PINs → <b>4321</b> (Doctor) · <b>1111</b> (Supervisor) · <b>9999</b> (Admin)</div>
-
-      <div class="foot">
-        <a href="./index.html">← Dashboard</a>
-      </div>
+    <div class="demo-pins">
+      PINs → <span>4321</span> Dashboard · <span>9876</span> Supervisor · <span>9999</span> Admin
     </div>
   </div>
 
   <script>
-    // --- helpers ----------------------------------------------------------
-    const qs = (s, r=document) => r.querySelector(s);
-    const getNext = () => new URLSearchParams(location.search).get('next');
-    const baseGoto = (file) => { const base = location.pathname.replace(/[^/]+$/, ''); location.href = base + file; };
-
-    // Seed demo PINs if missing (keeps any user-changed pins)
-    if (!localStorage.getItem('erp:pin_doctor'))     localStorage.setItem('erp:pin_doctor', '4321');
-    if (!localStorage.getItem('erp:pin_supervisor')) localStorage.setItem('erp:pin_supervisor', '1111');
-    if (!localStorage.getItem('erp:pin_admin'))      localStorage.setItem('erp:pin_admin', '9999');
-
-    // Reflect whatever is currently stored as the demo text (avoids mismatch)
-    (function refreshDemoPins(){
-      const d = localStorage.getItem('erp:pin_doctor') || '4321';
-      const s = localStorage.getItem('erp:pin_supervisor') || '1111';
-      const a = localStorage.getItem('erp:pin_admin') || '9999';
-      qs('#demoPins').innerHTML = `Demo PINs → <b>${d}</b> (Doctor) · <b>${s}</b> (Supervisor) · <b>${a}</b> (Admin)`;
-    })();
-
-    // Toggle show/hide PIN
-    qs('#toggleEye').addEventListener('click', () => {
-      const i = qs('#pinInput');
-      i.type = i.type === 'password' ? 'text' : 'password';
-    });
-
-    // Only allow digits
-    qs('#pinInput').addEventListener('input', (e) => {
-      e.target.value = e.target.value.replace(/\D+/g, '').slice(0, 6);
-    });
-
-    // Login logic → sets role + auth flag, then routes to dashboard (or ?next)
     function handleLogin() {
-      const pin = (qs('#pinInput').value || '').trim();
-      if (!/^\d{4,6}$/.test(pin)) { alert('Enter a 4–6 digit PIN'); return; }
-
-      const pins = {
-        doctor:     localStorage.getItem('erp:pin_doctor')     || '4321',
-        supervisor: localStorage.getItem('erp:pin_supervisor') || '1111',
-        admin:      localStorage.getItem('erp:pin_admin')      || '9999',
-      };
-
-      let role = '';
-      if (pin === pins.admin)      role = 'admin';
-      else if (pin === pins.supervisor) role = 'supervisor';
-      else if (pin === pins.doctor)     role = 'doctor';
-
-      if (!role) { alert('Invalid PIN. Please try again.'); return; }
-
-      localStorage.setItem('erp:auth', 'true');
-      localStorage.setItem('erp:role', role);
-
-      const next = getNext();
-      if (next) {
-        // if next is an absolute URL, keep it safe and only allow same-origin
-        try {
-          const u = new URL(decodeURIComponent(next), location.origin);
-          if (u.origin === location.origin) location.href = u.href;
-          else baseGoto('index.html');
-        } catch { baseGoto('index.html'); }
+      const pin = document.getElementById("pinInput").value.trim();
+      if (pin === "4321") {
+        window.location.href = "dashboard.html";
+      } else if (pin === "9876") {
+        window.location.href = "supervisor.html";
+      } else if (pin === "9999") {
+        window.location.href = "admin.html";
       } else {
-        // Always go to dashboard; role-specific areas can gate on role later
-        baseGoto('index.html');
+        alert("Invalid PIN. Try 4321, 9876, or 9999.");
       }
     }
-
-    // Clear cache but keep demo PINs (so the page remains usable)
-    async function clearCache() {
-      const keep = ['erp:pin_doctor','erp:pin_supervisor','erp:pin_admin','theme','erp:fmt'];
-      Object.keys(localStorage).forEach(k => { if (!keep.includes(k)) localStorage.removeItem(k); });
-      if ('caches' in window) {
-        const names = await caches.keys(); await Promise.all(names.map(n => caches.delete(n)));
-      }
-      alert('Cache cleared (PINs preserved).');
-      location.reload();
-    }
-
-    // Bind
-    qs('#btnLogin').addEventListener('click', handleLogin);
-    qs('#btnClear').addEventListener('click', clearCache);
-    qs('#pinInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') handleLogin(); });
-    // autofocus
-    setTimeout(() => qs('#pinInput')?.focus(), 50);
   </script>
 </body>
 </html>
