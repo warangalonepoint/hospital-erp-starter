@@ -1,11 +1,21 @@
 <!doctype html>
 <html lang="en" data-theme="light">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Pharmacy • Hospital ERP</title>
-  <link rel="stylesheet" href="../styles/styles.css" />
-  <link rel="icon" href="../public/assets/icon-192.png" />
+  <link rel="stylesheet" href="../styles/styles.css"/>
+  <link rel="icon" href="../public/assets/icon-192.png"/>
+  <style>
+    /* tiny page-local helpers only */
+    .tabs{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .tab-pane{display:none}
+    .tab-pane.active{display:block}
+    .table td input.qty{width:80px}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .grid-2{display:grid;grid-template-columns:1fr;gap:12px}
+    @media (min-width: 980px){ .grid-2{ grid-template-columns:1fr 1fr; } }
+  </style>
 </head>
 <body>
   <!-- Banner -->
@@ -13,414 +23,520 @@
     <button id="themeToggle" class="toggle" title="Toggle theme">🌙</button>
   </header>
 
-  <!-- Tabs + actions -->
+  <!-- Top actions -->
   <div class="toolbar">
     <a class="chip" href="./dashboard.html">← Dashboard</a>
     <button class="chip" id="btnClear">Clear Cache</button>
     <div style="flex:1"></div>
-    <button class="chip chip--primary" data-tab="sell">Sell</button>
-    <button class="chip" data-tab="purchase">Purchase</button>
-    <button class="chip" data-tab="stock">Stock</button>
-    <button class="chip" data-tab="reports">Reports</button>
+    <a class="chip admin-only" href="./admin.html">Admin</a>
   </div>
 
-  <!-- SELL -->
-  <section class="section" id="tab-sell">
+  <!-- Header / Tabs -->
+  <section class="section">
     <div class="panel grad-lilac">
-      <h2>Quick POS</h2>
-      <p class="muted">Search / scan, link patient, and bill.</p>
+      <h2>Pharmacy</h2>
+      <p class="muted">Billing, purchases, stock & reports. Use camera to scan barcodes.</p>
     </div>
 
-    <div class="grid-2 mt12">
-      <div class="section">
-        <h3 style="margin:0 0 8px">Patient</h3>
-        <div class="row">
-          <button class="chip chip--primary" id="btnScanPatient">📷 Scan Patient ID</button>
-          <button class="chip" id="btnNewPatient">New ID</button>
-          <span id="patientStatus" class="muted">No patient linked</span>
+    <div class="tabs mt12">
+      <a class="chip" data-tab="sell"     href="#tab-sell">Sell</a>
+      <a class="chip" data-tab="purchase" href="#tab-purchase">Purchase</a>
+      <a class="chip" data-tab="stock"    href="#tab-stock">Stock</a>
+      <a class="chip" data-tab="reports"  href="#tab-reports">Reports</a>
+    </div>
+  </section>
+
+  <!-- SELL -->
+  <section id="tab-sell" class="section tab-pane">
+    <div class="grid-2">
+      <!-- Left: Cart -->
+      <div class="card panel--blue">
+        <h3>Point of Sale</h3>
+        <div class="row mt8">
+          <input id="item-search" type="search" placeholder="Scan or type barcode / name" style="flex:1;min-width:240px">
+          <button id="btn-scan-item" class="chip action">📷 Scan Item</button>
+          <button id="btnDemo" class="chip">Demo Fill</button>
         </div>
 
-        <div class="row" style="margin-top:12px">
-          <input id="item-search" placeholder="Search item or scan…" />
-          <button id="btn-scan-item" class="btn">📷 Scan Item</button>
-          <button id="btnDemo" class="chip">Load Demo</button>
-        </div>
-
-        <div style="margin-top:12px; overflow:auto">
+        <div class="mt12" style="overflow:auto">
           <table class="table">
             <thead>
-              <tr><th>Item</th><th>Batch</th><th>Qty</th><th>MRP</th><th>GST</th><th>Line</th><th></th></tr>
+              <tr><th>Item</th><th>Batch</th><th>Qty</th><th>Rate</th><th>GST</th><th>Line Total</th><th></th></tr>
             </thead>
             <tbody id="cart-body">
               <tr><td class="muted" colspan="7">Cart is empty</td></tr>
             </tbody>
           </table>
         </div>
+
+        <div class="row mt12">
+          <input id="discount" type="number" min="0" step="0.01" placeholder="Discount (₹)">
+          <button id="btnSave" class="btn">Save Invoice</button>
+          <button id="btnClearCart" class="chip">Clear Cart</button>
+        </div>
       </div>
 
-      <div class="section">
-        <h3 style="margin:0 0 8px">Summary</h3>
-        <div class="kpi-grid">
-          <div class="kpi grad-sky"><div class="label">Items</div><div class="num" id="sum-items">0</div></div>
-          <div class="kpi grad-mint"><div class="label">Subtotal</div><div class="num" id="sum-subtotal">0.00</div></div>
-          <div class="kpi grad-rose"><div class="label">GST</div><div class="num" id="sum-gst">0.00</div></div>
-          <div class="kpi grad-amber"><div class="label">Total</div><div class="num" id="sum-grand">0.00</div></div>
+      <!-- Right: Patient + Summary -->
+      <div class="card panel--mint">
+        <h3>Patient</h3>
+        <p class="muted">Link by Patient ID / Barcode</p>
+        <div class="chips mt8">
+          <button id="btnScanPatient" class="chip">📷 Scan Patient</button>
+          <button id="btnNewPatient"  class="chip">+ New Patient</button>
         </div>
+        <p id="patientStatus" class="muted mt8">Not linked</p>
 
-        <div class="row" style="margin-top:12px">
-          <input id="discount" type="number" step="0.01" placeholder="Discount (₹)" style="max-width:180px">
-          <select id="payMode" style="max-width:160px">
-            <option value="cash">Cash</option>
-            <option value="upi">UPI</option>
-            <option value="card">Card</option>
-          </select>
-          <div style="flex:1"></div>
-          <button class="btn" id="btnSave">Save & Print</button>
+        <div class="mt16">
+          <h3>Summary</h3>
+          <div class="kpi-grid mt8">
+            <div class="kpi" style="background:var(--t-blue);color:var(--c-blue)">
+              <h4>Items</h4><div id="sum-items" class="num">0</div>
+            </div>
+            <div class="kpi" style="background:var(--t-lilac);color:var(--c-lilac)">
+              <h4>Subtotal</h4><div id="sum-subtotal" class="num">₹ 0.00</div>
+            </div>
+            <div class="kpi" style="background:var(--t-mint);color:var(--c-mint)">
+              <h4>GST</h4><div id="sum-gst" class="num">₹ 0.00</div>
+            </div>
+            <div class="kpi" style="background:var(--t-rose);color:var(--c-rose)">
+              <h4>Discount</h4><div id="sum-discount" class="num">₹ 0.00</div>
+            </div>
+            <div class="kpi" style="background:var(--t-peach);color:var(--c-peach)">
+              <h4>Total</h4><div id="sum-grand" class="num">₹ 0.00</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </section>
 
   <!-- PURCHASE -->
-  <section class="section" id="tab-purchase" hidden>
-    <div class="panel grad-mint">
-      <h2>Purchase / Stock-in</h2>
-      <p class="muted">Adds to inventory (batch, expiry, qty, cost/MRP).</p>
-    </div>
-
-    <div class="section mt12">
-      <div class="row">
-        <input id="purName" placeholder="Item name" style="max-width:260px">
-        <input id="purCode" placeholder="Barcode / Code" style="max-width:200px">
-        <input id="purBatch" placeholder="Batch" style="max-width:160px">
-        <input id="purExpiry" placeholder="YYYY-MM" style="max-width:140px">
-        <input id="purQty" type="number" step="1" placeholder="Qty" style="max-width:120px">
-        <input id="purMRP" type="number" step="0.01" placeholder="MRP" style="max-width:140px">
-        <input id="purGST" type="number" step="0.01" placeholder="GST%" style="max-width:120px">
-        <button id="btnAddPurchase" class="btn">Add</button>
+  <section id="tab-purchase" class="section tab-pane">
+    <div class="card panel--peach">
+      <h3>Purchase / Stock-in</h3>
+      <div class="row mt8">
+        <input id="purName"  placeholder="Item name" style="min-width:220px">
+        <input id="purCode"  placeholder="Barcode / Code" style="min-width:180px">
+        <input id="purBatch" placeholder="Batch" style="min-width:120px">
+        <input id="purExpiry" placeholder="YYYY-MM" style="min-width:120px">
       </div>
-      <p class="muted" id="purMsg" style="margin-top:10px">—</p>
+      <div class="row mt8">
+        <input id="purQty"  type="number" min="0" step="1" placeholder="Qty">
+        <input id="purMrp"  type="number" min="0" step="0.01" placeholder="MRP">
+        <input id="purGst"  type="number" min="0" step="0.01" placeholder="GST %">
+        <button id="btnAddPurchase" class="btn">Add to Stock</button>
+      </div>
+      <p id="purMsg" class="muted mt8">—</p>
     </div>
   </section>
 
   <!-- STOCK -->
-  <section class="section" id="tab-stock" hidden>
-    <div class="panel grad-sky">
-      <h2>Stock</h2>
-      <p class="muted">Near-expiry, expired, re-order.</p>
-    </div>
-
-    <div class="row mt12">
-      <input id="stockSearch" placeholder="Search item/batch…" style="max-width:300px">
-      <select id="stockFilter" style="max-width:220px">
-        <option value="all">All</option>
-        <option value="near">Near Expiry (≤60d)</option>
-        <option value="expired">Expired</option>
-        <option value="low">Below Min Qty</option>
-      </select>
-      <div style="flex:1"></div>
-      <button id="btnExportStock" class="chip">↓ Export CSV</button>
-    </div>
-
-    <div style="margin-top:12px; overflow:auto">
-      <table class="table">
-        <thead><tr><th>Item</th><th>Batch</th><th>Expiry</th><th>Qty</th><th>MRP</th><th>Status</th></tr></thead>
-        <tbody id="stockBody"><tr><td class="muted" colspan="6">Loading…</td></tr></tbody>
-      </table>
+  <section id="tab-stock" class="section tab-pane">
+    <div class="card panel--mint">
+      <h3>Stock</h3>
+      <div class="row mt8">
+        <input id="stockSearch" type="search" placeholder="Search name / batch" style="flex:1;min-width:240px">
+        <select id="stockFilter" style="min-width:160px">
+          <option value="all">All</option>
+          <option value="near">Expiring soon (≤ 60d)</option>
+          <option value="expired">Expired</option>
+          <option value="low">Low qty</option>
+        </select>
+        <button id="btnExportStock" class="chip">⬇ Export CSV</button>
+      </div>
+      <div class="mt12" style="overflow:auto">
+        <table class="table">
+          <thead>
+            <tr><th>Item</th><th>Batch</th><th>Expiry</th><th>Qty</th><th>MRP</th><th>Status</th></tr>
+          </thead>
+          <tbody id="stockBody">
+            <tr><td class="muted" colspan="6">No rows</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </section>
 
   <!-- REPORTS -->
-  <section class="section" id="tab-reports" hidden>
-    <div class="panel grad-rose">
+  <section id="tab-reports" class="section tab-pane">
+    <div class="panel grad-sky">
       <h2>Pharmacy Reports</h2>
-      <p class="muted">Totals, invoices, and top items for a date range.</p>
+      <p class="muted">Run by date to get totals and top items.</p>
     </div>
 
     <div class="row mt12">
       <input type="date" id="repFrom" style="max-width:180px">
       <input type="date" id="repTo" style="max-width:180px">
-      <button id="btnRunReports" class="chip chip--primary">Run</button>
+      <button id="btnRunReports" class="chip action">Run</button>
       <button class="chip" data-q="today">Today</button>
       <button class="chip" data-q="7d">Last 7D</button>
       <button class="chip" data-q="30d">Last 30D</button>
       <button class="chip" data-q="mtd">MTD</button>
       <div style="flex:1"></div>
-      <button id="btnExportSales" class="chip">↓ Export CSV</button>
+      <button id="btnExpInv" class="chip">↓ Invoices CSV</button>
+      <button id="btnExpItems" class="chip">↓ Items CSV</button>
     </div>
 
     <div class="kpi-grid mt12">
-      <div class="kpi grad-sky"><div class="label">Total (₹)</div><div class="num" id="rpTotal">0.00</div></div>
-      <div class="kpi grad-lilac"><div class="label">Avg/Day (₹)</div><div class="num" id="rpAvg">0.00</div></div>
-      <div class="kpi grad-mint"><div class="label">Invoices</div><div class="num" id="rpInv">0</div></div>
-      <div class="kpi grad-amber"><div class="label">Paid (₹)</div><div class="num" id="rpPaid">0.00</div></div>
+      <div class="kpi" style="background:var(--t-blue);color:var(--c-blue)">
+        <h4>Total (₹)</h4><div id="rpTotal" class="num">0.00</div>
+      </div>
+      <div class="kpi" style="background:var(--t-mint);color:var(--c-mint)">
+        <h4>Paid (₹)</h4><div id="rpPaid" class="num">0.00</div>
+      </div>
+      <div class="kpi" style="background:var(--t-peach);color:var(--c-peach)">
+        <h4>Invoices</h4><div id="rpInv" class="num">0</div>
+      </div>
+      <div class="kpi" style="background:var(--t-rose);color:var(--c-rose)">
+        <h4>Avg/Day (₹)</h4><div id="rpAvg" class="num">0.00</div>
+      </div>
     </div>
 
     <div class="section mt12">
       <h3 style="margin:0 0 8px">Top Items</h3>
-      <table class="table" id="topItemsTbl">
-        <thead><tr><th>Item</th><th>Qty</th><th>Amount</th></tr></thead>
-        <tbody id="topItemsBody"><tr><td class="muted" colspan="3">—</td></tr></tbody>
-      </table>
+      <div style="overflow:auto">
+        <table class="table">
+          <thead><tr><th>Item</th><th>Qty</th><th>Amount (₹)</th></tr></thead>
+          <tbody id="topItemsBody"><tr><td class="muted" colspan="3">—</td></tr></tbody>
+        </table>
+      </div>
     </div>
   </section>
 
   <script src="../scripts/utils.js"></script>
   <script src="../scripts/scanner.js"></script>
   <script>
-    // Theme
+    // =============== Theme ===============
     (function(){
       const key='theme', root=document.documentElement, btn=document.getElementById('themeToggle');
       const saved=localStorage.getItem(key)||'light'; root.dataset.theme=saved; btn.textContent=saved==='dark'?'🌙':'🌞';
       btn.onclick=()=>{ const next=root.dataset.theme==='dark'?'light':'dark'; root.dataset.theme=next; localStorage.setItem(key,next); btn.textContent=next==='dark'?'🌙':'🌞'; };
     })();
 
-    // Tabs
-    const tabBtns=[...document.querySelectorAll('[data-tab]')];
-    const tabs={ sell:'#tab-sell', purchase:'#tab-purchase', stock:'#tab-stock', reports:'#tab-reports' };
-    tabBtns.forEach(b=> b.onclick=()=>{
-      tabBtns.forEach(x=>x.classList.remove('chip--primary'));
-      b.classList.add('chip--primary');
-      Object.values(tabs).forEach(sel=> document.querySelector(sel).hidden = true);
-      document.querySelector(tabs[b.dataset.tab]).hidden = false;
-    });
-    document.querySelector('[data-tab="sell"]').click();
-
-    // Clear cache
-    document.getElementById('btnClear').onclick = async ()=>{
-      const keep=['theme'];
-      Object.keys(localStorage).forEach(k=>{ if(!keep.includes(k)) localStorage.removeItem(k); });
-      if('caches' in window){ const keys=await caches.keys(); await Promise.all(keys.map(k=>caches.delete(k))); }
-      alert('Cleared.');
-    };
-
-    // ===== Data bootstrap (optional CSV -> local cache) =====
-    // If you want to pre-load CSVs into LS on first visit:
-    (async function seed(){
-      if(!ERP.load('inventory').length){
-        try{ await ERP.loadAllCSVs(); }catch(e){}
-      }
-      renderStock('all');
+    // =============== Role-based visibility ===============
+    (function(){
+      const role = localStorage.getItem('erp:role') || sessionStorage.getItem('role');
+      if (role !== 'admin') document.querySelectorAll('.admin-only').forEach(el => el.remove());
     })();
 
-    // ===== SELL =====
-    let CART = [];
-    const ids = { itemsId:'sum-items', subtotalId:'sum-subtotal', gstId:'sum-gst', discountId:'sum-discount', totalId:'sum-grand' };
-
-    function renderCartTable(){
-      const body = document.getElementById('cart-body');
-      if(!CART.length){ body.innerHTML='<tr><td class="muted" colspan="7">Cart is empty</td></tr>'; }
-      else{
-        body.innerHTML = CART.map((it,i)=>{
-          const rate = Number(it.rate ?? it.mrp)||0;
-          const line = (Number(it.qty||1)*rate).toFixed(2);
-          const gstAmt = (Number(it.qty||1)*rate*(Number(it.gst||0)/100)).toFixed(2);
-          return `<tr data-i="${i}">
-            <td>${it.name||''}</td>
-            <td>${it.batch||''}</td>
-            <td><input class="qty" type="number" min="1" value="${it.qty||1}" style="width:80px"></td>
-            <td>₹ ${rate.toFixed(2)}</td>
-            <td>₹ ${gstAmt}</td>
-            <td>₹ ${(Number(line)+Number(gstAmt)).toFixed(2)}</td>
-            <td><button class="chip remove">✕</button></td>
-          </tr>`;
-        }).join('');
+    // =============== Tabs (hash-based) ===============
+    (function tabs(){
+      const panes = ['sell','purchase','stock','reports'];
+      function activate(name){
+        document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+        document.querySelectorAll('[data-tab]').forEach(c=>c.classList.remove('active'));
+        const pane = document.getElementById('tab-'+name) || document.getElementById('tab-sell');
+        pane.classList.add('active');
+        document.querySelectorAll(`[data-tab="${name}"]`).forEach(c=>c.classList.add('active'));
+        history.replaceState(null,'', '#tab-'+name);
       }
+      const fromHash = (location.hash||'').replace('#tab-','');
+      activate(panes.includes(fromHash)?fromHash:'sell');
+      document.querySelectorAll('[data-tab]').forEach(a=> a.addEventListener('click', e=>{
+        const t = a.getAttribute('data-tab'); if(!t) return;
+        activate(t);
+      }));
+    })();
+
+    // =============== Clear cache ===============
+    document.getElementById('btnClear').onclick = async ()=>{
+      const keep=['theme','erp:pin_doctor','erp:pin_supervisor','erp:pin_admin','erp:startup','erp:fmt','erp:auth','erp:role'];
+      Object.keys(localStorage).forEach(k=>{ if(!keep.includes(k)) localStorage.removeItem(k); });
+      if('caches' in window){ const keys=await caches.keys(); await Promise.all(keys.map(k=>caches.delete(k))); }
+      alert('Cache cleared (PINs/preferences preserved).');
+    };
+
+    // =============== SELL wiring ===============
+    const $ = (id)=> document.getElementById(id);
+    let CART = [];
+    let LINKED = null;
+
+    const totalIds = {
+      itemsId: 'sum-items',
+      subtotalId: 'sum-subtotal',
+      gstId: 'sum-gst',
+      discountId: 'sum-discount',
+      totalId: 'sum-grand'
+    };
+
+    function renderCart(){
+      const body = $('cart-body');
+      if(!CART.length){
+        body.innerHTML = '<tr><td class="muted" colspan="7">Cart is empty</td></tr>';
+        recalcTotals();
+        return;
+      }
+      body.innerHTML = CART.map((it,i)=>{
+        const qty  = ERP.n(it.qty||1);
+        const rate = ERP.n(it.rate ?? it.mrp);
+        const base = qty * rate;
+        const gstA = base * ERP.pct(it.gst || 0);
+        const line = base + gstA;
+        return `<tr data-i="${i}">
+          <td>${it.name||''}</td>
+          <td>${it.batch||''}</td>
+          <td><input class="qty" type="number" min="1" value="${qty}"></td>
+          <td>${ERP.formatMoney(rate)}</td>
+          <td>${ERP.formatMoney(gstA)}</td>
+          <td>${ERP.formatMoney(line)}</td>
+          <td><button class="chip remove">✕</button></td>
+        </tr>`;
+      }).join('');
       recalcTotals();
     }
 
     function recalcTotals(){
-      const discount = Number(document.getElementById('discount').value||0);
-      const t = ERP.calcCartTotals(CART, { discount });
-      ERP.renderCartTotals(t, ids);
+      const discount = ERP.n($('discount')?.value || 0);
+      const totals = ERP.calcCartTotals(CART, { discount });
+      ERP.renderCartTotals(totals, totalIds);
     }
 
-    // qty & remove handlers
-    document.getElementById('cart-body').addEventListener('input', (e)=>{
+    $('cart-body').addEventListener('input', (e)=>{
       if(e.target.classList.contains('qty')){
-        const i = Number(e.target.closest('tr').dataset.i);
-        CART[i].qty = Math.max(1, Number(e.target.value||1));
-        recalcTotals(); renderCartTable();
+        const i = +e.target.closest('tr').dataset.i;
+        CART[i].qty = Math.max(1, ERP.n(e.target.value||1));
+        recalcTotals();
       }
     });
-    document.getElementById('cart-body').addEventListener('click', (e)=>{
+    $('cart-body').addEventListener('click', (e)=>{
       if(e.target.classList.contains('remove')){
-        const i = Number(e.target.closest('tr').dataset.i);
-        CART.splice(i,1); renderCartTable();
+        const i = +e.target.closest('tr').dataset.i;
+        CART.splice(i,1); renderCart();
       }
     });
-    document.getElementById('discount').addEventListener('input', recalcTotals);
+    $('discount').addEventListener('input', recalcTotals);
+    $('btnClearCart').onclick = ()=>{ CART=[]; renderCart(); };
 
-    // search add
-    document.getElementById('item-search').addEventListener('keydown', (e)=>{
-      if(e.key==='Enter'){
-        const term = e.target.value.trim().toLowerCase();
-        const inv = ERP.load('inventory', []);
-        const idx = ERP.indexInventory(inv);
-        const hit = idx.byBarcode.get(term) || idx.byName.get(term);
-        if(!hit) return alert('Not found in inventory');
-        CART = ERP.addToCart(CART, { code: hit.barcode||hit.code||'', name: hit.name, batch: hit.batch, qty:1, mrp:Number(hit.mrp||0), gst:Number(hit.gst||0) });
-        renderCartTable(); e.target.value='';
-      }
-    });
-
-    // scanner add (item)
-    document.getElementById('btn-scan-item').onclick = async ()=>{
-      if(typeof window.startScanner!=='function' && !(window.Scanner?.start)){ alert('Scanner not available.'); return; }
-      const stop = await (window.startScanner ? startScanner({
-        containerId:'scan-overlay',
-        modal:true,
-        onDetected: (code)=>{
-          const inv = ERP.load('inventory', []);
-          const idx = ERP.indexInventory(inv);
-          const hit = idx.byBarcode.get(String(code).trim().toLowerCase());
-          if(hit){ CART = ERP.addToCart(CART, { code: hit.barcode||hit.code||'', name: hit.name, batch: hit.batch, qty:1, mrp:Number(hit.mrp||0), gst:Number(hit.gst||0) }); renderCartTable(); }
-        }
-      }) : window.Scanner.start({ containerId:'scan-overlay', onDecode:(code)=>{/* same as above */} }));
-      // stop() can be called on modal close if your scanner supports it
-    };
-
-    // demo
-    document.getElementById('btnDemo').onclick = ()=>{
-      const inv = ERP.load('inventory', []);
-      CART = [];
-      inv.slice(0,3).forEach(x=>{
-        CART = ERP.addToCart(CART, { code:x.barcode||x.code||'', name:x.name, batch:x.batch, qty:1, mrp:Number(x.mrp||0), gst:Number(x.gst||0) });
+    // Search (Enter)
+    $('item-search').addEventListener('keydown', (e)=>{
+      if(e.key!=='Enter') return;
+      const term = e.target.value.trim();
+      if(!term) return;
+      const hit = ERP.findInventoryByTerm(term);
+      if(!hit) return alert('Not found in inventory');
+      CART = ERP.addToCart(CART, {
+        code: hit.barcode||hit.code||'',
+        name: hit.name,
+        batch: hit.batch,
+        qty: 1,
+        mrp: ERP.n(hit.mrp||0),
+        gst: ERP.n(hit.gst||0)
       });
-      renderCartTable();
-    };
+      renderCart(); e.target.value='';
+    });
 
-    // patient link (basic)
-    let LINKED=null;
-    document.getElementById('btnNewPatient').onclick=()=>{
-      const id='P'+Date.now().toString().slice(-6);
-      LINKED={ patient_id:id, name:'New Patient' };
-      document.getElementById('patientStatus').textContent = `Linked: ${id} (new)`;
-    };
-    document.getElementById('btnScanPatient').onclick=async ()=>{
-      if(typeof window.startScanner!=='function' && !(window.Scanner?.start)){ alert('Scanner not available.'); return; }
+    // Scan item
+    $('btn-scan-item').addEventListener('click', async ()=>{
+      if(typeof window.startScanner!=='function' && !(window.Scanner?.start)){
+        alert('Scanner not available'); return;
+      }
       const stop = await (window.startScanner ? startScanner({
-        containerId:'scan-overlay',
         modal:true,
         onDetected:(code)=>{
-          const pats = ERP.load('patients', []);
-          const p = pats.find(r => String(r.patient_id)===String(code));
+          const hit = ERP.findInventoryByTerm(code);
+          if(hit){
+            CART = ERP.addToCart(CART, {
+              code: hit.barcode||hit.code||'',
+              name: hit.name, batch: hit.batch, qty:1,
+              mrp: ERP.n(hit.mrp||0), gst: ERP.n(hit.gst||0)
+            });
+            renderCart();
+          }
+        }
+      }) : window.Scanner.start({ onDecode:(code)=>{/* optional alt impl */} }));
+      void stop;
+    });
+
+    // Patient link
+    $('btnNewPatient').onclick = ()=>{
+      const id='P'+Date.now().toString().slice(-6);
+      LINKED = { patient_id:id, name:'New Patient' };
+      $('patientStatus').textContent = `Linked: ${id} (new)`;
+    };
+    $('btnScanPatient').onclick = async ()=>{
+      if(typeof window.startScanner!=='function' && !(window.Scanner?.start)){
+        alert('Scanner not available'); return;
+      }
+      await (window.startScanner ? startScanner({
+        modal:true,
+        onDetected:(code)=>{
+          const p = ERP.findPatientByIdOrBarcode(code);
           if(!p) return alert('Patient not found');
           LINKED = p;
-          document.getElementById('patientStatus').textContent = `Linked: ${p.name} (${p.patient_id})`;
+          $('patientStatus').textContent = `Linked: ${p.name} (${p.patient_id})`;
         }
-      }) : window.Scanner.start({ containerId:'scan-overlay', onDecode:(code)=>{/* same */} }));
+      }) : window.Scanner.start({ onDecode:(code)=>{/* optional */} }));
     };
 
-    // Save (demo)
-    document.getElementById('btnSave').onclick = ()=>{
+    // Save invoice (also deduct stock)
+    $('btnSave').onclick = ()=>{
       if(!CART.length) return alert('Cart empty');
-      const totals = ERP.calcCartTotals(CART, { discount: Number(document.getElementById('discount').value||0) });
+      const discount = ERP.n($('discount')?.value || 0);
+      const totals = ERP.calcCartTotals(CART, { discount });
       const invId = 'INV'+Date.now();
       const invoice = {
-        id:invId,
-        date:ERP.todayISO(),
+        id: invId,
+        date: ERP.todayISO(),
         patient_id: LINKED?.patient_id || '',
         patient_name: LINKED?.name || '',
         total: totals.total,
-        paid: totals.total, // full paid (demo)
+        paid: totals.total
       };
-      const items = CART.map(l=>({ invoice_id:invId, item_name:l.name, qty:l.qty, rate:Number(l.rate??l.mrp)||0, gst:Number(l.gst||0) }));
-      const allInv = ERP.load('invoices', []); allInv.push(invoice); ERP.save('invoices', allInv);
+      const items = CART.map(l=>({
+        invoice_id: invId,
+        item_name: l.name,
+        qty: ERP.n(l.qty||1),
+        rate: ERP.n(l.rate ?? l.mrp),
+        gst: ERP.n(l.gst||0)
+      }));
+
+      // save
+      const invs = ERP.load('invoices', []); invs.push(invoice); ERP.save('invoices', invs);
       const allItems = ERP.load('invoice_items', []); ERP.save('invoice_items', allItems.concat(items));
-      alert('Saved ✓');
-      CART=[]; renderCartTable();
+
+      // deduct stock by (code|barcode + batch)
+      const key = (r) => `${(r.code || r.barcode || '').trim()}@@${(r.batch || '').trim()}`;
+      const inv = ERP.load('inventory', []);
+      const map = new Map(inv.map(r => [key(r), r]));
+      CART.forEach(l=>{
+        const k = key(l);
+        if(map.has(k)){
+          const cur = map.get(k);
+          cur.qty = String(Math.max(0, ERP.n(cur.qty) - ERP.n(l.qty||1)));
+        }
+      });
+      ERP.save('inventory', Array.from(map.values()));
+
+      alert('Invoice saved ✓');
+      CART=[]; $('discount').value=''; $('patientStatus').textContent='Not linked'; LINKED=null;
+      renderCart();
     };
 
-    // ===== PURCHASE =====
-    document.getElementById('btnAddPurchase').onclick = ()=>{
-      const pl = [{
-        name:   document.getElementById('purName').value.trim(),
-        barcode:document.getElementById('purCode').value.trim(),
-        code:   document.getElementById('purCode').value.trim(),
-        batch:  document.getElementById('purBatch').value.trim(),
-        expiry: document.getElementById('purExpiry').value.trim(),
-        qty:    Number(document.getElementById('purQty').value||0),
-        mrp:    Number(document.getElementById('purMRP').value||0),
-        gst:    Number(document.getElementById('purGST').value||0),
-      }];
-      if(!pl[0].barcode && !pl[0].name){ document.getElementById('purMsg').textContent='Need name or barcode'; return; }
-      const inv = ERP.load('inventory', []);
-      ERP.applyPurchaseRows(inv, pl);
-      document.getElementById('purMsg').textContent='Added to stock ✅';
-      // Clear qty only
-      document.getElementById('purQty').value='';
-    };
+    // =============== PURCHASE → STOCK ===============
+    (function wirePurchase(){
+      const get = id => $(id);
+      get('btnAddPurchase').onclick = ()=>{
+        const rows = [{
+          name:   get('purName').value.trim(),
+          barcode:get('purCode').value.trim(),
+          code:   get('purCode').value.trim(),
+          batch:  get('purBatch').value.trim(),
+          expiry: get('purExpiry').value.trim(),
+          qty:    ERP.n(get('purQty').value || 0),
+          mrp:    ERP.n(get('purMrp').value || 0),
+          gst:    ERP.n(get('purGst').value || 0)
+        }];
+        if(!rows[0].name && !rows[0].barcode) { $('purMsg').textContent='Need name or barcode'; return; }
+        const inv = ERP.load('inventory', []);
+        ERP.applyPurchaseRows(inv, rows);
+        $('purMsg').textContent='Added to stock ✅';
+        ['purQty','purMrp','purGst'].forEach(id=> get(id).value='');
+      };
+    })();
 
-    // ===== STOCK =====
-    function expiryState(expiry){
-      if(!expiry) return 'ok';
-      const d = new Date(expiry.length===7? expiry+'-01' : expiry);
-      const now = new Date();
-      const diff = (d - now)/86400000;
-      if(diff < -1) return 'expired';
-      if(diff <= 60) return 'near';
-      return 'ok';
-    }
-    function renderStock(filter){
-      const body = document.getElementById('stockBody');
-      const inv = ERP.load('inventory', []);
-      const q = (document.getElementById('stockSearch').value||'').toLowerCase();
-      const rows = inv.filter(r=>{
-        if(q && !((r.name||'').toLowerCase().includes(q) || (r.batch||'').toLowerCase().includes(q))) return false;
-        const st = expiryState(r.expiry);
-        if(filter==='near') return st==='near';
-        if(filter==='expired') return st==='expired';
-        if(filter==='low') return Number(r.qty||0) <= Number(r.min||r.min_qty||5);
-        return true;
-      }).map(r=>{
-        const st = expiryState(r.expiry);
-        const label = st==='ok' ? 'OK' : (st==='near'?'Near':'Expired');
-        return `<tr>
-          <td>${r.name||''}</td>
-          <td>${r.batch||''}</td>
-          <td>${r.expiry||''}</td>
-          <td>${r.qty||0}</td>
-          <td>₹ ${(Number(r.mrp||0)).toFixed(2)}</td>
-          <td>${label}</td>
-        </tr>`;
-      }).join('');
-      body.innerHTML = rows || '<tr><td class="muted" colspan="6">No rows</td></tr>';
-    }
-    function currentFilter(){ return document.getElementById('stockFilter').value; }
-    document.getElementById('stockFilter').onchange = ()=> renderStock(currentFilter());
-    document.getElementById('stockSearch').oninput = ()=> renderStock(currentFilter());
-    document.getElementById('btnExportStock').onclick = ()=> ERP.downloadCSV('stock_export.csv', ERP.load('inventory', []));
+    // =============== STOCK LIST ===============
+    (function wireStock(){
+      const search=$('stockSearch'), filter=$('stockFilter'), body=$('stockBody');
+      function n(v){ return ERP.n(v||0); }
+      function expiryState(expiry){
+        if(!expiry) return 'ok';
+        const d = new Date(expiry.length===7? expiry+'-01' : expiry);
+        const now = new Date();
+        const diff = (d - now)/86400000;
+        if(diff < -1) return 'expired';
+        if(diff <= 60) return 'near';
+        return 'ok';
+      }
+      function render(){
+        const inv = ERP.load('inventory', []);
+        const q = (search.value||'').toLowerCase();
+        const rows = inv.filter(r=>{
+          if(q && !((r.name||'').toLowerCase().includes(q) || (r.batch||'').toLowerCase().includes(q))) return false;
+          const st = expiryState(r.expiry);
+          const f = filter.value || 'all';
+          if(f==='near') return st==='near';
+          if(f==='expired') return st==='expired';
+          if(f==='low') return n(r.qty) <= n(r.min||r.min_qty||5);
+          return true;
+        }).map(r=>{
+          const st = expiryState(r.expiry);
+          const label = st==='ok' ? 'OK' : (st==='near'?'Near':'Expired');
+          return `<tr>
+            <td>${r.name||''}</td>
+            <td>${r.batch||''}</td>
+            <td>${r.expiry||''}</td>
+            <td>${n(r.qty)}</td>
+            <td>${ERP.formatMoney(n(r.mrp||0))}</td>
+            <td>${label}</td>
+          </tr>`;
+        }).join('');
+        body.innerHTML = rows || '<tr><td class="muted" colspan="6">No rows</td></tr>';
+      }
+      search.addEventListener('input', render);
+      filter.addEventListener('change', render);
+      $('btnExportStock').onclick = ()=> ERP.downloadCSV('inventory.csv', ERP.load('inventory', []));
+      render();
+    })();
 
-    // ===== REPORTS =====
-    const setRange = (days)=>{ const to=new Date(), from=new Date(); from.setDate(to.getDate()-days+1); repFrom.value=from.toISOString().slice(0,10); repTo.value=to.toISOString().slice(0,10); };
-    const repFrom = document.getElementById('repFrom');
-    const repTo   = document.getElementById('repTo');
-    document.querySelectorAll('[data-q]').forEach(b=> b.onclick=()=>{
-      const q=b.dataset.q; if(q==='today') setRange(1); if(q==='7d') setRange(7); if(q==='30d') setRange(30);
-      if(q==='mtd'){ const d=new Date(); repFrom.value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`; repTo.value=new Date().toISOString().slice(0,10); }
-      runReports();
-    });
-    document.getElementById('btnRunReports').onclick = runReports;
-    function runReports(){
-      const invsAll = ERP.load('invoices', []);
-      const itemsAll = ERP.load('invoice_items', []);
-      const invs = ERP.filterInvoicesByDate(invsAll, repFrom.value, repTo.value);
-      const ids = new Set(invs.map(i=> i.id||i.invoice_id));
-      const items = itemsAll.filter(x => ids.has(x.invoice_id));
-      const k = ERP.buildSalesKPIs(invs, items);
-      document.getElementById('rpTotal').textContent = k.total.toFixed(2);
-      const days = Math.max(1, Math.ceil((new Date(repTo.value) - new Date(repFrom.value))/86400000) + 1);
-      document.getElementById('rpAvg').textContent = (k.total/days).toFixed(2);
-      document.getElementById('rpInv').textContent = String(k.invoices);
-      document.getElementById('rpPaid').textContent = k.paid.toFixed(2);
+    // =============== REPORTS ===============
+    (function wireReports(){
+      const from=$('repFrom'), to=$('repTo');
+      function setRange(days){
+        const t=new Date(); t.setHours(0,0,0,0);
+        const f=new Date(t); f.setDate(t.getDate()-days+1);
+        from.value = f.toISOString().slice(0,10);
+        to.value   = t.toISOString().slice(0,10);
+      }
+      function MTD(){
+        const d=new Date();
+        from.value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`;
+        to.value=new Date().toISOString().slice(0,10);
+      }
+      document.querySelectorAll('[data-q]').forEach(b=> b.addEventListener('click', ()=>{
+        const q=b.dataset.q; if(q==='today') setRange(1); if(q==='7d') setRange(7); if(q==='30d') setRange(30); if(q==='mtd') MTD();
+        run();
+      }));
 
-      const top = ERP.topItems(items, 10);
-      const body = document.getElementById('topItemsBody');
-      body.innerHTML = top.length ? top.map(r=> `<tr><td>${r.name}</td><td>${r.qty}</td><td>₹ ${r.amount.toFixed(2)}</td></tr>`).join('') : '<tr><td class="muted" colspan="3">—</td></tr>';
-    }
-    // defaults
-    setRange(7); runReports();
+      function run(){
+        const invsAll = ERP.load('invoices', []);
+        const itemsAll = ERP.load('invoice_items', []);
+        const invs = ERP.filterInvoicesByDate(invsAll, from.value, to.value);
+        const ids = new Set(invs.map(i=> i.id||i.invoice_id));
+        const items = itemsAll.filter(x=> ids.has(x.invoice_id));
+
+        const k = ERP.buildSalesKPIs(invs, items);
+        $('rpTotal').textContent = ERP.formatNumber(k.total);
+        $('rpPaid').textContent  = ERP.formatNumber(k.paid);
+        $('rpInv').textContent   = String(k.invoices);
+        const days = Math.max(1, Math.ceil((new Date(to.value) - new Date(from.value))/86400000) + 1);
+        $('rpAvg').textContent   = ERP.formatNumber(k.total/days);
+
+        const top = ERP.topItems(items, 10);
+        $('topItemsBody').innerHTML = top.length
+          ? top.map(r=> `<tr><td>${r.name}</td><td>${r.qty}</td><td>${ERP.formatMoney(r.amount)}</td></tr>`).join('')
+          : '<tr><td class="muted" colspan="3">—</td></tr>';
+      }
+
+      $('btnRunReports').onclick = run;
+      $('btnExpInv').onclick = ()=> ERP.downloadCSV('invoices_filtered.csv', ERP.filterInvoicesByDate(ERP.load('invoices', []), from.value, to.value));
+      $('btnExpItems').onclick = ()=>{
+        const invs = ERP.filterInvoicesByDate(ERP.load('invoices', []), from.value, to.value);
+        const ids = new Set(invs.map(i=> i.id||i.invoice_id));
+        const items = ERP.load('invoice_items', []).filter(x=> ids.has(x.invoice_id));
+        ERP.downloadCSV('invoice_items_filtered.csv', items);
+      };
+
+      // defaults
+      setRange(7); run();
+    })();
+
+    // =============== First load: try CSVs if LS empty ===============
+    (async function boot(){
+      if(!ERP.load('inventory').length || !ERP.load('invoices').length){
+        try{ await ERP.loadAllCSVs(); }catch(e){}
+      }
+      renderCart();
+    })();
   </script>
 </body>
 </html>
