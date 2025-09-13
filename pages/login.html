@@ -1,42 +1,82 @@
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>PIN Login • Hospital ERP</title>
+  <title>Login • Hospital ERP</title>
   <link rel="stylesheet" href="../styles/styles.css"/>
-  <script defer src="../scripts/utils.js"></script>
+  <link rel="icon" href="../public/assets/icon-192.png"/>
 </head>
 <body>
+  <!-- Banner -->
   <header class="banner">
-    <button class="toggle" id="themeToggle" title="Toggle theme">🌙</button>
+    <button id="themeToggle" class="toggle" title="Toggle theme">🌙</button>
   </header>
 
   <div class="toolbar">
-    <a class="chip" href="../index.html">← Dashboard</a>
+    <a class="chip" href="./dashboard.html">← Dashboard</a>
     <button class="chip" id="clearCacheBtn">Clear Cache</button>
   </div>
 
-  <section class="section">
-    <div class="panel grad-sky"><h2>PIN Login</h2></div>
+  <section class="section" style="max-width:720px">
+    <div class="panel grad-sky">
+      <h2>Sign in</h2>
+      <p class="muted">Enter PIN to continue. Demo PINs: <strong>4321</strong> (Doctor), <strong>1111</strong> (Supervisor).</p>
+    </div>
 
-    <div class="section" style="max-width:680px; margin-top:12px">
-      <label class="muted">Enter PIN</label>
-      <input id="pin" inputmode="numeric" maxlength="6" placeholder="4–6 digits" style="margin:8px 0 12px"/>
-      <div class="row">
-        <button class="btn" id="loginBtn">Login</button>
-        <button class="chip" id="clearCache">Clear Cache</button>
+    <div class="section" style="margin-top:12px">
+      <label class="muted">PIN</label>
+      <input id="pin" inputmode="numeric" maxlength="6" placeholder="4–6 digits" style="margin-top:6px"/>
+      <div class="row" style="margin-top:12px">
+        <button id="btnLogin" class="btn">Login</button>
+        <button id="btnLogout" class="chip">Logout</button>
       </div>
-      <p class="muted" style="margin-top:10px">Demo PINs → <strong>4321</strong> (Doctor) · <strong>1111</strong> (Supervisor)</p>
+      <p id="msg" class="muted" style="margin-top:10px">—</p>
     </div>
   </section>
 
   <script>
-    const html=document.documentElement, t=document.getElementById('themeToggle');
-    function sync(){t.textContent=html.dataset.theme==='dark'?'🌙':'🌞'}; t.onclick=()=>{html.dataset.theme=html.dataset.theme==='dark'?'light':'dark'; localStorage.setItem('theme',html.dataset.theme); sync();}; html.dataset.theme=localStorage.getItem('theme')||'dark'; sync();
-    document.getElementById('clearCache')?.addEventListener('click',()=>{localStorage.clear(); alert('Cleared');});
-    document.getElementById('clearCacheBtn')?.addEventListener('click',()=>{localStorage.clear(); alert('Cleared');});
-    document.getElementById('loginBtn').onclick=()=>{ const v=document.getElementById('pin').value.trim(); if(['4321','1111','2468','9876'].includes(v)) { localStorage.setItem('role', v==='1111'?'supervisor':'doctor'); location.href='../index.html'; } else { alert('Invalid PIN'); } };
+    // Theme
+    (function(){
+      const key='theme';
+      const root=document.documentElement;
+      const btn=document.getElementById('themeToggle');
+      const saved=localStorage.getItem(key)||'light';
+      root.dataset.theme=saved; btn.textContent=saved==='dark'?'🌙':'🌞';
+      btn.onclick=()=>{ const next=root.dataset.theme==='dark'?'light':'dark'; root.dataset.theme=next; localStorage.setItem(key,next); btn.textContent=next==='dark'?'🌙':'🌞'; };
+    })();
+
+    // Auth
+    const $ = id => document.getElementById(id);
+    function setMsg(t){ $('msg').textContent=t; }
+
+    $('btnLogin').onclick = () => {
+      const v = ($('pin').value||'').trim();
+      if(!v){ setMsg('Please enter a PIN'); return; }
+      // Demo mapping
+      const role = (v==='1111') ? 'supervisor'
+                 : (v==='4321') ? 'doctor'
+                 : (v==='2468') ? 'reception'
+                 : null;
+      if(!role){ setMsg('Invalid PIN'); return; }
+      localStorage.setItem('erp:auth','true');
+      localStorage.setItem('erp:role',role);
+      setMsg(`Logged in as ${role}. Redirecting…`);
+      location.href = './dashboard.html';
+    };
+
+    $('btnLogout').onclick = () => {
+      localStorage.removeItem('erp:auth');
+      localStorage.removeItem('erp:role');
+      setMsg('Logged out.');
+    };
+
+    document.getElementById('clearCacheBtn')?.addEventListener('click', async ()=>{
+      const keep=['theme'];
+      Object.keys(localStorage).forEach(k=>{ if(!keep.includes(k)) localStorage.removeItem(k); });
+      if('caches' in window){ const keys=await caches.keys(); await Promise.all(keys.map(k=>caches.delete(k))); }
+      setMsg('Cache cleared.');
+    });
   </script>
 </body>
 </html>
