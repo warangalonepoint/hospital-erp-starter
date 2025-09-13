@@ -374,3 +374,44 @@
   }
 
 })(window);
+// ===== Auth helpers =====
+window.ERP = window.ERP || {};
+
+ERP.setRole = (role) => localStorage.setItem('role', role);
+ERP.getRole = () => localStorage.getItem('role') || '';
+
+/**
+ * Require a role before showing the page.
+ * - allowed: array of roles or '*' for any signed-in user
+ * - redirect: where to send unauthenticated users
+ */
+ERP.requireRole = (allowed='*', redirect='login.html') => {
+  // Allow manual bypass while debugging: ?dev=1
+  if (new URLSearchParams(location.search).get('dev') === '1') return;
+
+  const role = ERP.getRole();
+  const ok = allowed === '*' ? !!role : Array.isArray(allowed) && allowed.includes(role);
+  if (!ok) {
+    // Keep original target so you can come back after login
+    const target = encodeURIComponent(location.pathname + location.search + location.hash);
+    location.replace(`${redirect}?next=${target}`);
+  }
+};
+
+/** Build a safe page-relative URL (works whether files are in / or /pages/) */
+ERP.goto = (file) => {
+  const base = location.pathname.replace(/[^/]+$/, ''); // strip filename
+  location.href = base + file;
+};
+
+/** Hard cache clear (SW + HTTP cache + localStorage) */
+ERP.hardClear = async () => {
+  try {
+    if ('caches' in window) {
+      const names = await caches.keys();
+      await Promise.all(names.map(n => caches.delete(n)));
+    }
+  } catch {}
+  localStorage.clear();
+  location.reload(true);
+};
