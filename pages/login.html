@@ -2,54 +2,125 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Hospital ERP – Login</title>
-  <link rel="stylesheet" href="styles.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PIN Login · Hospital ERP</title>
+  <link rel="stylesheet" href="../styles/styles.css" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f5f7fb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .login-card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+      padding: 2rem;
+      width: 100%;
+      max-width: 380px;
+    }
+    .login-card h2 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      color: #222;
+    }
+    .input-group {
+      display: flex;
+      align-items: center;
+      background: #f0f4ff;
+      border-radius: 8px;
+      padding: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .input-group input {
+      border: none;
+      outline: none;
+      background: transparent;
+      flex: 1;
+      font-size: 1rem;
+      padding-left: 0.5rem;
+    }
+    .btn-row {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      margin-bottom: 1rem;
+    }
+    button {
+      border: none;
+      padding: 0.7rem 1.5rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .btn-primary {
+      background: #2563eb;
+      color: white;
+    }
+    .btn-primary:hover { background: #1e4ed8; }
+    .btn-secondary {
+      background: #f3f4f6;
+      color: #111;
+    }
+    .btn-secondary:hover { background: #e5e7eb; }
+    .demo-pins {
+      font-size: 0.9rem;
+      color: #555;
+      text-align: center;
+    }
+    .demo-pins span { font-weight: 600; }
+  </style>
 </head>
-<body class="login-body">
-  <div class="login-container card">
-    <h1 class="login-title">Hospital ERP</h1>
-    <p class="login-subtitle">Enter your PIN to continue</p>
-    
-    <form id="loginForm">
-      <div class="form-group">
-        <input 
-          type="password" 
-          id="pinInput" 
-          placeholder="Enter PIN" 
-          required 
-          class="form-control"/>
-      </div>
-      <button type="submit" class="btn btn-primary w-full">Login</button>
-    </form>
-    
-    <div id="loginMessage" class="login-message"></div>
+<body>
+  <div class="login-card">
+    <h2>🔒 PIN Login</h2>
+
+    <div class="input-group">
+      <span>🔑</span>
+      <input id="pinInput" type="password" maxlength="6" placeholder="Enter 4–6 digit PIN" />
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-primary" onclick="handleLogin()">Login</button>
+      <button class="btn-secondary" onclick="clearCache()">Clear Cache</button>
+    </div>
+
+    <div class="demo-pins">
+      Demo PINs → 
+      <span>4321</span> (Doctor) · 
+      <span>1111</span> (Supervisor) · 
+      <span>9999</span> (Admin)
+    </div>
   </div>
 
   <script>
-    document.getElementById('loginForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      const pin = document.getElementById('pinInput').value.trim();
-      const msg = document.getElementById('loginMessage');
+    const roles = {
+      "4321": "doctor",
+      "1111": "supervisor",
+      "9999": "admin"
+    };
 
-      // Role-based PINs
-      const roles = {
-        doctor: '4321',
-        supervisor: '9876',
-        admin: '2468'
-      };
-
-      if (pin === roles.doctor) {
-        window.location.href = 'analytics.html';
-      } else if (pin === roles.supervisor) {
-        window.location.href = 'supervisor.html';
-      } else if (pin === roles.admin) {
-        window.location.href = 'admin.html';
+    function handleLogin() {
+      const pin = document.getElementById("pinInput").value.trim();
+      if (roles[pin]) {
+        localStorage.setItem("role", roles[pin]);
+        alert("Login successful as " + roles[pin]);
+        window.location.href = "dashboard.html"; 
       } else {
-        msg.textContent = 'Invalid PIN. Try again.';
-        msg.style.color = 'red';
+        alert("Invalid PIN. Please try again.");
       }
-    });
+    }
+
+    function clearCache() {
+      localStorage.clear();
+      alert("Cache cleared. You can re-login with demo PINs.");
+      window.location.reload();
+    }
   </script>
 </body>
 </html>
