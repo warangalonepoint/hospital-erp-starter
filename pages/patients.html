@@ -6,7 +6,7 @@
   <title>Patients · Hospital ERP</title>
   <link rel="manifest" href="manifest.webmanifest"/>
   <link rel="icon" href="assets/logo.png"/>
-  <link rel="stylesheet" href="styles.css?v=33"/>
+  <link rel="stylesheet" href="styles.css?v=35"/>
   <style>
     .section{margin:12px}
     .card{border-radius:16px;padding:16px;box-shadow:var(--shadow);border:1px solid var(--border);background:var(--card-bg)}
@@ -18,7 +18,6 @@
     tr:hover td{background:color-mix(in srgb, var(--card-bg) 92%, #2563eb 8%)}
     .grid2{display:grid;gap:10px;grid-template-columns:1fr 1fr}
     @media (max-width:560px){.grid2{grid-template-columns:1fr}}
-    /* Drawer uses global .drawer/.scrim from styles.css */
     .vrow{display:grid;grid-template-columns:84px 1fr;gap:8px;padding:10px 12px;border-top:1px solid var(--border)}
     .vrow:nth-child(odd){background:color-mix(in srgb, var(--card-bg) 96%, #fff 4%)}
     .mini{font-size:12px;opacity:.8}
@@ -38,7 +37,8 @@
     <a class="chip" href="bookings.html">Supervisor · Slots</a>
     <a class="chip" href="supervisor.html">Supervisor</a>
     <a class="chip" href="admin.html">Admin</a>
-    <span id="whoami" class="chip" style="pointer-events:none">Patients</span>
+    <span class="chip" style="pointer-events:none">Patients</span>
+    <button id="btnScan" class="chip">🔎 Scan</button>
     <button id="clearCacheBtn" class="chip">Clear Cache</button>
   </nav>
 
@@ -113,7 +113,7 @@
             <th>Referred By</th>
             <th>Last Visit</th>
             <th>Next Visit</th>
-            <th style="width:320px">Actions</th>
+            <th style="width:360px">Actions</th>
           </tr>
         </thead>
         <tbody id="rows"></tbody>
@@ -122,7 +122,7 @@
     <div class="muted mini" id="countLbl" style="margin-top:6px"></div>
   </section>
 
-  <!-- Scrim + Drawer -->
+  <!-- Scrim + Drawer (Patient) -->
   <div class="scrim" id="scrim"></div>
   <div class="drawer" id="drawer">
     <h2 id="dwTitle" style="margin:0 0 6px 0">Patient</h2>
@@ -162,12 +162,44 @@
       <button class="chip" id="btnClose">Close</button>
     </div>
 
+    <!-- Barcode preview & print -->
+    <div class="card" style="margin-top:12px">
+      <div class="filters" style="justify-content:space-between;align-items:center">
+        <div><div class="muted">Patient ID Barcode</div><div id="pPidText" class="mini">—</div></div>
+        <button class="chip" id="btnPrintPidDrawer">Print ID Label</button>
+      </div>
+      <div style="background:var(--card-bg);border:1px dashed var(--border);border-radius:12px;padding:12px;margin-top:8px;display:flex;justify-content:center">
+        <svg id="pPidBarcode"></svg>
+      </div>
+    </div>
+
     <div class="card" style="margin-top:12px">
       <h3 style="margin:0 0 6px 0">Visit History</h3>
-      <div class="muted mini">Entries come from doctor’s Booking Status page + Next Visits.</div>
+      <div class="muted mini">Entries come from supervisor bookings + doctor’s updates & next visits.</div>
       <div id="visitList" style="margin-top:8px"></div>
     </div>
   </div>
+
+  <!-- Scan Drawer (wedge-friendly) -->
+  <div class="scrim" id="scrimScan"></div>
+  <div class="drawer" id="drawerScan">
+    <h2 style="margin:0 0 6px 0">Scan Patient ID</h2>
+    <div class="muted">Use a barcode scanner (keyboard wedge) and press Enter — or type manually.</div>
+    <div class="card" style="margin-top:10px">
+      <label>Patient ID
+        <input id="scanInput" placeholder="e.g., PID-RK1234" autofocus/>
+      </label>
+      <div class="filters" style="margin-top:10px">
+        <button class="chip" id="scanGo">Open History</button>
+        <button class="chip" id="scanClose">Close</button>
+      </div>
+    </div>
+    <div id="scanViewport" style="margin-top:10px;display:none"></div>
+    <div class="muted mini">Tip: Most handheld scanners work as keyboards; just focus the box and scan.</div>
+  </div>
+
+  <!-- Barcode lib -->
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 
   <script type="module">
     /* ---------- Theme ---------- */
@@ -185,12 +217,50 @@
     const ISO=d=>new Date(d).toISOString().slice(0,10);
     const today=ISO(new Date());
 
-    const bookings=()=>JSON.parse(localStorage.getItem(BK)||'[]);
+    const bookings=()=>JSON.parse(localStorage.getItem(BK)||'[]');
     const loadPatients=()=>JSON.parse(localStorage.getItem(PT)||'{}');
     const savePatients=o=>localStorage.setItem(PT, JSON.stringify(o));
     const getVisits=()=>JSON.parse(localStorage.getItem(NV)||'[]');
 
     const phoneLink=n=> n ? `tel:${n}` : '#';
+
+    /* ===== Barcode helpers ===== */
+    function drawPidBarcode(svgEl, pid){
+      if(!window.JsBarcode || !svgEl || !pid) { if(svgEl) svgEl.innerHTML=''; return; }
+      try {
+        JsBarcode(svgEl, pid, { format: "CODE128", width: 2, height: 64, displayValue: true, fontSize: 14, margin: 8 });
+      } catch(_) { svgEl.innerHTML=''; }
+    }
+    function printPidLabel(pid, name="", mobile=""){
+      const html = `
+        <html><head><meta charset="utf-8"><title>${pid} Label</title>
+          <style>
+            body{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto; padding:16px}
+            .card{width:320px;border:1px solid #000;padding:10px;border-radius:8px}
+            .h{font-weight:700}
+            svg{width:100%}
+            .mini{font-size:12px;opacity:.8}
+          </style>
+        </head>
+        <body onload="window.print(); setTimeout(()=>window.close(), 300);">
+          <div class="card">
+            <div class="h">Patient ID</div>
+            <div style="margin:6px 0 10px 0">${pid}</div>
+            <div id="wrap"></div>
+            <div class="mini" style="margin-top:8px">${name||""} ${mobile?("• "+mobile):""}</div>
+          </div>
+          <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"><\/script>
+          <script>
+            (function(){
+              var s=document.createElement('svg');
+              document.getElementById('wrap').appendChild(s);
+              try{ JsBarcode(s, ${JSON.stringify(pid)}, {format:'CODE128', width:2, height:64, displayValue:true, fontSize:14, margin:8}); }catch(e){}
+            })();
+          <\/script>
+        </body></html>`;
+      const w = window.open('', '_blank', 'width=420,height=420');
+      w.document.open(); w.document.write(html); w.document.close();
+    }
 
     function computeDerivedPatients(){
       // Start with saved patients
@@ -201,15 +271,12 @@
         const pid=b.patientId||'';
         if(!pid) continue;
         const p = pts[pid] || { id: pid, name: b.name||'', mobile: b.mobile||'', gender: '', age:'', referredBy: b.referredBy||'', history: [] };
-        // Keep the freshest values if empty
         if(!p.name && b.name) p.name=b.name;
         if(!p.mobile && b.mobile) p.mobile=b.mobile;
         if(!p.referredBy && b.referredBy) p.referredBy=b.referredBy;
-        // If the booking is marked Done, reflect lastVisit
         if(b.status==='Done'){
           p.lastVisit = b.date;
           p.history = p.history || [];
-          // Deduplicate on bookingId
           if(!p.history.some(h=>h.bookingId===b.id)){
             p.history.push({ bookingId:b.id, token:b.token, date:b.date, slot:b.slot, reason:b.reason||'', type:'visit' });
           }
@@ -217,7 +284,7 @@
         pts[pid]=p;
       }
 
-      // Attach next visit info (latest future)
+      // Attach next visit info (future)
       const nexts = getVisits().filter(v=>v.date>=today).sort((a,b)=> (a.pid||'').localeCompare(b.pid||'') || (a.date||'').localeCompare(b.date||''));
       for(const n of nexts){
         const p = pts[n.pid] || { id:n.pid, name:n.name||'', mobile:n.mobile||'', history:[] };
@@ -226,7 +293,6 @@
         p.history.push({ type:'next_visit', date:n.date, notes:n.notes||'', createdAt:new Date().toISOString() });
         pts[n.pid]=p;
       }
-
       return pts;
     }
 
@@ -237,14 +303,10 @@
       const obj=computeDerivedPatients();
       let rows=Object.values(obj).map(p=>({
         id:p.id, name:p.name||'', mobile:p.mobile||'', age:p.age||'', gender:p.gender||'',
-        referredBy:p.referredBy||'',
-        lastVisit:p.lastVisit||'',
-        nextVisit:p.upcoming?.date||'',
-        nextNotes:p.upcoming?.notes||'',
-        history:p.history||[]
+        referredBy:p.referredBy||'', lastVisit:p.lastVisit||'',
+        nextVisit:p.upcoming?.date||'', nextNotes:p.upcoming?.notes||'', history:p.history||[]
       }));
 
-      // Search
       const q=state.q.trim().toLowerCase();
       if(q){
         rows=rows.filter(r =>
@@ -254,17 +316,13 @@
           (r.referredBy||'').toLowerCase().includes(q)
         );
       }
-      // Gender
       if(state.gender) rows=rows.filter(r=> (r.gender||'')===state.gender);
-      // Upcoming
       if(state.upcoming==='upcoming') rows=rows.filter(r=> !!r.nextVisit && r.nextVisit>=today);
       if(state.upcoming==='none') rows=rows.filter(r=> !r.nextVisit || r.nextVisit<today);
 
-      // Sort
       if(state.sortBy==='name') rows.sort((a,b)=> a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
       if(state.sortBy==='lastvisit') rows.sort((a,b)=> (b.lastVisit||'').localeCompare(a.lastVisit||'') || a.name.localeCompare(b.name));
       if(state.sortBy==='nextvisit') rows.sort((a,b)=> (a.nextVisit||'').localeCompare(b.nextVisit||'') || a.name.localeCompare(b.name));
-
       return rows;
     }
 
@@ -280,7 +338,6 @@
     function renderTable(){
       const tbody=$('rows'); tbody.innerHTML='';
       const rows=filteredRows();
-
       $('countLbl').textContent = `${rows.length} patient(s)`;
 
       if(!rows.length){
@@ -328,7 +385,6 @@
       $('pReferredBy').value = p.referredBy||'';
       $('pPid').value = pid;
 
-      // History list
       const wrap=$('visitList'); wrap.innerHTML='';
       const hist=(p.history||[]).slice().sort((a,b)=> (b.date||'').localeCompare(a.date||'') || (b.token||0)-(a.token||0));
       if(!hist.length){
@@ -355,6 +411,9 @@
       document.body.classList.add('no-scroll');
       $('scrim').classList.add('show');
       $('drawer').classList.add('show');
+
+      // barcode
+      refreshDrawerBarcode();
     }
     function closeDrawer(){
       $('drawer').classList.remove('show');
@@ -375,6 +434,8 @@
       pts[currentPid]=p; savePatients(pts);
       renderTable(); computeKPIs();
       alert('Saved.');
+
+      refreshDrawerBarcode();
     }
 
     function exportHistoryCsv(pid){
@@ -426,7 +487,6 @@
             p.gender = val(pos('gender')) || p.gender || '';
             p.referredBy = val(pos('referredby')) || p.referredBy || '';
             p.lastVisit = val(pos('lastvisit')) || p.lastVisit || '';
-            // next visit info is kept in nextVisits store; we won’t write it here to avoid conflicts
             pts[pid]=p;
           }
           savePatients(pts);
@@ -437,6 +497,70 @@
       };
       r.readAsText(f);
     });
+
+    /* ---------- Scan drawer ---------- */
+    const scrimScan = $('scrimScan');
+    const drawerScan = $('drawerScan');
+    const scanInput = $('scanInput');
+
+    function openScanDrawer(){
+      document.body.classList.add('no-scroll');
+      scrimScan.classList.add('show');
+      drawerScan.classList.add('show');
+      setTimeout(()=>scanInput.focus(), 50);
+    }
+    function closeScanDrawer(){
+      drawerScan.classList.remove('show');
+      scrimScan.classList.remove('show');
+      document.body.classList.remove('no-scroll');
+      scanInput.value='';
+    }
+    $('btnScan').onclick = () => location.href='patients.html#scan';
+    $('scanClose').onclick = closeScanDrawer;
+    scrimScan.onclick = closeScanDrawer;
+
+    function openByPid(pid){
+      const rows = filteredRows();
+      const hit = rows.find(r => (r.id||'').toLowerCase() === pid.toLowerCase());
+      if(!hit){ alert('Patient not found: '+pid); return; }
+      closeScanDrawer();
+      openDrawer(hit.id);
+    }
+    $('scanGo').onclick = ()=>{
+      const pid = scanInput.value.trim();
+      if(pid) openByPid(pid);
+    };
+    scanInput.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter'){
+        e.preventDefault();
+        const pid = scanInput.value.trim();
+        if(pid) openByPid(pid);
+      }
+    });
+
+    if (location.hash.startsWith('#scan')) setTimeout(()=> openScanDrawer(), 50);
+    window.addEventListener('hashchange', ()=>{ if(location.hash.startsWith('#scan')) openScanDrawer(); });
+
+    window.addEventListener('keydown', (e)=>{
+      if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        openScanDrawer();
+      }
+    });
+
+    /* ---------- Drawer barcode refresh/print ---------- */
+    function refreshDrawerBarcode(){
+      const pid = ($('pPid')?.value||'').trim();
+      $('pPidText').textContent = pid || '—';
+      drawPidBarcode($('pPidBarcode'), pid);
+    }
+    $('btnPrintPidDrawer').onclick = ()=>{
+      const pid = ($('pPid')?.value||'').trim();
+      const name = ($('pName')?.value||'').trim();
+      const mobile = ($('pMobile')?.value||'').trim();
+      if(!pid){ alert('No Patient ID'); return; }
+      printPidLabel(pid, name, mobile);
+    };
 
     /* ---------- Bindings ---------- */
     function bind(){
