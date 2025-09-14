@@ -1,65 +1,476 @@
-<!-- FILE: /pages/patient.html -->
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Patient</title>
-  <link rel="stylesheet" href="../styles/styles.css" />
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Patients · Hospital ERP</title>
+  <link rel="manifest" href="manifest.webmanifest"/>
+  <link rel="icon" href="assets/logo.png"/>
+  <link rel="stylesheet" href="styles.css?v=33"/>
+  <style>
+    .section{margin:12px}
+    .card{border-radius:16px;padding:16px;box-shadow:var(--shadow);border:1px solid var(--border);background:var(--card-bg)}
+    .muted{color:var(--muted);font-size:13px}
+    .table-wrap{overflow:auto;border-radius:16px;border:1px solid var(--border);background:var(--card-bg)}
+    table{width:100%;min-width:1080px;border-collapse:separate;border-spacing:0}
+    thead th{position:sticky;top:0;background:var(--card-bg);z-index:1}
+    th,td{padding:10px 12px;border-bottom:1px solid var(--border);text-align:left;font-size:13px}
+    tr:hover td{background:color-mix(in srgb, var(--card-bg) 92%, #2563eb 8%)}
+    .grid2{display:grid;gap:10px;grid-template-columns:1fr 1fr}
+    @media (max-width:560px){.grid2{grid-template-columns:1fr}}
+    /* Drawer uses global .drawer/.scrim from styles.css */
+    .vrow{display:grid;grid-template-columns:84px 1fr;gap:8px;padding:10px 12px;border-top:1px solid var(--border)}
+    .vrow:nth-child(odd){background:color-mix(in srgb, var(--card-bg) 96%, #fff 4%)}
+    .mini{font-size:12px;opacity:.8}
+    .nowrap{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  </style>
 </head>
 <body>
-<header class="app-topbar">
-  <nav class="nav">
-    <a class="link-back" href="./patients.html">← Patients</a>
-    <div class="spacer"></div>
-    <button class="pill" id="themeToggle">🌗</button>
+  <!-- Banner -->
+  <header class="banner">
+    <button id="themeToggle" class="chip floating-toggle" aria-label="Theme">🌙</button>
+  </header>
+
+  <!-- Top actions / nav -->
+  <nav class="fixed-actions">
+    <a class="chip" href="dashboard.html">← Dashboard</a>
+    <a class="chip" href="booking-status.html">Doctor · Bookings</a>
+    <a class="chip" href="bookings.html">Supervisor · Slots</a>
+    <a class="chip" href="supervisor.html">Supervisor</a>
+    <a class="chip" href="admin.html">Admin</a>
+    <span id="whoami" class="chip" style="pointer-events:none">Patients</span>
+    <button id="clearCacheBtn" class="chip">Clear Cache</button>
   </nav>
-</header>
 
-<main class="container">
-  <section class="panel">
-    <h2 id="pTitle">Patient</h2>
-    <p id="pMeta"></p>
-  </section>
-
-  <section class="panel">
-    <h3>Pharmacy Invoices</h3>
-    <div class="table-wrap">
-      <table id="invT"><thead><tr>
-        <th>Invoice</th><th>Date</th><th>Total (₹)</th>
-      </tr></thead><tbody></tbody></table>
+  <!-- KPIs -->
+  <section class="section">
+    <div class="kpi-grid">
+      <div class="kpi tint-blue">
+        <h4>Total Patients</h4>
+        <div class="num" id="kTotal">0</div>
+        <div class="muted" id="lblTotal">in local registry</div>
+      </div>
+      <div class="kpi tint-mint">
+        <h4>With Visit History</h4>
+        <div class="num" id="kWithHistory">0</div>
+        <div class="muted">has ≥1 visit</div>
+      </div>
+      <div class="kpi tint-peach">
+        <h4>Upcoming Next Visits</h4>
+        <div class="num" id="kUpcoming">0</div>
+        <div class="muted">from today onwards</div>
+      </div>
     </div>
   </section>
-</main>
 
-<script type="module">
-  import {parseCSV} from '../scripts/utils.js';
-  const root = document.documentElement;
-  const saved = localStorage.getItem('theme');
-  if (saved) root.setAttribute('data-theme', saved);
-  else if (window.matchMedia('(prefers-color-scheme: light)').matches) root.setAttribute('data-theme','light');
-  document.getElementById('themeToggle').onclick = () => {
-    const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-    root.setAttribute('data-theme', next); localStorage.setItem('theme', next);
-  };
+  <!-- Filters -->
+  <section class="section">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <h2 style="margin:0">Patient Registry</h2>
+        <div class="filters">
+          <button class="chip" id="btnExportPatients">Export patients.csv</button>
+          <label class="chip" for="inpImportPatients" style="cursor:pointer">Import patients.csv
+            <input id="inpImportPatients" type="file" accept=".csv" style="display:none"/>
+          </label>
+        </div>
+      </div>
+      <div class="filters" style="margin-top:10px">
+        <input id="q" class="chip" placeholder="Search name, mobile, PID, referred by…"/>
+        <select id="filterGender" class="chip">
+          <option value="">All genders</option>
+          <option>Male</option>
+          <option>Female</option>
+          <option>Other</option>
+        </select>
+        <select id="filterUpcoming" class="chip">
+          <option value="">Any next visit</option>
+          <option value="upcoming">Has upcoming</option>
+          <option value="none">No upcoming</option>
+        </select>
+        <select id="sortBy" class="chip">
+          <option value="name">Sort: Name</option>
+          <option value="lastvisit">Sort: Last Visit</option>
+          <option value="nextvisit">Sort: Next Visit</option>
+        </select>
+        <button class="chip" id="btnApply">Apply</button>
+        <button class="chip" id="btnReset">Reset</button>
+      </div>
+    </div>
+  </section>
 
-  const url = new URL(location.href);
-  const pid = url.searchParams.get('pid');
+  <!-- Table -->
+  <section class="section">
+    <div class="table-wrap">
+      <table id="tbl">
+        <thead>
+          <tr>
+            <th>Patient</th>
+            <th>Patient ID</th>
+            <th>Mobile</th>
+            <th>Age</th>
+            <th>Gender</th>
+            <th>Referred By</th>
+            <th>Last Visit</th>
+            <th>Next Visit</th>
+            <th style="width:320px">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <div class="muted mini" id="countLbl" style="margin-top:6px"></div>
+  </section>
 
-  async function load() {
-    if (!pid) { document.getElementById('pTitle').textContent = 'No PID'; return; }
-    const pts = await fetch('../data/patients.csv').then(r=>r.text()).then(parseCSV);
-    const inv = await fetch('../data/invoices.csv').then(r=>r.text()).then(parseCSV);
+  <!-- Scrim + Drawer -->
+  <div class="scrim" id="scrim"></div>
+  <div class="drawer" id="drawer">
+    <h2 id="dwTitle" style="margin:0 0 6px 0">Patient</h2>
+    <div class="muted" id="dwSub">—</div>
+    <hr style="border:none;border-top:1px solid var(--border);margin:10px 0 12px"/>
 
-    const p = pts.find(x=>x.patient_id===pid);
-    document.getElementById('pTitle').textContent = `${p?.name||'Unknown'} — ${pid}`;
-    document.getElementById('pMeta').textContent = p ? `${p.age} • ${p.gender} • ${p.mobile}` : 'not found';
+    <div class="grid2">
+      <div>
+        <label class="muted">Name</label>
+        <input id="pName" placeholder="Full name"/>
+      </div>
+      <div>
+        <label class="muted">Mobile</label>
+        <input id="pMobile" placeholder="+91…" />
+      </div>
+      <div>
+        <label class="muted">Age</label>
+        <input id="pAge" type="number" min="0" max="120" placeholder="Age"/>
+      </div>
+      <div>
+        <label class="muted">Gender</label>
+        <select id="pGender"><option value="">—</option><option>Male</option><option>Female</option><option>Other</option></select>
+      </div>
+      <div>
+        <label class="muted">Referred By</label>
+        <input id="pReferredBy" placeholder="Doctor/Hospital name"/>
+      </div>
+      <div>
+        <label class="muted">Patient ID</label>
+        <input id="pPid" disabled/>
+      </div>
+    </div>
 
-    const tbody = document.querySelector('#invT tbody');
-    const rows = inv.filter(r=>r.patient_id===pid);
-    tbody.innerHTML = rows.map(r=>`<tr><td>${r.invoice_id}</td><td>${r.date}</td><td>${Number(r.total).toFixed(2)}</td></tr>`).join('');
-  }
-  load();
-</script>
+    <div class="filters" style="margin-top:12px">
+      <button class="chip" id="btnSave">Save</button>
+      <button class="chip" id="btnExportHistory">Export History CSV</button>
+      <button class="chip" id="btnClose">Close</button>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <h3 style="margin:0 0 6px 0">Visit History</h3>
+      <div class="muted mini">Entries come from doctor’s Booking Status page + Next Visits.</div>
+      <div id="visitList" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    /* ---------- Theme ---------- */
+    const tt=document.getElementById('themeToggle');
+    if(localStorage.theme){document.documentElement.dataset.theme=localStorage.theme;tt.textContent=localStorage.theme==='light'?'🌞':'🌙'}
+    tt.onclick=()=>{const cur=document.documentElement.dataset.theme||'light';const nxt=cur==='light'?'dark':'light';document.documentElement.dataset.theme=nxt;localStorage.theme=nxt;tt.textContent=nxt==='light'?'🌞':'🌙'}
+
+    /* ---------- Actions ---------- */
+    clearCacheBtn.onclick=async()=>{localStorage.clear();if('caches'in window){const ks=await caches.keys();await Promise.all(ks.map(k=>caches.delete(k)))};location.reload()}
+
+    /* ---------- Stores & helpers ---------- */
+    const BK="bookings", PT="patients", NV="nextVisits";
+    const $=id=>document.getElementById(id);
+    const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+    const ISO=d=>new Date(d).toISOString().slice(0,10);
+    const today=ISO(new Date());
+
+    const bookings=()=>JSON.parse(localStorage.getItem(BK)||'[]);
+    const loadPatients=()=>JSON.parse(localStorage.getItem(PT)||'{}');
+    const savePatients=o=>localStorage.setItem(PT, JSON.stringify(o));
+    const getVisits=()=>JSON.parse(localStorage.getItem(NV)||'[]');
+
+    const phoneLink=n=> n ? `tel:${n}` : '#';
+
+    function computeDerivedPatients(){
+      // Start with saved patients
+      const pts = loadPatients();
+
+      // Merge from bookings to ensure all PIDs present
+      for(const b of bookings()){
+        const pid=b.patientId||'';
+        if(!pid) continue;
+        const p = pts[pid] || { id: pid, name: b.name||'', mobile: b.mobile||'', gender: '', age:'', referredBy: b.referredBy||'', history: [] };
+        // Keep the freshest values if empty
+        if(!p.name && b.name) p.name=b.name;
+        if(!p.mobile && b.mobile) p.mobile=b.mobile;
+        if(!p.referredBy && b.referredBy) p.referredBy=b.referredBy;
+        // If the booking is marked Done, reflect lastVisit
+        if(b.status==='Done'){
+          p.lastVisit = b.date;
+          p.history = p.history || [];
+          // Deduplicate on bookingId
+          if(!p.history.some(h=>h.bookingId===b.id)){
+            p.history.push({ bookingId:b.id, token:b.token, date:b.date, slot:b.slot, reason:b.reason||'', type:'visit' });
+          }
+        }
+        pts[pid]=p;
+      }
+
+      // Attach next visit info (latest future)
+      const nexts = getVisits().filter(v=>v.date>=today).sort((a,b)=> (a.pid||'').localeCompare(b.pid||'') || (a.date||'').localeCompare(b.date||''));
+      for(const n of nexts){
+        const p = pts[n.pid] || { id:n.pid, name:n.name||'', mobile:n.mobile||'', history:[] };
+        p.upcoming = (p.upcoming && p.upcoming.date <= n.date) ? p.upcoming : { date:n.date, notes:n.notes||'' };
+        p.history = p.history || [];
+        p.history.push({ type:'next_visit', date:n.date, notes:n.notes||'', createdAt:new Date().toISOString() });
+        pts[n.pid]=p;
+      }
+
+      return pts;
+    }
+
+    /* ---------- State + Filters ---------- */
+    const state={ q:'', gender:'', upcoming:'', sortBy:'name' };
+
+    function filteredRows(){
+      const obj=computeDerivedPatients();
+      let rows=Object.values(obj).map(p=>({
+        id:p.id, name:p.name||'', mobile:p.mobile||'', age:p.age||'', gender:p.gender||'',
+        referredBy:p.referredBy||'',
+        lastVisit:p.lastVisit||'',
+        nextVisit:p.upcoming?.date||'',
+        nextNotes:p.upcoming?.notes||'',
+        history:p.history||[]
+      }));
+
+      // Search
+      const q=state.q.trim().toLowerCase();
+      if(q){
+        rows=rows.filter(r =>
+          r.name.toLowerCase().includes(q) ||
+          r.mobile.includes(q) ||
+          (r.id||'').toLowerCase().includes(q) ||
+          (r.referredBy||'').toLowerCase().includes(q)
+        );
+      }
+      // Gender
+      if(state.gender) rows=rows.filter(r=> (r.gender||'')===state.gender);
+      // Upcoming
+      if(state.upcoming==='upcoming') rows=rows.filter(r=> !!r.nextVisit && r.nextVisit>=today);
+      if(state.upcoming==='none') rows=rows.filter(r=> !r.nextVisit || r.nextVisit<today);
+
+      // Sort
+      if(state.sortBy==='name') rows.sort((a,b)=> a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
+      if(state.sortBy==='lastvisit') rows.sort((a,b)=> (b.lastVisit||'').localeCompare(a.lastVisit||'') || a.name.localeCompare(b.name));
+      if(state.sortBy==='nextvisit') rows.sort((a,b)=> (a.nextVisit||'').localeCompare(b.nextVisit||'') || a.name.localeCompare(b.name));
+
+      return rows;
+    }
+
+    /* ---------- KPIs ---------- */
+    function computeKPIs(){
+      const rows=filteredRows();
+      $('kTotal').textContent = rows.length;
+      $('kWithHistory').textContent = rows.filter(r=> (r.history||[]).length>0).length;
+      $('kUpcoming').textContent = rows.filter(r=> r.nextVisit && r.nextVisit>=today).length;
+    }
+
+    /* ---------- Render table ---------- */
+    function renderTable(){
+      const tbody=$('rows'); tbody.innerHTML='';
+      const rows=filteredRows();
+
+      $('countLbl').textContent = `${rows.length} patient(s)`;
+
+      if(!rows.length){
+        const tr=document.createElement('tr'); const td=document.createElement('td'); td.colSpan=9; td.className='muted'; td.textContent='No patients found.'; tr.appendChild(td); tbody.appendChild(tr); return;
+      }
+
+      for(const r of rows){
+        const tr=document.createElement('tr');
+        tr.innerHTML=`
+          <td>${esc(r.name)||'—'}</td>
+          <td>${r.id||'—'}</td>
+          <td><a href="${phoneLink(r.mobile)}">${r.mobile||''}</a></td>
+          <td>${r.age||''}</td>
+          <td>${r.gender||''}</td>
+          <td>${esc(r.referredBy||'—')}</td>
+          <td>${r.lastVisit||'—'}</td>
+          <td>${r.nextVisit||'—'}</td>
+          <td>
+            <div class="filters" style="flex-wrap:wrap;gap:8px">
+              <button class="chip act" data-act="open" data-id="${r.id}">Open</button>
+              <a class="chip" target="_blank" rel="noopener" href="${r.mobile?`https://wa.me/${r.mobile}?text=${encodeURIComponent(`Hello ${r.name||''}, this is a message from the clinic.`)}`:`https://wa.me/`}">📲 WhatsApp</a>
+              <button class="chip act" data-act="export" data-id="${r.id}">Export History</button>
+              <button class="chip act" data-act="delete" data-id="${r.id}">Delete</button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    /* ---------- Drawer ---------- */
+    let currentPid=null;
+    function openDrawer(pid){
+      const pts=computeDerivedPatients();
+      const p=pts[pid]; if(!p){ alert('Patient not found.'); return; }
+      currentPid=pid;
+
+      $('dwTitle').textContent = p.name || 'Patient';
+      $('dwSub').textContent = `${pid} • ${p.mobile||''}`;
+
+      $('pName').value = p.name||'';
+      $('pMobile').value = p.mobile||'';
+      $('pAge').value = p.age||'';
+      $('pGender').value = p.gender||'';
+      $('pReferredBy').value = p.referredBy||'';
+      $('pPid').value = pid;
+
+      // History list
+      const wrap=$('visitList'); wrap.innerHTML='';
+      const hist=(p.history||[]).slice().sort((a,b)=> (b.date||'').localeCompare(a.date||'') || (b.token||0)-(a.token||0));
+      if(!hist.length){
+        const div=document.createElement('div'); div.className='mini'; div.textContent='No history yet.'; wrap.appendChild(div);
+      }else{
+        for(const v of hist){
+          const row=document.createElement('div'); row.className='vrow';
+          const kind = v.type==='next_visit' ? 'Next' : 'Visit';
+          row.innerHTML=`
+            <div>
+              <div class="mini">${kind} Date</div>
+              <div class="nowrap"><strong>${v.date||'-'}</strong></div>
+              ${v.token?`<div class="mini">Token #${v.token}</div>`:''}
+            </div>
+            <div>
+              ${v.reason?`<div class="mini">Reason</div><div class="nowrap">${esc(v.reason)}</div>`:''}
+              ${v.notes?`<div class="mini" style="margin-top:6px">Notes</div><div class="nowrap">${esc(v.notes)}</div>`:''}
+            </div>
+          `;
+          wrap.appendChild(row);
+        }
+      }
+
+      document.body.classList.add('no-scroll');
+      $('scrim').classList.add('show');
+      $('drawer').classList.add('show');
+    }
+    function closeDrawer(){
+      $('drawer').classList.remove('show');
+      $('scrim').classList.remove('show');
+      document.body.classList.remove('no-scroll');
+      currentPid=null;
+    }
+
+    function saveDrawer(){
+      if(!currentPid) return;
+      const pts=loadPatients();
+      const p=pts[currentPid] || { id: currentPid, history: [] };
+      p.name = $('pName').value.trim();
+      p.mobile = $('pMobile').value.trim();
+      p.age = $('pAge').value.trim();
+      p.gender = $('pGender').value;
+      p.referredBy = $('pReferredBy').value.trim();
+      pts[currentPid]=p; savePatients(pts);
+      renderTable(); computeKPIs();
+      alert('Saved.');
+    }
+
+    function exportHistoryCsv(pid){
+      const pts=computeDerivedPatients();
+      const p=pts[pid]; if(!p || !p.history || !p.history.length){ alert('No history to export.'); return; }
+      const csvEsc = v => { const s=String(v??""); return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s; };
+      const head = ["patientId","name","mobile","age","gender","type","date","token","slot","reason","notes"];
+      const rows = p.history.map(h=>[
+        pid, csvEsc(p.name||""), p.mobile||"", p.age||"", p.gender||"",
+        h.type||"", h.date||"", h.token||"", h.slot||"", csvEsc(h.reason||""), csvEsc(h.notes||"")
+      ]);
+      const text=[head.join(','), ...rows.map(r=>r.join(','))].join('\n');
+      const blob=new Blob([text],{type:'text/csv;charset=utf-8'});
+      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`patient_${pid}_history_${Date.now()}.csv`; a.click(); URL.revokeObjectURL(a.href);
+    }
+
+    /* ---------- Export / Import patients.csv ---------- */
+    $('btnExportPatients').onclick=()=>{
+      const pts=computeDerivedPatients();
+      const csvEsc = v => { const s=String(v??""); return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s; };
+      const head=['patientId','name','mobile','age','gender','referredBy','lastVisit','nextVisit','nextNotes'];
+      const rows=Object.values(pts).map(p=>[
+        p.id, csvEsc(p.name||''), p.mobile||'', p.age||'', p.gender||'', csvEsc(p.referredBy||''), p.lastVisit||'', p.upcoming?.date||'', csvEsc(p.upcoming?.notes||'')
+      ]);
+      const text=[head.join(','), ...rows.map(r=>r.join(','))].join('\n');
+      const blob=new Blob([text],{type:'text/csv;charset=utf-8'});
+      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`patients_${Date.now()}.csv`; a.click(); URL.revokeObjectURL(a.href);
+    };
+
+    $('inpImportPatients').addEventListener('change',(e)=>{
+      const f=e.target.files?.[0]; if(!f) return;
+      const r=new FileReader();
+      r.onload=()=>{
+        try{
+          const text=String(r.result||'').replace(/\r/g,'');
+          const lines=text.split('\n').filter(Boolean);
+          const H=lines[0].split(',').map(h=>h.trim().toLowerCase());
+          const pos=k=>H.indexOf(k);
+          const pts=loadPatients();
+          for(let i=1;i<lines.length;i++){
+            const cols=lines[i].match(/(?:^|,)(?:"([^"]*(?:""[^"]*)*)"|([^",]*))/g).map(s=>s.replace(/^,?/,'')); // coarse CSV
+            const val=idx=>(cols[idx]||'').replace(/^"|"$/g,'').replace(/""/g,'"');
+            const pid = val(pos('patientid')) || '';
+            if(!pid) continue;
+            const p=pts[pid] || { id:pid, history:[] };
+            p.name = val(pos('name')) || p.name || '';
+            p.mobile = val(pos('mobile')) || p.mobile || '';
+            p.age = val(pos('age')) || p.age || '';
+            p.gender = val(pos('gender')) || p.gender || '';
+            p.referredBy = val(pos('referredby')) || p.referredBy || '';
+            p.lastVisit = val(pos('lastvisit')) || p.lastVisit || '';
+            // next visit info is kept in nextVisits store; we won’t write it here to avoid conflicts
+            pts[pid]=p;
+          }
+          savePatients(pts);
+          renderTable(); computeKPIs();
+          alert('patients.csv imported.');
+        }catch(err){ console.error(err); alert('Import failed. Check CSV format.'); }
+        e.target.value='';
+      };
+      r.readAsText(f);
+    });
+
+    /* ---------- Bindings ---------- */
+    function bind(){
+      $('btnApply').onclick=()=>{ state.q=$('q').value; state.gender=$('filterGender').value; state.upcoming=$('filterUpcoming').value; state.sortBy=$('sortBy').value; renderTable(); computeKPIs(); };
+      $('btnReset').onclick=()=>{ $('q').value=''; $('filterGender').value=''; $('filterUpcoming').value=''; $('sortBy').value='name'; state.q=''; state.gender=''; state.upcoming=''; state.sortBy='name'; renderTable(); computeKPIs(); };
+
+      $('rows').addEventListener('click',(e)=>{
+        const btn=e.target.closest('.act'); if(!btn) return;
+        const pid=btn.getAttribute('data-id'); const act=btn.getAttribute('data-act');
+        if(act==='open') openDrawer(pid);
+        if(act==='export') exportHistoryCsv(pid);
+        if(act==='delete'){
+          const pts=loadPatients();
+          if(!pts[pid]) return;
+          if(confirm('Delete this patient from local registry? (History will be removed locally)')){
+            delete pts[pid]; savePatients(pts); renderTable(); computeKPIs();
+          }
+        }
+      });
+
+      $('btnClose').onclick=closeDrawer;
+      $('scrim').onclick=closeDrawer;
+      $('btnSave').onclick=saveDrawer;
+      $('btnExportHistory').onclick=()=>{ if(currentPid) exportHistoryCsv(currentPid); };
+    }
+
+    /* ---------- Init ---------- */
+    function init(){
+      bind();
+      renderTable();
+      computeKPIs();
+      if('serviceWorker' in navigator){ navigator.serviceWorker.register('service-worker.js').catch(()=>{}) }
+    }
+    init();
+  </script>
 </body>
 </html>
