@@ -1,95 +1,116 @@
-</html>
 <!doctype html>
 <html lang="en" data-theme="light">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Dashboard • Hospital ERP</title>
-  <link rel="stylesheet" href="../styles/styles.css" />
-  <link rel="stylesheet" href="../styles/ui.css" />
-  <link rel="icon" href="../public/assets/icon-192.png">
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Doctor Dashboard</title>
+  <link rel="manifest" href="manifest.webmanifest"/>
+  <link rel="icon" href="assets/logo.png"/>
+  <link rel="stylesheet" href="styles.css?v=30"/>
+  <style>
+    .section{margin:12px}
+    .tint{border-radius:16px;padding:16px;box-shadow:var(--shadow);border:1px solid rgba(0,0,0,.06)}
+    .tint-blue{background: color-mix(in srgb, #2563eb 16%, var(--card-bg))}
+    .tint-mint{background: color-mix(in srgb, #22c55e 14%, var(--card-bg))}
+    .tint-peach{background: color-mix(in srgb, #fb923c 14%, var(--card-bg))}
+    .kpi-grid{display:grid;gap:14px;grid-template-columns:repeat(3,1fr)}
+    @media (max-width:760px){.kpi-grid{grid-template-columns:1fr}}
+    .kpi .num{font-size:32px;font-weight:800}
+    .card{border-radius:16px;padding:16px;box-shadow:var(--shadow);border:1px solid rgba(0,0,0,.06)}
+    .chip{height:40px;padding:0 14px;border-radius:999px;background:var(--card-bg);border:1px solid rgba(0,0,0,.06)}
+    .grid{display:grid;gap:12px}
+    .grid-3{grid-template-columns:repeat(3,1fr)}
+    @media (max-width:980px){.grid-3{grid-template-columns:1fr}}
+    .muted{color:var(--muted)}
+  </style>
 </head>
 <body>
-  <!-- Banner -->
   <header class="banner">
-    <div class="brand">
-      <span class="brand-mark">🏥</span>
-      <span class="brand-title">Hospital ERP</span>
-    </div>
-    <button id="themeToggle" class="toggle" title="Toggle theme">🌙</button>
+    <button id="themeToggle" class="chip floating-toggle" aria-label="Theme">🌙</button>
   </header>
 
-  <!-- Toolbar -->
-  <nav class="toolbar">
-    <a class="chip" href="./login.html">← Login</a>
-    <button id="btnClear" class="chip">Clear Cache</button>
+  <nav class="fixed-actions">
+    <a class="chip" href="login.html">← Roles</a>
+    <a class="chip" href="booking-status.html">Bookings (Doctor)</a>
+    <a class="chip" href="pharmacy.html">Pharmacy</a>
+    <span id="whoami" class="chip" style="pointer-events:none">Role: Guest</span>
+    <button id="logoutBtn" class="chip">Logout</button>
+    <button id="clearCacheBtn" class="chip">Clear Cache</button>
   </nav>
 
-  <!-- Just the 6 colored cards (no charts) -->
-  <main class="section">
-    <div class="card-grid">
-      <!-- Analytics -->
-      <a class="card grad-purple" href="./analytics.html">
-        <h2>Analytics</h2>
-        <p>Sales reports from Pharmacy</p>
-      </a>
-
-      <!-- Bookings -->
-      <a class="card grad-mint" href="./booking-status.html">
-        <h2>Bookings</h2>
-        <p>View today's booking status & appointments</p>
-      </a>
-
-      <!-- Patients -->
-      <a class="card grad-rose" href="./patients.html">
-        <h2>Patients</h2>
-        <p>Patients data • Referred • New</p>
-      </a>
-
-      <!-- Pharmacy -->
-      <a class="card grad-sky" href="./pharmacy.html">
-        <h2>Pharmacy</h2>
-        <p>Sell • Purchase • Stock • Reports</p>
-      </a>
-
-      <!-- Staff -->
-      <a class="card grad-peach" href="./staff.html">
-        <h2>Staff</h2>
-        <p>Attendance • Roster • On-duty</p>
-      </a>
-
-      <!-- Doctor Settings -->
-      <a class="card grad-lavender" href="./settings.html">
-        <h2>Doctor Settings</h2>
-        <p>Patients & Staff tools</p>
-      </a>
+  <section class="section">
+    <div class="kpi-grid">
+      <div class="tint tint-blue">
+        <h4>Patients Today</h4>
+        <div class="num" id="kToday">0</div>
+        <div class="muted" id="lblToday"></div>
+      </div>
+      <div class="tint tint-mint">
+        <h4>This Month</h4>
+        <div class="num" id="kMonth">0</div>
+        <div class="muted" id="lblMonth"></div>
+      </div>
+      <div class="tint tint-peach">
+        <h4>YTD</h4>
+        <div class="num" id="kYTD">0</div>
+        <div class="muted" id="lblYTD"></div>
+      </div>
     </div>
-  </main>
+  </section>
 
-  <footer class="footer">Dashboard · Hospital ERP</footer>
+  <section class="section">
+    <div class="grid grid-3">
+      <div class="card">
+        <h2 style="margin:0 0 8px 0">Appointments</h2>
+        <div class="muted">Review bookings and write prescriptions.</div>
+        <div style="margin-top:10px"><a class="chip" href="booking-status.html">Open</a></div>
+      </div>
+      <div class="card">
+        <h2 style="margin:0 0 8px 0">Pharmacy</h2>
+        <div class="muted">Sell, stock, reports (PWA-ready).</div>
+        <div style="margin-top:10px"><a class="chip" href="pharmacy.html">Open</a></div>
+      </div>
+      <div class="card">
+        <h2 style="margin:0 0 8px 0">Settings</h2>
+        <div class="muted">Preferences & clinic info.</div>
+        <div style="margin-top:10px"><a class="chip" href="settings.html">Open</a></div>
+      </div>
+    </div>
+  </section>
 
-  <script>
-    // Theme toggle
-    (function(){
-      const root=document.documentElement, btn=document.getElementById('themeToggle');
-      const saved=localStorage.getItem('theme')||'light';
-      root.dataset.theme=saved; btn.textContent=saved==='dark'?'🌙':'🌞';
-      btn.onclick=()=>{ const next=root.dataset.theme==='dark'?'light':'dark';
-        root.dataset.theme=next; localStorage.setItem('theme',next);
-        btn.textContent=next==='dark'?'🌙':'🌞';
-      };
-    })();
+  <script type="module">
+    // Theme
+    const tt=document.getElementById('themeToggle');
+    if(localStorage.theme){document.documentElement.dataset.theme=localStorage.theme;tt.textContent=localStorage.theme==='light'?'🌞':'🌙'}
+    tt.onclick=()=>{const cur=document.documentElement.dataset.theme||'light';const nxt=cur==='light'?'dark':'light';document.documentElement.dataset.theme=nxt;localStorage.theme=nxt;tt.textContent=nxt==='light'?'🌞':'🌙'}
 
-    // Clear cache button
-    document.getElementById('btnClear').onclick = async ()=>{
-      try{
-        if('caches' in window){ const ks=await caches.keys(); await Promise.all(ks.map(k=>caches.delete(k))); }
-      }catch{}
-      const keepTheme = localStorage.getItem('theme');
-      localStorage.clear();
-      if (keepTheme) localStorage.setItem('theme', keepTheme);
-      location.reload();
-    };
+    // Role badge / actions
+    const who=document.getElementById('whoami');
+    const ses=JSON.parse(localStorage.getItem('session')||'{}');
+    if(who) who.textContent = ses.role ? `Role: ${ses.role}` : 'Role: Guest';
+    logoutBtn.onclick=()=>{localStorage.removeItem('session');location.href='login.html'}
+    clearCacheBtn.onclick=async()=>{localStorage.clear();if('caches'in window){const ks=await caches.keys();await Promise.all(ks.map(c=>caches.delete(c)))};location.reload()}
+
+    // KPIs from bookings store
+    const bookings=()=>JSON.parse(localStorage.getItem('bookings')||'[]');
+    const ISO=d=>new Date(d).toISOString().slice(0,10);
+    const today=ISO(new Date());
+    const monthStart=ISO(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+    const ytdStart=ISO(new Date(new Date().getFullYear(), 0, 1));
+    const inRange=(iso,a,b)=> iso>=a && iso<=b;
+
+    function computeKPIs(){
+      const all=bookings();
+      const t=all.filter(b=>b.date===today).length;
+      const m=all.filter(b=>inRange(b.date, monthStart, today)).length;
+      const y=all.filter(b=>inRange(b.date, ytdStart, today)).length;
+      kToday.textContent=t;   lblToday.textContent=today;
+      kMonth.textContent=m;   lblMonth.textContent=`${monthStart} → ${today}`;
+      kYTD.textContent=y;     lblYTD.textContent=`${ytdStart} → ${today}`;
+    }
+    computeKPIs();
+
+    if('serviceWorker' in navigator){ navigator.serviceWorker.register('service-worker.js').catch(()=>{}) }
   </script>
 </body>
 </html>
