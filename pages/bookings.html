@@ -3,31 +3,39 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Bookings / Tokens</title>
+  <title>Bookings – Supervisor</title>
   <link rel="manifest" href="manifest.webmanifest"/>
   <link rel="icon" href="assets/logo.png"/>
-  <link rel="stylesheet" href="styles.css?v=23"/>
+  <link rel="stylesheet" href="styles.css?v=26"/>
   <style>
-    .section { margin:12px; }
-    .tint { border-radius:16px; padding:16px; box-shadow:var(--shadow); border:1px solid rgba(0,0,0,.06); }
-    .tint-blue   { background: color-mix(in srgb, #3b82f6 12%, var(--card-bg)); }
-    .tint-purple { background: color-mix(in srgb, #8b5cf6 12%, var(--card-bg)); }
-    .grid-2 { display:grid; gap:10px; grid-template-columns:1fr; }
-    @media (min-width:720px){ .grid-2 { grid-template-columns:1fr 1fr; } }
-    .field { display:grid; gap:6px; }
-    .label { font-size:12px; color:var(--muted); }
-    .input, select { height:44px; border-radius:12px; border:1px solid rgba(0,0,0,.12); padding:0 12px; background:var(--card-bg); }
-    .textarea { min-height:44px; padding:10px 12px; border-radius:12px; border:1px solid rgba(0,0,0,.12); background:var(--card-bg); resize:vertical; }
-    .toolbar { display:flex; flex-wrap:wrap; gap:10px; margin:10px 12px; }
-    .btn { height:44px; padding:0 16px; border-radius:12px; }
-    .chip { height:40px; padding:0 14px; border-radius:999px; }
-    .filters { display:flex; gap:10px; flex-wrap:wrap; margin:10px 0 0; }
-    .filters .chip { background:var(--card-bg); border:1px solid rgba(0,0,0,.06); }
-    .list { width:100%; border-collapse:collapse; background:var(--card-bg); border-radius:12px; overflow:hidden; }
-    .list th,.list td{ padding:10px; border-bottom:1px solid rgba(0,0,0,.06); font-size:13px; text-align:left; }
-    .list th{ background:rgba(0,0,0,.04); font-weight:600; }
-    html[data-theme="dark"] .list th{ background:rgba(255,255,255,.06); }
-    .muted-note{ font-size:12px; color:var(--muted); margin-top:10px; }
+    /* Page helpers to match dashboard look */
+    .section{margin:12px}
+    .tint{border-radius:16px;padding:16px;box-shadow:var(--shadow);border:1px solid rgba(0,0,0,.06)}
+    .tint-blue{background: color-mix(in srgb, #2563eb 16%, var(--card-bg))}
+    .tint-mint{background: color-mix(in srgb, #22c55e 14%, var(--card-bg))}
+    .tint-peach{background: color-mix(in srgb, #fb923c 14%, var(--card-bg))}
+    .kpi-grid{display:grid;gap:14px;grid-template-columns:repeat(3,1fr)}
+    @media (max-width:760px){.kpi-grid{grid-template-columns:1fr}}
+    .kpi h4{font-size:14px;opacity:.85;margin-bottom:6px}
+    .kpi .num{font-size:32px;font-weight:800}
+    .filters{display:flex;gap:10px;flex-wrap:wrap}
+    .chip{height:40px;padding:0 14px;border-radius:999px;background:var(--card-bg);border:1px solid rgba(0,0,0,.06)}
+    .chart-card,.card{border-radius:16px;padding:16px;box-shadow:var(--shadow);border:1px solid rgba(0,0,0,.06)}
+    .muted{color:var(--muted);font-size:13px}
+    .grid{display:grid;gap:12px}
+    .grid-2{grid-template-columns:1fr 1fr}
+    @media (max-width:760px){.grid-2{grid-template-columns:1fr}}
+    .input, select, textarea{width:100%}
+    .table-wrap{overflow:auto;border-radius:16px;border:1px solid rgba(0,0,0,.06)}
+    table{width:100%;min-width:980px;border-collapse:separate;border-spacing:0}
+    thead th{position:sticky;top:0;background:var(--card-bg);z-index:1}
+    th,td{padding:10px 12px;border-bottom:1px solid rgba(0,0,0,.06);text-align:left;font-size:13px}
+    tr:hover td{background:color-mix(in srgb, var(--card-bg) 92%, #2563eb 8%)}
+    .pill{font-size:12px;padding:4px 8px;border-radius:999px;border:1px solid rgba(0,0,0,.1)}
+    .pill.pending{background:color-mix(in srgb, #f59e0b 16%, var(--card-bg))}
+    .pill.done{background:color-mix(in srgb, #22c55e 16%, var(--card-bg))}
+    canvas{width:100%;height:280px}
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap}
   </style>
 </head>
 <body>
@@ -36,192 +44,496 @@
     <button id="themeToggle" class="chip floating-toggle" aria-label="Theme">🌙</button>
   </header>
 
-  <!-- Toolbar -->
-  <nav class="toolbar">
-    <a class="chip" href="admin.html">← Supervisor</a>
-    <a class="chip" href="dashboard.html">Doctor</a>
+  <!-- Actions (match dashboard) -->
+  <nav class="fixed-actions">
+    <a class="chip" href="dashboard.html">← Dashboard</a>
+    <a class="chip" href="booking-status.html">Doctor: Booking Status</a>
     <button id="logoutBtn" class="chip">Logout</button>
     <button id="clearCacheBtn" class="chip">Clear Cache</button>
   </nav>
 
+  <!-- KPIs -->
+  <section class="section">
+    <div class="kpi-grid">
+      <div class="kpi tint tint-blue">
+        <h4>Today</h4>
+        <div class="num" id="kToday">0</div>
+        <div class="muted" id="lblToday"></div>
+      </div>
+      <div class="kpi tint tint-mint">
+        <h4>This Week</h4>
+        <div class="num" id="kWeek">0</div>
+        <div class="muted" id="lblWeek"></div>
+      </div>
+      <div class="kpi tint tint-peach">
+        <h4>This Month</h4>
+        <div class="num" id="kMonth">0</div>
+        <div class="muted" id="lblMonth"></div>
+      </div>
+    </div>
+  </section>
+
   <!-- Create Booking -->
-  <section class="section tint tint-blue">
-    <h2 style="font-size:22px; margin-bottom:10px;">Create Booking (Token)</h2>
-
-    <div class="tint tint-purple" style="margin-top:8px;">
-      <div class="grid-2">
-        <div class="field">
-          <label class="label" for="patName">Patient Name</label>
-          <input id="patName" class="input" placeholder="Full name" autocomplete="name" required/>
-        </div>
-        <div class="field">
-          <label class="label" for="patPhone">Phone</label>
-          <input id="patPhone" class="input" inputmode="numeric" maxlength="10" placeholder="10-digit" autocomplete="tel" required/>
-        </div>
-
-        <div class="field">
-          <label class="label" for="visitDate">Visit Date</label>
-          <input id="visitDate" class="input" type="date" required/>
-        </div>
-        <div class="field">
-          <label class="label" for="visitTime">Time</label>
-          <input id="visitTime" class="input" type="time" required/>
-        </div>
-
-        <div class="field" style="grid-column:1/-1">
-          <label class="label" for="reason">Reason / Notes</label>
-          <textarea id="reason" class="textarea" placeholder="Reason or short note"></textarea>
-        </div>
+  <section class="section">
+    <div class="card">
+      <div class="toolbar" style="justify-content:space-between;align-items:center">
+        <h2 style="margin:0">Create Booking</h2>
+        <div class="muted">Unique slot rule: one booking per Date + Slot</div>
       </div>
-
-      <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;">
-        <button id="createBtn" class="btn">Create Token</button>
-        <button id="waBtn" class="chip">Share via WhatsApp</button>
-      </div>
-
-      <p class="muted-note">
-        Supervisor creates tokens. Doctor sees them on Patients/Bookings views.  
-        Token numbers auto-increment per day.
-      </p>
+      <form id="bookingForm" style="margin-top:10px">
+        <div class="grid grid-2">
+          <div>
+            <label class="muted">Date</label>
+            <input type="date" id="bkDate" class="input" required/>
+          </div>
+          <div>
+            <label class="muted">Time Slot</label>
+            <select id="bkSlot" class="input" required></select>
+          </div>
+          <div>
+            <label class="muted">Patient Name</label>
+            <input type="text" id="bkName" class="input" placeholder="Patient full name" required/>
+          </div>
+          <div>
+            <label class="muted">Mobile (10 digits) → Patient ID</label>
+            <input type="tel" id="bkMobile" class="input" pattern="[0-9]{10}" placeholder="e.g., 9000000001" required/>
+            <div class="muted" id="pidPreview" style="margin-top:6px">Patient ID: —</div>
+          </div>
+        </div>
+        <div style="margin-top:10px">
+          <label class="muted">Reason / Notes</label>
+          <textarea id="bkReason" class="input" rows="2" placeholder="Consultation reason (optional)"></textarea>
+        </div>
+        <div class="toolbar" style="margin-top:12px">
+          <button type="submit" class="chip">Save Booking</button>
+          <button type="button" id="btnPrintTicket" class="chip">Quick Print Ticket</button>
+          <button type="button" id="btnClearForm" class="chip">Clear</button>
+        </div>
+      </form>
     </div>
   </section>
 
-  <!-- Upcoming -->
-  <section class="section tint" style="background: color-mix(in srgb, #22c55e 10%, var(--card-bg));">
-    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
-      <h2 style="font-size:22px;">Upcoming Tokens</h2>
-      <div class="filters">
-        <button class="chip" id="fToday">Today</button>
-        <button class="chip" id="fAll">All</button>
-        <button class="chip" id="fClear">Clear List</button>
+  <!-- Search & Filters -->
+  <section class="section">
+    <div class="card">
+      <div class="toolbar" style="justify-content:space-between;align-items:center">
+        <h2 style="margin:0">Search & Filters</h2>
+        <div class="filters">
+          <button class="chip scope" data-scope="today">Today</button>
+          <button class="chip scope" data-scope="week">This Week</button>
+          <button class="chip scope" data-scope="month">This Month</button>
+          <button class="chip scope" data-scope="all">All</button>
+        </div>
+      </div>
+      <div class="toolbar" style="margin-top:10px">
+        <input id="q" class="input" placeholder="Search name, mobile, patient ID, reason, slot…"/>
+        <input id="fDateFrom" type="date" class="input"/>
+        <input id="fDateTo" type="date" class="input"/>
+        <select id="fStatus" class="input" style="max-width:180px">
+          <option value="">All Status</option>
+          <option value="Pending">Pending</option>
+          <option value="Done">Done</option>
+        </select>
+        <button class="chip" id="btnApply">Apply</button>
+        <button class="chip" id="btnReset">Reset</button>
+        <button class="chip" id="btnExport">Export CSV</button>
+        <label class="chip" for="importFile" style="cursor:pointer">Import CSV
+          <input id="importFile" type="file" accept=".csv" style="display:none"/>
+        </label>
       </div>
     </div>
-
-    <table class="list" style="margin-top:10px;">
-      <thead>
-        <tr>
-          <th>#</th><th>Name</th><th>Phone</th><th>Date</th><th>Time</th><th>Notes</th>
-        </tr>
-      </thead>
-      <tbody id="bookRows">
-        <!-- rows injected -->
-      </tbody>
-    </table>
   </section>
+
+  <!-- Table -->
+  <section class="section">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:72px">Token</th>
+            <th>Date</th>
+            <th>Slot</th>
+            <th>Patient</th>
+            <th>Patient ID</th>
+            <th>Mobile</th>
+            <th>Reason</th>
+            <th>Status</th>
+            <th style="width:300px">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Trend -->
+  <section class="section">
+    <div class="chart-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <h2>Bookings Trend</h2>
+        <div class="filters">
+          <button class="chip range" data-range="7d">7D</button>
+          <button class="chip range" data-range="30d">30D</button>
+          <button class="chip range" data-range="90d">90D</button>
+        </div>
+      </div>
+      <canvas id="trend"></canvas>
+      <div class="muted" id="rangeLbl" style="margin-top:8px"></div>
+    </div>
+  </section>
+
+  <script src="assets/chart.umd.min.js"></script>
+  <iframe id="printFrame" style="display:none"></iframe>
 
   <script type="module">
-    // --- Theme toggle
+    /* ================= Theme & Session ================= */
     const tt=document.getElementById('themeToggle');
-    if(localStorage.theme){ document.documentElement.dataset.theme=localStorage.theme; tt.textContent=localStorage.theme==='light'?'🌞':'🌙'; }
-    tt.onclick=()=>{ const cur=document.documentElement.dataset.theme||'light'; const next=cur==='light'?'dark':'light'; document.documentElement.dataset.theme=next; localStorage.theme=next; tt.textContent=next==='light'?'🌞':'🌙'; };
+    if(localStorage.theme){document.documentElement.dataset.theme=localStorage.theme;tt.textContent=localStorage.theme==='light'?'🌞':'🌙'}
+    tt.onclick=()=>{const cur=document.documentElement.dataset.theme||'light';const nxt=cur==='light'?'dark':'light';document.documentElement.dataset.theme=nxt;localStorage.theme=nxt;tt.textContent=nxt==='light'?'🌞':'🌙'}
 
-    // --- Guard: Supervisor only
-    const sess = JSON.parse(localStorage.getItem('session')||'{}');
-    if(sess.role!=='supervisor'){ location.replace('login.html'); }
+    const ses=JSON.parse(localStorage.getItem('session')||'{}');
+    if(ses.role!=='supervisor'){location.replace('login.html')}
 
-    // --- Buttons
-    document.getElementById('logoutBtn').onclick=()=>{ localStorage.removeItem('session'); location.href='login.html'; };
-    document.getElementById('clearCacheBtn').onclick=async()=>{
-      localStorage.clear(); sessionStorage.clear();
-      if('caches' in window){ const ks=await caches.keys(); await Promise.all(ks.map(k=>caches.delete(k))); }
-      alert('Cleared. Reloading…'); location.reload();
+    logoutBtn.onclick=()=>{localStorage.removeItem('session');location.href='login.html'}
+    clearCacheBtn.onclick=async()=>{localStorage.clear();if('caches'in window){const ks=await caches.keys();await Promise.all(ks.map(k=>caches.delete(k)))};location.reload()}
+
+    /* ================= Data & Helpers ================= */
+    const LS="bookings"; // shared with doctor page
+    const bookings=()=>JSON.parse(localStorage.getItem(LS)||'[]');
+    const save=(arr)=>localStorage.setItem(LS, JSON.stringify(arr));
+
+    const $=id=>document.getElementById(id);
+    const ISO=d=>new Date(d).toISOString().slice(0,10);
+    const today=ISO(new Date());
+    const weekStart=(()=>{const d=new Date();const n=(d.getDay()+6)%7;d.setDate(d.getDate()-n);d.setHours(0,0,0,0);return ISO(d)})();
+    const monthStart=ISO(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+    const inRange=(iso,a,b)=> iso>=a && iso<=b;
+
+    // ======= NEW: Patient ID from Name + Mobile =======
+    function patientIdFrom(name, mobile){
+      const mob=String(mobile||"").replace(/\D/g,"").slice(-10);
+      const last4 = mob.slice(-4).padStart(4,"0");
+      const letters = String(name||"").toUpperCase().replace(/[^A-Z]/g,"").slice(0,3).padEnd(3,"X");
+      return `PID-${letters}${last4}`;
+    }
+
+    const phoneLink=n=>`tel:${n}`;
+    const wa=(num,msg)=>`https://wa.me/${encodeURIComponent(num.startsWith('+')?num:`+91${num}`)}?text=${encodeURIComponent(msg)}`;
+    const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+
+    const TIME_SLOTS=[
+      "09:00 AM","09:15 AM","09:30 AM","09:45 AM",
+      "10:00 AM","10:15 AM","10:30 AM","10:45 AM",
+      "11:00 AM","11:15 AM","11:30 AM","11:45 AM",
+      "12:00 PM","12:15 PM","12:30 PM","12:45 PM",
+      "04:00 PM","04:15 PM","04:30 PM","04:45 PM",
+      "05:00 PM","05:15 PM","05:30 PM","05:45 PM",
+      "06:00 PM","06:15 PM","06:30 PM","06:45 PM"
+    ];
+
+    /* ================= KPIs ================= */
+    function renderKPIs(){
+      const all=bookings();
+      const t=all.filter(b=>b.date===today).length;
+      const w=all.filter(b=> inRange(b.date, weekStart, today)).length;
+      const m=all.filter(b=> inRange(b.date, monthStart, today)).length;
+      kToday.textContent=t; kWeek.textContent=w; kMonth.textContent=m;
+      lblToday.textContent=today;
+      lblWeek.textContent=`${weekStart} → ${today}`;
+      lblMonth.textContent=`${monthStart} → ${today}`;
+    }
+
+    /* ================= Form ================= */
+    function fillSlots(){
+      const s=$('bkSlot'); s.innerHTML='';
+      TIME_SLOTS.forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t;s.appendChild(o)});
+    }
+    function nextToken(dateStr){
+      const all=bookings().filter(b=>b.date===dateStr);
+      const max=all.reduce((m,b)=>Math.max(m, b.token||0),0);
+      return max+1;
+    }
+    function duplicate(dateStr, slotStr){
+      return bookings().some(b=>b.date===dateStr && b.slot===slotStr);
+    }
+
+    /* ================= CSV ================= */
+    const toCSV=(list)=>{
+      const head=["token","date","slot","name","mobile","patientId","reason","status","id"];
+      const rows=list.map(r=>[r.token,r.date,r.slot,csv(r.name),r.mobile,r.patientId,csv(r.reason||""),r.status,r.id]);
+      return [head.join(","),...rows.map(r=>r.join(","))].join("\n");
     };
-
-    // --- Elements
-    const nameEl=document.getElementById('patName');
-    const phoneEl=document.getElementById('patPhone');
-    const dateEl=document.getElementById('visitDate');
-    const timeEl=document.getElementById('visitTime');
-    const noteEl=document.getElementById('reason');
-    const rowsEl=document.getElementById('bookRows');
-
-    // Defaults
-    const todayISO = new Date().toISOString().slice(0,10);
-    dateEl.value = todayISO;
-    timeEl.value = new Date(Date.now()+15*60000).toTimeString().slice(0,5); // +15m
-
-    // Storage helpers (local for now; swap to Supabase later)
-    const load = () => JSON.parse(localStorage.getItem('bookings')||'[]');
-    const save = (arr) => localStorage.setItem('bookings', JSON.stringify(arr));
-
-    // Generate next token number for a given date
-    function nextTokenFor(dateISO){
-      const all=load().filter(b=>b.date===dateISO);
-      const last = all.sort((a,b)=>a.token-b.token).pop();
-      return last ? last.token+1 : 1;
+    const csv=v=>{const s=String(v??"");return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s};
+    function parseCSVLine(line){
+      const out=[],re=/(?:^|,)(?:"([^"]*(?:""[^"]*)*)"|([^",]*))/g;let m;
+      while((m=re.exec(line))){out.push((m[1]?m[1].replace(/""/g,'"'):m[2])||"")}
+      return out;
+    }
+    function fromCSV(text){
+      const lines=text.replace(/\r/g,"").split("\n").filter(Boolean);
+      const [hdr,...rows]=lines; const idx={}; hdr.split(",").forEach((h,i)=>idx[h.trim().toLowerCase()]=i);
+      return rows.map(line=>{
+        const p=parseCSVLine(line);
+        const mobile=p[idx.mobile]||"";
+        const name=p[idx.name]||"";
+        return {
+          token:Number(p[idx.token]||0)||0,
+          date:p[idx.date]||today,
+          slot:p[idx.slot]||"",
+          name,
+          mobile,
+          // If patientId missing in CSV, regenerate from name + mobile
+          patientId:p[idx.patientid]||patientIdFrom(name, mobile),
+          reason:p[idx.reason]||"",
+          status:p[idx.status]==="Done"?"Done":"Pending",
+          id:p[idx.id]||crypto.randomUUID()
+        };
+      });
     }
 
-    function render(filter='today'){
-      const all=load();
-      let list = all;
-      if(filter==='today') list = all.filter(b=>b.date===todayISO);
+    /* ================= Render Table ================= */
+    const state={q:"",from:"",to:"",status:"",scope:"all"};
+    function filtered(){
+      const list=[...bookings()];
+      const q=(state.q||"").toLowerCase().trim();
+      let out=list;
+      if(state.scope==="today"){ out=out.filter(r=>r.date===today); }
+      else if(state.scope==="week"){ out=out.filter(r=>inRange(r.date, weekStart, today)); }
+      else if(state.scope==="month"){ out=out.filter(r=>inRange(r.date, monthStart, today)); }
 
-      rowsEl.innerHTML = list
-        .sort((a,b)=> a.date.localeCompare(b.date) || a.time.localeCompare(b.time) || a.token-b.token)
-        .map(b=>`<tr>
-          <td>${b.token}</td>
-          <td>${b.name}</td>
-          <td>${b.phone}</td>
-          <td>${b.date}</td>
-          <td>${b.time}</td>
-          <td>${b.note||''}</td>
-        </tr>`).join('') || `<tr><td colspan="6" class="muted-note">No tokens.</td></tr>`;
-    }
-
-    // Create Token
-    document.getElementById('createBtn').onclick=()=>{
-      const name=(nameEl.value||'').trim();
-      const phone=(phoneEl.value||'').trim();
-      const date=dateEl.value;
-      const time=timeEl.value;
-      const note=(noteEl.value||'').trim();
-
-      if(!name || !/^\d{10}$/.test(phone) || !date || !time){
-        alert('Please enter a name, a 10-digit phone, date and time.');
-        return;
+      if(q){
+        out=out.filter(r=>
+          (r.name||"").toLowerCase().includes(q) ||
+          (r.mobile||"").includes(q) ||
+          (r.patientId||"").toLowerCase().includes(q) ||
+          (r.reason||"").toLowerCase().includes(q) ||
+          (r.slot||"").toLowerCase().includes(q)
+        );
       }
+      if(state.from){ out=out.filter(r=>r.date>=state.from); }
+      if(state.to){ out=out.filter(r=>r.date<=state.to); }
+      if(state.status){ out=out.filter(r=>r.status===state.status); }
 
-      const token = nextTokenFor(date);
-      const rec = { id: crypto.randomUUID(), token, name, phone, date, time, note, createdAt: Date.now() };
+      out.sort((a,b)=> a.date.localeCompare(b.date) || a.slot.localeCompare(b.slot) || (a.token||0)-(b.token||0));
+      return out;
+    }
 
-      const arr = load(); arr.push(rec); save(arr);
-      render('today');
+    function renderTable(){
+      const tbody=$('rows'); tbody.innerHTML='';
+      const list=filtered();
+      if(!list.length){
+        const tr=document.createElement('tr'); const td=document.createElement('td'); td.colSpan=9; td.className='muted'; td.textContent='No bookings found.'; tr.appendChild(td); tbody.appendChild(tr); return;
+      }
+      for(const r of list){
+        const tr=document.createElement('tr');
+        tr.innerHTML=`
+          <td><strong>#${r.token||"-"}</strong></td>
+          <td>${r.date}</td>
+          <td>${r.slot}</td>
+          <td>${esc(r.name)}</td>
+          <td>${r.patientId||""}</td>
+          <td><a href="${phoneLink(r.mobile)}">${r.mobile}</a></td>
+          <td>${esc(r.reason||"")}</td>
+          <td><span class="pill ${r.status==='Done'?'done':'pending'}">${r.status==='Done'?'✔ Done':'⏳ Pending'}</span></td>
+          <td>
+            <div class="toolbar">
+              <button class="chip act" data-act="toggle" data-id="${r.id}">${r.status==='Done'?'Mark Pending':'Mark Done'}</button>
+              <a class="chip" href="${wa(r.mobile, waMsg(r))}" target="_blank" rel="noopener">WhatsApp</a>
+              <button class="chip act" data-act="ticket" data-id="${r.id}">Ticket</button>
+              <button class="chip act" data-act="del" data-id="${r.id}">Delete</button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
 
-      // Reset name/note only
-      nameEl.value=''; noteEl.value='';
-      nameEl.focus();
+    const waMsg = r => `Hello ${r.name},
 
-      // Keep a copy for Share button
-      lastShared = rec;
-    };
+Your OPD booking is confirmed.
+Date: ${r.date}
+Time: ${r.slot}
+Token: ${r.token}
+Patient ID: ${r.patientId}
 
-    // Share via WhatsApp
-    let lastShared = null;
-    document.getElementById('waBtn').onclick=()=>{
-      const name=(nameEl.value||'').trim();
-      const phone=(phoneEl.value||'').trim();
-      const date=dateEl.value, time=timeEl.value, note=noteEl.value||'';
-      const tok = nextTokenFor(date); // preview
-      const msg = encodeURIComponent(
-        `Dr. Charan Hospital\nToken: ${tok}\nName: ${name||'-'}\nDate: ${date}\nTime: ${time}\n${note?('Note: '+note+'\n'):''}Please arrive 10 min early.`
-      );
-      const tel = phone ? `91${phone}` : '';
-      const url = tel ? `https://wa.me/${tel}?text=${msg}` : `https://wa.me/?text=${msg}`;
-      window.open(url, '_blank');
-    };
+Location: Warangal OneStop Clinic.
+Reply YES to confirm or call if you need changes.`;
 
-    // Filters
-    document.getElementById('fToday').onclick=()=>render('today');
-    document.getElementById('fAll').onclick=()=>render('all');
-    document.getElementById('fClear').onclick=()=>{
-      if(confirm('Clear all tokens (local only)?')){ save([]); render('today'); }
-    };
+    /* ================= Trend Chart ================= */
+    let chart;
+    function renderChart(days=7){
+      const end=new Date(); const start=new Date(); start.setDate(end.getDate()-days+1);
+      const startISO=ISO(start), endISO=ISO(end);
+      $('rangeLbl').textContent=`${startISO} → ${endISO}`;
+      const map={}; for(let d=new Date(start); d<=end; d.setDate(d.getDate()+1)){ map[ISO(d)]=0; }
+      bookings().forEach(b=>{ if(map[b.date]!=null) map[b.date]++; });
+      const labels=Object.keys(map); const data=labels.map(k=>map[k]);
+      if(chart) chart.destroy();
+      chart=new Chart(document.getElementById('trend'),{
+        type:'line',
+        data:{labels, datasets:[{label:'Bookings', data, tension:.35}]},
+        options:{responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}}
+      });
+    }
 
-    // Initial render
-    render('today');
+    /* ================= Printing ================= */
+    function printTicket(r){
+      const html=`
+        <html><head><meta charset="utf-8"><title>Ticket #${r.token}</title>
+        <style>
+          body{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; padding:16px}
+          .box{border:1px dashed #111; padding:12px; max-width: 320px}
+          h2{margin:0 0 4px 0}
+          .muted{color:#333;font-size:12px}
+          .row{display:flex; justify-content:space-between}
+          .big{font-size:24px; font-weight:700}
+        </style></head>
+        <body onload="window.print(); setTimeout(()=>window.close(), 300);">
+          <div class="box">
+            <h2>Warangal OneStop Clinic</h2>
+            <div class="muted">OPD Token Ticket</div>
+            <hr/>
+            <div class="row"><div>Token</div><div class="big">#${r.token}</div></div>
+            <div class="row"><div>Date</div><div>${r.date}</div></div>
+            <div class="row"><div>Time</div><div>${r.slot}</div></div>
+            <div class="row"><div>Patient</div><div>${esc(r.name)}</div></div>
+            <div class="row"><div>Mobile</div><div>${r.mobile}</div></div>
+            <div class="row"><div>Patient ID</div><div>${r.patientId}</div></div>
+            <div class="row"><div>Status</div><div>${r.status}</div></div>
+            ${r.reason?`<div class="row"><div>Notes</div><div>${esc(r.reason)}</div></div>`:""}
+            <hr/>
+            <div class="muted">Please arrive 10 minutes early.</div>
+          </div>
+        </body></html>`;
+      const frame=document.getElementById('printFrame').contentWindow||document.getElementById('printFrame');
+      frame.document.open(); frame.document.write(html); frame.document.close();
+    }
 
-    // SW
-    if('serviceWorker' in navigator){ navigator.serviceWorker.register('service-worker.js').catch(()=>{}); }
+    /* ================= Event Bindings ================= */
+    function bind(){
+      // Form
+      $('bkDate').value=today; fillSlots();
+
+      // live Patient ID preview – uses name + mobile
+      function updatePidPreview(){
+        const m=$('bkMobile').value.trim();
+        const n=$('bkName').value.trim();
+        $('pidPreview').textContent = (/^[0-9]{10}$/.test(m) && n)
+          ? `Patient ID: ${patientIdFrom(n, m)}`
+          : 'Patient ID: —';
+      }
+      $('bkMobile').addEventListener('input', updatePidPreview);
+      $('bkName').addEventListener('input', updatePidPreview);
+
+      $('bookingForm').addEventListener('submit', e=>{
+        e.preventDefault();
+        const date=$('bkDate').value||today;
+        const slot=$('bkSlot').value;
+        const name=$('bkName').value.trim();
+        const mobile=$('bkMobile').value.trim();
+        const reason=$('bkReason').value.trim();
+
+        if(!date || !slot || !name || !/^[0-9]{10}$/.test(mobile)){ alert('Please fill Date, Slot, Name, and valid 10-digit Mobile.'); return; }
+        if(duplicate(date, slot)){ alert('This slot is already booked for the selected date.'); return; }
+
+        const pid = patientIdFrom(name, mobile);
+        const all=bookings();
+        const rec={ id:crypto.randomUUID(), token:nextToken(date), date, slot, name, mobile, patientId:pid, reason, status:'Pending' };
+        all.push(rec); save(all);
+        renderKPIs(); renderTable(); renderChart(); printTicket(rec);
+        $('bkReason').value="";
+      });
+
+      $('btnClearForm').onclick=()=>{ $('bookingForm').reset(); $('bkDate').value=today; fillSlots(); $('pidPreview').textContent='Patient ID: —'; };
+      $('btnPrintTicket').onclick=()=>{
+        const name=$('bkName').value.trim();
+        const m=$('bkMobile').value.trim();
+        const temp={ token:'—', date:$('bkDate').value||today, slot:$('bkSlot').value||'', name, mobile:m, patientId:(/^[0-9]{10}$/.test(m)&&name)?patientIdFrom(name,m):'', reason:$('bkReason').value||'', status:'Pending' };
+        printTicket(temp);
+      };
+
+      // Filters & scopes
+      $('btnApply').onclick=()=>{ state.q=$('q').value; state.from=$('fDateFrom').value; state.to=$('fDateTo').value; state.status=$('fStatus').value; renderTable(); };
+      $('btnReset').onclick=()=>{ $('q').value=''; $('fDateFrom').value=''; $('fDateTo').value=''; $('fStatus').value=''; state.q=''; state.from=''; state.to=''; state.status=''; state.scope='all'; renderKPIs(); renderTable(); };
+      document.querySelectorAll('.scope').forEach(b=> b.onclick=()=>{ state.scope=b.dataset.scope; renderTable(); });
+
+      // Export / Import
+      $('btnExport').onclick=()=>{
+        const blob=new Blob([toCSV(filtered())],{type:"text/csv;charset=utf-8"});
+        const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`bookings_${Date.now()}.csv`; a.click(); URL.revokeObjectURL(a.href);
+      };
+      $('importFile').addEventListener('change', e=>{
+        const f=e.target.files?.[0]; if(!f) return;
+        const rdr=new FileReader();
+        rdr.onload=()=>{
+          try{
+            const all=bookings();
+            const incoming=fromCSV(String(rdr.result||""));
+            // merge with unique (date+slot)
+            const key=r=>`${r.date}__${r.slot}`;
+            const seen=new Set(all.map(key));
+            for(const r of incoming){
+              if(!r.token){ r.token=nextToken(r.date); }
+              if(!seen.has(key(r))){ seen.add(key(r)); all.push(r); }
+            }
+            save(all); renderKPIs(); renderTable(); renderChart(); alert('Imported successfully.');
+          }catch{ alert('Import failed.'); }
+        };
+        rdr.readAsText(f); e.target.value="";
+      });
+
+      // Row actions
+      document.getElementById('rows').addEventListener('click', e=>{
+        const btn=e.target.closest('.act'); if(!btn) return;
+        const id=btn.getAttribute('data-id'); const act=btn.getAttribute('data-act');
+        const all=bookings(); const i=all.findIndex(x=>x.id===id); if(i<0) return;
+        if(act==='del'){ if(confirm('Delete this booking?')){ all.splice(i,1); save(all); renderKPIs(); renderTable(); renderChart(); } }
+        if(act==='toggle'){ all[i].status = all[i].status==='Done'?'Pending':'Done'; save(all); renderKPIs(); renderTable(); }
+        if(act==='ticket'){ printTicket(all[i]); }
+      });
+    }
+
+    /* ================= Trend ================= */
+    let chart;
+    function renderChart(days=7){
+      const end=new Date(); const start=new Date(); start.setDate(end.getDate()-days+1);
+      const startISO=ISO(start), endISO=ISO(end);
+      document.getElementById('rangeLbl').textContent=`${startISO} → ${endISO}`;
+      const map={}; for(let d=new Date(start); d<=end; d.setDate(d.getDate()+1)){ map[ISO(d)]=0; }
+      bookings().forEach(b=>{ if(map[b.date]!=null) map[b.date]++; });
+      const labels=Object.keys(map); const data=labels.map(k=>map[k]);
+      if(chart) chart.destroy();
+      chart=new Chart(document.getElementById('trend'),{
+        type:'line',
+        data:{labels, datasets:[{label:'Bookings', data, tension:.35}]},
+        options:{responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}}
+      });
+    }
+    document.querySelectorAll('.range').forEach(btn=>{
+      btn.onclick=()=>{ document.querySelectorAll('.range').forEach(x=>x.classList.remove('active')); btn.classList.add('active'); const r=btn.dataset.range; renderChart(r==='30d'?30:r==='90d'?90:7); }
+    });
+
+    /* ================= Seed & Init ================= */
+    function seedIfEmpty(){
+      const all=bookings(); if(all.length) return;
+      const d=today;
+      const demo=[
+        {id:crypto.randomUUID(), token:1, date:d, slot:"09:00 AM", name:"Vijay Kumar", mobile:"9000000001", patientId:patientIdFrom("Vijay Kumar","9000000001"), reason:"Fever", status:"Pending"},
+        {id:crypto.randomUUID(), token:2, date:d, slot:"09:15 AM", name:"Suma R", mobile:"9000000002", patientId:patientIdFrom("Suma R","9000000002"), reason:"BP check", status:"Pending"},
+        {id:crypto.randomUUID(), token:3, date:d, slot:"05:15 PM", name:"Rahul",   mobile:"9000000003", patientId:patientIdFrom("Rahul","9000000003"), reason:"Follow-up", status:"Done"}
+      ];
+      save(demo);
+    }
+
+    function init(){
+      seedIfEmpty();
+      bind();
+      renderKPIs();
+      renderTable();
+      renderChart(7);
+      if('serviceWorker' in navigator){ navigator.serviceWorker.register('service-worker.js').catch(()=>{}) }
+    }
+    init();
   </script>
 </body>
 </html>
