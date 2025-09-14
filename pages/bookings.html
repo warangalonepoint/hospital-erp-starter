@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hospital ERP — Bookings (OPD)</title>
+  <link rel="manifest" href="../manifest.json" />
+  <link rel="stylesheet" href="../styles.css" />
+  <style>
+    /* Minimal page-scoped polish to stay consistent even if styles.css differs */
+    :root { --bg:#0b0f14; --card:#121821; --muted:#96a0af; --text:#eaf0ff; --accent:#4ade80; --danger:#ef4444; --warn:#f59e0b; --line:#1d2631; }
+    body { background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, "Helvetica Neue", Arial; }
+    a { color: var(--accent); text-decoration: none; }
+    .wrap { max-width: 1100px; margin: 16px auto 120px; padding: 0 12px; }
+    .header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin: 10px 0 16px; }
+    .brand { font-weight:700; font-size: 18px; opacity:.9; }
+    .tabs { display:flex; gap:8px; flex-wrap:wrap; }
+    .tab { background:#0f1620; border:1px solid var(--line); padding:8px 12px; border-radius:10px; cursor:pointer; }
+    .tab.active { background: var(--card); border-color:#243040; }
+    .row { display:grid; grid-template-columns: 1fr; gap:12px; }
+    @media (min-width: 860px){ .row.two { grid-template-columns: 1fr 1fr; } .row.three { grid-template-columns: repeat(3, 1fr); } }
+    .card { background: var(--card); border:1px solid var(--line); border-radius:16px; padding:14px; }
+    .card h3 { margin:0 0 10px 0; font-size:14px; color: var(--muted); font-weight:600; letter-spacing:.2px; }
+    .metric { font-size:28px; font-weight:700; }
+    .muted { color: var(--muted); font-size:12px; }
+    .grid2 { display:grid; grid-template-columns:1fr; gap:10px; }
+    @media (min-width:640px){ .grid2 { grid-template-columns: 1fr 1fr; } }
+    label { font-size:12px; color: var(--muted); margin-bottom:6px; display:block; }
+    input, select, textarea { width:100%; background: #0c121a; color: var(--text); border:1px solid #1a2431; border-radius:10px; padding:10px 12px; outline:none; }
+    input:focus, select:focus, textarea:focus { border-color:#304156; }
+    .btns { display:flex; gap:8px; flex-wrap:wrap; }
+    .btn { background:#16202b; border:1px solid #233245; color:var(--text); padding:10px 12px; border-radius:12px; cursor:pointer; font-weight:600; }
+    .btn.primary { background: #1c2c20; border-color:#244a33; color:#c8fadc; }
+    .btn.warn { background:#2a2215; border-color:#3f3216; color:#ffe0b2; }
+    .btn.danger { background:#2a1717; border-color:#492121; color:#ffd1d1; }
+    .btn.ghost { background: transparent; border:1px dashed #2b3646; }
+    .table-wrap { overflow:auto; border:1px solid var(--line); border-radius:14px; }
+    table { width:100%; border-collapse: collapse; min-width: 820px; }
+    th, td { text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); font-size:13px; }
+    th { position:sticky; top:0; background:#101722; z-index:1; color:#b8c2d0; font-weight:700; }
+    tr:hover td { background:#0e1520; }
+    .pill { font-size:12px; padding:4px 8px; border-radius:999px; display:inline-flex; align-items:center; gap:6px; border:1px solid #253246; background:#0d1621; }
+    .pill.done { border-color:#244a33; background:#0f2016; color:#c8fadc; }
+    .pill.pending { border-color:#43380f; background:#1c1607; color:#ffe5a3; }
+    .searchbar { display:flex; gap:8px; flex-wrap:wrap; }
+    .hint { font-size:11px; color:#99a7ba; }
+    .footerbar {
+      position:fixed; left:0; right:0; bottom:0; background: linear-gradient(180deg, rgba(11,15,20,0), rgba(11,15,20,.8) 12%, rgba(11,15,20,1) 40%);
+      padding:12px; display:flex; gap:8px; justify-content:center; backdrop-filter: blur(6px); border-top:1px solid var(--line);
+    }
+    .ok { color:#a7f3d0; }
+    .red { color:#fecaca; }
+    .yellow { color:#fde68a; }
+    .copy { cursor:pointer; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <div class="brand">🏥 Hospital ERP • <strong>Bookings (OPD)</strong></div>
+      <div class="tabs">
+        <a class="tab" href="../dashboard.html">Dashboard</a>
+        <a class="tab" href="../analytics.html">Analytics</a>
+        <button class="tab active" type="button">Bookings</button>
+        <a class="tab" href="../patients.html">Patients</a>
+        <a class="tab" href="../pharmacy.html">Pharmacy</a>
+        <a class="tab" href="../staff.html">Staff</a>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="row three">
+      <div class="card"><h3>Today</h3><div class="metric" id="mToday">0</div><div class="muted">Appointments</div></div>
+      <div class="card"><h3>This Week</h3><div class="metric" id="mWeek">0</div><div class="muted">Mon–Sun</div></div>
+      <div class="card"><h3>This Month</h3><div class="metric" id="mMonth">0</div><div class="muted">Calendar month</div></div>
+    </div>
+
+    <!-- Create Booking -->
+    <div class="card" style="margin-top:12px">
+      <h3>Create Booking</h3>
+      <form id="bookingForm">
+        <div class="grid2">
+          <div>
+            <label>Date</label>
+            <input type="date" id="bkDate" required />
+          </div>
+          <div>
+            <label>Time Slot</label>
+            <select id="bkSlot" required></select>
+          </div>
+          <div>
+            <label>Patient Name</label>
+            <input type="text" id="bkName" placeholder="Patient full name" required />
+          </div>
+          <div>
+            <label>Mobile</label>
+            <input type="tel" id="bkMobile" placeholder="10-digit mobile" pattern="[0-9]{10}" required />
+          </div>
+        </div>
+        <div style="margin-top:10px">
+          <label>Reason / Notes</label>
+          <textarea id="bkReason" rows="2" placeholder="Consultation reason (optional)"></textarea>
+        </div>
+        <div class="btns" style="margin-top:12px">
+          <button type="submit" class="btn primary">Save Booking</button>
+          <button type="button" id="btnPrintTicket" class="btn ghost">Quick Print Ticket</button>
+          <button type="button" id="btnClearForm" class="btn">Clear</button>
+        </div>
+        <div class="hint" style="margin-top:8px">Tokens start at 1 per day and auto-increment. Duplicate slot guard prevents same date+slot being double-booked.</div>
+      </form>
+    </div>
+
+    <!-- Filters / Actions -->
+    <div class="card" style="margin-top:12px">
+      <h3>Search & Filters</h3>
+      <div class="searchbar">
+        <input id="q" placeholder="Search name, mobile, reason…" />
+        <input id="fDateFrom" type="date" />
+        <input id="fDateTo" type="date" />
+        <select id="fStatus">
+          <option value="">All Status</option>
+          <option value="Pending">Pending</option>
+          <option value="Done">Done</option>
+        </select>
+        <button class="btn" id="btnApply">Apply</button>
+        <button class="btn" id="btnReset">Reset</button>
+        <button class="btn warn" id="btnExport">Export CSV</button>
+        <label class="btn ghost" for="importFile" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer">Import CSV<input id="importFile" type="file" accept=".csv" style="display:none"/></label>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrap card">
+      <table id="tbl">
+        <thead>
+          <tr>
+            <th style="width:72px">Token</th>
+            <th>Date</th>
+            <th>Slot</th>
+            <th>Patient</th>
+            <th>Mobile</th>
+            <th>Reason</th>
+            <th>Status</th>
+            <th style="width:240px">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- Footer actions -->
+  <div class="footerbar">
+    <button class="btn primary" id="btnToday">Today</button>
+    <button class="btn" id="btnWeek">This Week</button>
+    <button class="btn" id="btnMonth">This Month</button>
+    <button class="btn ghost" id="btnAll">All</button>
+    <button class="btn danger" id="btnWipe">Wipe (Local)</button>
+  </div>
+
+  <!-- Print Ticket (hidden) -->
+  <iframe id="printFrame" style="display:none"></iframe>
+
+  <script>
+    /********** Constants & Helpers **********/
+    const LS_KEY = "erp_bookings_v1";
+    const timeSlots = [
+      "09:00 AM","09:15 AM","09:30 AM","09:45 AM",
+      "10:00 AM","10:15 AM","10:30 AM","10:45 AM",
+      "11:00 AM","11:15 AM","11:30 AM","11:45 AM",
+      "12:00 PM","12:15 PM","12:30 PM","12:45 PM",
+      "04:00 PM","04:15 PM","04:30 PM","04:45 PM",
+      "05:00 PM","05:15 PM","05:30 PM","05:45 PM",
+      "06:00 PM","06:15 PM","06:30 PM","06:45 PM"
+    ];
+
+    const $ = (id) => document.getElementById(id);
+    const fmtDate = (d) => new Date(d).toISOString().slice(0,10);
+    const todayStr = () => fmtDate(new Date());
+    const isSameDay = (a,b) => fmtDate(a) === fmtDate(b);
+
+    function getWeekRange(date = new Date()){
+      const d = new Date(date);
+      const day = (d.getDay()+6)%7; // Mon=0
+      const start = new Date(d); start.setDate(d.getDate()-day);
+      const end = new Date(start); end.setDate(start.getDate()+6);
+      return {start: fmtDate(start), end: fmtDate(end)};
+    }
+    function getMonthRange(date = new Date()){
+      const d = new Date(date);
+      const start = new Date(d.getFullYear(), d.getMonth(), 1);
+      const end = new Date(d.getFullYear(), d.getMonth()+1, 0);
+      return {start: fmtDate(start), end: fmtDate(end)};
+    }
+
+    function loadAll(){
+      try { return JSON.parse(localStorage.getItem(LS_KEY) || "[]"); }
+      catch { return []; }
+    }
+    function saveAll(list){ localStorage.setItem(LS_KEY, JSON.stringify(list)); }
+
+    function nextTokenForDate(list, dateStr){
+      const max = list.filter(r => r.date===dateStr).reduce((m,r)=>Math.max(m, r.token||0), 0);
+      return max + 1;
+    }
+
+    function duplicateExists(list, dateStr, slotStr){
+      return list.some(r => r.date===dateStr && r.slot===slotStr);
+    }
+
+    function toCSV(list){
+      const header = ["token","date","slot","name","mobile","reason","status"];
+      const rows = list.map(r => [r.token, r.date, r.slot, csvSafe(r.name), r.mobile, csvSafe(r.reason||""), r.status]);
+      return [header.join(","), ...rows.map(r=>r.join(","))].join("\n");
+    }
+    function csvSafe(v){ if(v==null) return ""; const s=String(v); return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s; }
+
+    function fromCSV(text){
+      // simple CSV parser (no commas-in-quoted fields across lines)
+      const lines = text.replace(/\r/g,"").split("\n").filter(Boolean);
+      const [hdr, ...rows] = lines;
+      const idx = {};
+      hdr.split(",").forEach((h,i)=> idx[h.trim().toLowerCase()] = i);
+      return rows.map(line=>{
+        const parts = parseCSVLine(line);
+        return {
+          token: Number(parts[idx.token]||0) || 0,
+          date: parts[idx.date] || todayStr(),
+          slot: parts[idx.slot] || "",
+          name: parts[idx.name] || "",
+          mobile: parts[idx.mobile] || "",
+          reason: parts[idx.reason] || "",
+          status: parts[idx.status] || "Pending",
+        }
+      });
+    }
+    function parseCSVLine(line){
+      const out=[], re=/(?:^|,)(?:"([^"]*(?:""[^"]*)*)"|([^",]*))/g; let m;
+      while((m=re.exec(line))){
+        out.push( (m[1] ? m[1].replace(/""/g,'"') : m[2]) || "" );
+      }
+      return out;
+    }
+
+    function phoneLink(num){ return `tel:${num}`; }
+    function waLink(num, msg){
+      const t = encodeURIComponent(msg);
+      const n = encodeURIComponent(num.startsWith("+")?num:`+91${num}`);
+      return `https://wa.me/${n}?text=${t}`;
+    }
+
+    /********** State & UI **********/
+    let all = loadAll();
+    let view = { q:"", from:"", to:"", status:"", scope:"all" };
+
+    function renderSlots(){
+      const s = $("bkSlot"); s.innerHTML = "";
+      timeSlots.forEach(t=>{
+        const opt = document.createElement("option");
+        opt.value=t; opt.textContent=t; s.appendChild(opt);
+      });
+    }
+
+    function renderMetrics(){
+      const t = todayStr();
+      const week = getWeekRange();
+      const month = getMonthRange();
+      $("mToday").textContent = all.filter(r=>r.date===t).length;
+      $("mWeek").textContent = all.filter(r=>r.date>=week.start && r.date<=week.end).length;
+      $("mMonth").textContent = all.filter(r=>r.date>=month.start && r.date<=month.end).length;
+    }
+
+    function applyFilters(){
+      const q = view.q.trim().toLowerCase();
+      const from = view.from || "";
+      const to = view.to || "";
+      const status = view.status || "";
+      let list = [...all];
+
+      // Scope quick filters
+      if(view.scope==="today"){
+        list = list.filter(r=>r.date===todayStr());
+      } else if(view.scope==="week"){
+        const w = getWeekRange(); list = list.filter(r=>r.date>=w.start && r.date<=w.end);
+      } else if(view.scope==="month"){
+        const m = getMonthRange(); list = list.filter(r=>r.date>=m.start && r.date<=m.end);
+      }
+
+      if(q){
+        list = list.filter(r =>
+          r.name.toLowerCase().includes(q) ||
+          r.mobile.includes(q) ||
+          (r.reason||"").toLowerCase().includes(q) ||
+          r.slot.toLowerCase().includes(q)
+        );
+      }
+      if(from){ list = list.filter(r=>r.date>=from); }
+      if(to){ list = list.filter(r=>r.date<=to); }
+      if(status){ list = list.filter(r=>r.status===status); }
+
+      // Sort: date asc, slot asc, token asc
+      list.sort((a,b)=> (a.date.localeCompare(b.date) || a.slot.localeCompare(b.slot) || a.token-b.token));
+      return list;
+    }
+
+    function renderTable(){
+      const tbody = $("rows");
+      const list = applyFilters();
+      tbody.innerHTML = "";
+      if(!list.length){
+        const tr = document.createElement("tr");
+        const td = document.createElement("td"); td.colSpan = 8; td.className="muted"; td.textContent="No bookings found.";
+        tr.appendChild(td); tbody.appendChild(tr);
+        return;
+      }
+      for(const r of list){
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><strong>#${r.token}</strong></td>
+          <td>${r.date}</td>
+          <td>${r.slot}</td>
+          <td>${escapeHtml(r.name)}</td>
+          <td><a href="${phoneLink(r.mobile)}">${r.mobile}</a></td>
+          <td>${escapeHtml(r.reason||"")}</td>
+          <td>
+            <span class="pill ${r.status==='Done'?'done':'pending'}">${r.status==='Done'?'✔ Done':'⏳ Pending'}</span>
+          </td>
+          <td>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn" data-act="done" data-id="${r.id}">${r.status==='Done'?'Mark Pending':'Mark Done'}</button>
+              <a class="btn" href="${waLink(r.mobile, buildWhatsAppMsg(r))}" target="_blank" rel="noopener">WhatsApp</a>
+              <button class="btn warn" data-act="ticket" data-id="${r.id}">Ticket</button>
+              <button class="btn danger" data-act="del" data-id="${r.id}">Delete</button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c])); }
+
+    function buildWhatsAppMsg(r){
+      return `Hello ${r.name},
+
+Your OPD booking is confirmed.
+Date: ${r.date}
+Time: ${r.slot}
+Token: ${r.token}
+Status: ${r.status}
+
+Location: Warangal OneStop Clinic
+Reply YES to confirm or call ${r.mobile} if you need changes.`;
+    }
+
+    function setScope(scope){
+      view.scope = scope; renderMetrics(); renderTable();
+    }
+
+    /********** Events **********/
+    function init(){
+      // Defaults
+      $("bkDate").value = todayStr();
+      renderSlots();
+      renderMetrics();
+      renderTable();
+
+      $("bookingForm").addEventListener("submit", onSave);
+      $("btnClearForm").addEventListener("click", () => { $("bookingForm").reset(); $("bkDate").value=todayStr(); renderSlots(); });
+      $("btnPrintTicket").addEventListener("click", () => {
+        const temp = {
+          token: "—",
+          date: $("bkDate").value || todayStr(),
+          slot: $("bkSlot").value || "",
+          name: $("bkName").value || "",
+          mobile: $("bkMobile").value || "",
+          reason: $("bkReason").value || "",
+          status: "Pending",
+        };
+        printTicket(temp);
+      });
+
+      // Filters
+      $("btnApply").addEventListener("click", ()=>{
+        view.q = $("q").value; view.from = $("fDateFrom").value; view.to = $("fDateTo").value; view.status = $("fStatus").value; renderTable();
+      });
+      $("btnReset").addEventListener("click", ()=>{
+        $("q").value=""; $("fDateFrom").value=""; $("fDateTo").value=""; $("fStatus").value="";
+        view = { q:"", from:"", to:"", status:"", scope:"all" }; renderMetrics(); renderTable();
+      });
+
+      // Footer quick scopes
+      $("btnToday").addEventListener("click", ()=>setScope("today"));
+      $("btnWeek").addEventListener("click", ()=>setScope("week"));
+      $("btnMonth").addEventListener("click", ()=>setScope("month"));
+      $("btnAll").addEventListener("click", ()=>setScope("all"));
+
+      // Export
+      $("btnExport").addEventListener("click", ()=>{
+        const list = applyFilters();
+        const blob = new Blob([toCSV(list)], {type:"text/csv;charset=utf-8"});
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `bookings_${Date.now()}.csv`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      });
+
+      // Import
+      $("importFile").addEventListener("change", (e)=>{
+        const file = e.target.files?.[0]; if(!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try{
+            const incoming = fromCSV(String(reader.result||""));
+            // assign ids and ensure tokens for any zero
+            incoming.forEach(x=>{
+              x.id = x.id || crypto.randomUUID();
+              if(!x.token){ x.token = nextTokenForDate(all, x.date); }
+              x.status = x.status==="Done" ? "Done" : "Pending";
+            });
+            all = mergeAvoidingDup(all, incoming);
+            saveAll(all); renderMetrics(); renderTable();
+            alert("Imported successfully.");
+          }catch(err){ alert("Import failed."); }
+        };
+        reader.readAsText(file);
+        e.target.value = "";
+      });
+
+      // Table actions (delegate)
+      $("rows").addEventListener("click", (e)=>{
+        const btn = e.target.closest("button.btn");
+        if(!btn) return;
+        const id = btn.getAttribute("data-id");
+        const act = btn.getAttribute("data-act");
+        const r = all.find(x=>x.id===id);
+        if(!r) return;
+        if(act==="del"){
+          if(confirm("Delete this booking?")){
+            all = all.filter(x=>x.id!==id); saveAll(all); renderMetrics(); renderTable();
+          }
+        } else if(act==="done"){
+          r.status = (r.status==="Done") ? "Pending" : "Done"; saveAll(all); renderMetrics(); renderTable();
+        } else if(act==="ticket"){
+          printTicket(r);
+        }
+      });
+
+      // Dangerous wipe
+      $("btnWipe").addEventListener("click", ()=>{
+        if(confirm("Wipe all local bookings? This cannot be undone.")){
+          all = []; saveAll(all); renderMetrics(); renderTable();
+        }
+      });
+    }
+
+    function mergeAvoidingDup(base, incoming){
+      const key = (r)=>`${r.date}__${r.slot}__${(r.name||"").toLowerCase()}__${r.mobile}`;
+      const seen = new Set(base.map(key));
+      const out = base.slice();
+      for(const r of incoming){
+        const k = key(r);
+        if(seen.has(k)) continue;
+        seen.add(k);
+        out.push(r);
+      }
+      return out;
+    }
+
+    async function onSave(e){
+      e.preventDefault();
+      const date = $("bkDate").value || todayStr();
+      const slot = $("bkSlot").value;
+      const name = $("bkName").value.trim();
+      const mobile = $("bkMobile").value.trim();
+      const reason = $("bkReason").value.trim();
+
+      if(!date || !slot || !name || !/^[0-9]{10}$/.test(mobile)){
+        alert("Please fill Date, Slot, Name, and 10-digit Mobile."); return;
+      }
+
+      // Duplicate guard: date+slot already exists
+      if(duplicateExists(all, date, slot)){
+        alert("This slot is already booked for the selected date."); return;
+      }
+
+      const token = nextTokenForDate(all, date);
+      const rec = { id: crypto.randomUUID(), token, date, slot, name, mobile, reason, status:"Pending" };
+      all.push(rec);
+      saveAll(all);
+      renderMetrics();
+      renderTable();
+      // Show quick receipt
+      printTicket(rec, {silent:false});
+      // reset minimal
+      $("bkReason").value = "";
+      // Keep form values to take next patient quickly
+    }
+
+    function printTicket(r, opts={}){
+      const html = `
+        <html><head><meta charset="utf-8"><title>Ticket #${r.token}</title>
+        <style>
+          body{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; padding:16px;}
+          .box{border:1px dashed #111; padding:12px; max-width: 320px;}
+          h2{margin:0 0 4px 0;}
+          .muted{color:#333;font-size:12px}
+          .row{display:flex; justify-content:space-between}
+          .big{font-size:24px; font-weight:700}
+        </style></head>
+        <body onload="window.print(); setTimeout(()=>window.close(), 300);">
+          <div class="box">
+            <h2>Warangal OneStop Clinic</h2>
+            <div class="muted">OPD Token Ticket</div>
+            <hr/>
+            <div class="row"><div>Token</div><div class="big">#${r.token}</div></div>
+            <div class="row"><div>Date</div><div>${r.date}</div></div>
+            <div class="row"><div>Time</div><div>${r.slot}</div></div>
+            <div class="row"><div>Patient</div><div>${escapeHtml(r.name)}</div></div>
+            <div class="row"><div>Mobile</div><div>${r.mobile}</div></div>
+            <div class="row"><div>Status</div><div>${r.status}</div></div>
+            ${r.reason ? `<div class="row"><div>Notes</div><div>${escapeHtml(r.reason)}</div></div>` : ""}
+            <hr/>
+            <div class="muted">Thank you. Please arrive 10 minutes early.</div>
+          </div>
+        </body></html>
+      `;
+      const frame = $("printFrame").contentWindow || $("printFrame");
+      frame.document.open(); frame.document.write(html); frame.document.close();
+    }
+
+    // Initial demo seed (optional): only if empty
+    function seedIfEmpty(){
+      if(all.length) return;
+      const d = todayStr();
+      const sample = [
+        {date:d, slot:"09:00 AM", name:"Vijay Kumar", mobile:"9000000001", reason:"Fever", status:"Pending"},
+        {date:d, slot:"09:15 AM", name:"Suma R", mobile:"9000000002", reason:"BP check", status:"Pending"},
+        {date:d, slot:"05:15 PM", name:"Rahul", mobile:"9000000003", reason:"Follow-up", status:"Done"},
+      ];
+      let t=0;
+      sample.forEach(s=>{ s.token=++t; s.id=crypto.randomUUID(); all.push(s); });
+      saveAll(all);
+    }
+
+    // Boot
+    seedIfEmpty();
+    init();
+  </script>
+</body>
+</html>
