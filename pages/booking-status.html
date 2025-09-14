@@ -3,48 +3,38 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Booking Status – Doctor</title>
+  <title>Booking Status · Doctor</title>
   <link rel="manifest" href="manifest.webmanifest"/>
   <link rel="icon" href="assets/logo.png"/>
-  <link rel="stylesheet" href="styles.css?v=31"/>
+  <link rel="stylesheet" href="styles.css?v=32"/>
   <style>
     .section{margin:12px}
-    .tint{border-radius:16px;padding:16px;box-shadow:var(--shadow);border:1px solid rgba(0,0,0,.06)}
-    .tint-blue{background: color-mix(in srgb, #2563eb 16%, var(--card-bg))}
-    .tint-mint{background: color-mix(in srgb, #22c55e 14%, var(--card-bg))}
-    .tint-peach{background: color-mix(in srgb, #fb923c 14%, var(--card-bg))}
     .kpi-grid{display:grid;gap:14px;grid-template-columns:repeat(3,1fr)}
     @media (max-width:760px){.kpi-grid{grid-template-columns:1fr}}
-    .kpi{border-radius:16px;padding:16px;box-shadow:var(--shadow);border:1px solid rgba(0,0,0,.06)}
-    .kpi h4{font-size:14px;opacity:.85;margin-bottom:6px}
-    .kpi .num{font-size:32px;font-weight:800}
-    .filters{display:flex;gap:10px;flex-wrap:wrap}
-    .chip{height:40px;padding:0 14px;border-radius:999px;background:var(--card-bg);border:1px solid rgba(0,0,0,.06);cursor:pointer}
-    .chart-card,.card{border-radius:16px;padding:16px;box-shadow:var(--shadow);border:1px solid rgba(0,0,0,.06)}
+    .chart-card,.card{border-radius:16px;padding:16px;box-shadow:var(--shadow);border:1px solid var(--border);background:var(--card-bg)}
     .muted{color:var(--muted);font-size:13px}
-    .table-wrap{overflow:auto;border-radius:16px;border:1px solid rgba(0,0,0,.06)}
+    .table-wrap{overflow:auto;border-radius:16px;border:1px solid var(--border)}
     table{width:100%;min-width:1200px;border-collapse:separate;border-spacing:0}
     thead th{position:sticky;top:0;background:var(--card-bg);z-index:1}
-    th,td{padding:10px 12px;border-bottom:1px solid rgba(0,0,0,.06);text-align:left;font-size:13px}
+    th,td{padding:10px 12px;border-bottom:1px solid var(--border);text-align:left;font-size:13px}
     tr:hover td{background:color-mix(in srgb, var(--card-bg) 92%, #2563eb 8%)}
-    .pill{font-size:12px;padding:4px 8px;border-radius:999px;border:1px solid rgba(0,0,0,.1)}
+    .pill{font-size:12px;padding:4px 8px;border-radius:999px;border:1px solid var(--border)}
     .pill.pending{background:color-mix(in srgb, #f59e0b 16%, var(--card-bg))}
     .pill.done{background:color-mix(in srgb, #22c55e 16%, var(--card-bg))}
-
-    /* Drawer */
-    .drawer{position:fixed;right:-560px;top:0;height:100vh;width:560px;max-width:98vw;background:var(--card-bg);
-      border-left:1px solid rgba(0,0,0,.08);box-shadow:-8px 0 24px rgba(0,0,0,.15);transition:right .25s ease;padding:16px 14px 110px;z-index:100}
-    .drawer.show{right:0}
     .grid2{display:grid;gap:10px;grid-template-columns:1fr 1fr}
     @media (max-width:560px){.grid2{grid-template-columns:1fr}}
-    input,select,textarea{width:100%}
-
+    /* Drawer + scrim */
+    .scrim{position:fixed;inset:0;background:rgba(0,0,0,.32);opacity:0;pointer-events:none;transition:opacity .2s ease;z-index:999}
+    .scrim.show{opacity:1;pointer-events:auto}
+    .drawer{position:fixed;right:0;top:0;height:100vh;width:560px;max-width:100vw;background:var(--card-bg);border-left:1px solid var(--border);box-shadow:-10px 0 28px rgba(0,0,0,.25);transform:translateX(100%);transition:transform .25s ease;padding:16px 14px 110px;z-index:1000;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+    .drawer.show{transform:translateX(0)}
+    body.no-scroll{overflow:hidden}
     /* Visits panel */
-    .visits{margin-top:14px;border:1px solid rgba(0,0,0,.08);border-radius:12px;overflow:hidden}
+    .visits{margin-top:14px;border:1px solid var(--border);border-radius:12px;overflow:hidden}
     .visits header{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:color-mix(in srgb, #2563eb 10%, var(--card-bg))}
     .visits header .title{font-weight:700}
     .visits .list{max-height:220px;overflow:auto}
-    .vrow{display:grid;grid-template-columns:84px 1fr;gap:8px;padding:10px 12px;border-top:1px solid rgba(0,0,0,.06)}
+    .vrow{display:grid;grid-template-columns:84px 1fr;gap:8px;padding:10px 12px;border-top:1px solid var(--border)}
     .vrow:nth-child(odd){background:color-mix(in srgb, var(--card-bg) 96%, #fff 4%)}
     .mini{font-size:12px;opacity:.8}
     .nowrap{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -56,14 +46,14 @@
     <button id="themeToggle" class="chip floating-toggle" aria-label="Theme">🌙</button>
   </header>
 
-  <!-- Actions -->
+  <!-- Top actions -->
   <nav class="fixed-actions">
-    <a class="chip" href="dashboard.html">Doctor Dashboard</a>
+    <a class="chip" href="dashboard.html">← Dashboard</a>
     <a class="chip" href="supervisor.html">Supervisor</a>
     <a class="chip" href="bookings.html">Bookings</a>
     <a class="chip" href="admin.html">Admin</a>
     <a class="chip" href="login.html">Role Tabs</a>
-    <span id="whoami" class="chip" style="pointer-events:none">Role: Guest</span>
+    <span id="whoami" class="chip" style="pointer-events:none">Role: Doctor</span>
     <button id="clearCacheBtn" class="chip">Clear Cache</button>
   </nav>
 
@@ -124,7 +114,7 @@
             <th>Reason</th>
             <th>Referred By</th>
             <th>Status</th>
-            <th style="width:280px">Doctor</th>
+            <th style="width:300px">Doctor</th>
           </tr>
         </thead>
         <tbody id="rows"></tbody>
@@ -148,11 +138,12 @@
     </div>
   </section>
 
-  <!-- Doctor Drawer -->
+  <!-- Scrim + Drawer -->
+  <div class="scrim" id="scrim"></div>
   <div class="drawer" id="drawer">
     <h2 id="dwTitle" style="margin:0 0 6px 0">Patient</h2>
     <div class="muted" id="dwSub">—</div>
-    <hr style="border:none;border-top:1px solid rgba(0,0,0,.08);margin:10px 0 12px"/>
+    <hr style="border:none;border-top:1px solid var(--border);margin:10px 0 12px"/>
 
     <div class="grid2">
       <div>
@@ -169,12 +160,7 @@
       </div>
       <div>
         <label class="muted">Gender</label>
-        <select id="pGender">
-          <option value="">—</option>
-          <option>Male</option>
-          <option>Female</option>
-          <option>Other</option>
-        </select>
+        <select id="pGender"><option value="">—</option><option>Male</option><option>Female</option><option>Other</option></select>
       </div>
     </div>
 
@@ -202,6 +188,29 @@
       <button class="chip" id="btnClose">Close</button>
     </div>
 
+    <!-- Next Visit entry -->
+    <div class="card" style="margin-top:12px">
+      <h3 style="margin:0 0 6px 0">Next Visit Details</h3>
+      <div class="grid2">
+        <div>
+          <label class="muted">Next Visit Date</label>
+          <input id="nvDate" type="date"/>
+        </div>
+        <div>
+          <label class="muted">Notes</label>
+          <input id="nvNotes" placeholder="Follow-up on tests, etc."/>
+        </div>
+      </div>
+      <div class="filters" style="margin-top:10px">
+        <button class="chip" id="btnSaveNext">Save Next Visit</button>
+        <button class="chip" id="btnWhatsApp">📲 WhatsApp Reminder</button>
+        <button class="chip" id="btnExportVisits">Export visits.csv</button>
+        <label class="chip" for="inpImportVisits" style="cursor:pointer">Import visits.csv
+          <input id="inpImportVisits" type="file" accept=".csv" style="display:none"/>
+        </label>
+      </div>
+    </div>
+
     <!-- Visits Panel -->
     <div class="visits">
       <header>
@@ -221,18 +230,20 @@
     if(localStorage.theme){document.documentElement.dataset.theme=localStorage.theme;tt.textContent=localStorage.theme==='light'?'🌞':'🌙'}
     tt.onclick=()=>{const cur=document.documentElement.dataset.theme||'light';const nxt=cur==='light'?'dark':'light';document.documentElement.dataset.theme=nxt;localStorage.theme=nxt;tt.textContent=nxt==='light'?'🌞':'🌙'}
 
-    /* Soft badge only */
-    (function(){ const ses=JSON.parse(localStorage.getItem('session')||'{}'); const who=document.getElementById('whoami'); if(who) who.textContent=`Role: ${ses.role||'Guest'}`; })();
+    /* Soft role badge only */
+    (function(){ const ses=JSON.parse(localStorage.getItem('session')||'{}'); const who=document.getElementById('whoami'); if(who) who.textContent=`Role: ${ses.role||'Doctor'}`; })();
 
     /* Actions */
     clearCacheBtn.onclick=async()=>{localStorage.clear();if('caches'in window){const ks=await caches.keys();await Promise.all(ks.map(k=>caches.delete(k)))};location.reload()}
 
     /* Stores */
-    const BK="bookings", PT="patients";
+    const BK="bookings", PT="patients", NV="nextVisits";
     const $=id=>document.getElementById(id);
     const bookings=()=>JSON.parse(localStorage.getItem(BK)||'[]');
     const loadPatients=()=>JSON.parse(localStorage.getItem(PT)||'{}');
     const savePatients=o=>localStorage.setItem(PT, JSON.stringify(o));
+    const getVisits=()=>JSON.parse(localStorage.getItem(NV)||'[]');
+    const saveVisits=a=>localStorage.setItem(NV, JSON.stringify(a));
 
     const ISO=d=>new Date(d).toISOString().slice(0,10);
     const today=ISO(new Date());
@@ -241,7 +252,7 @@
     const inRange=(iso,a,b)=> iso>=a && iso<=b;
 
     const phoneLink=n=>`tel:${n}`;
-    const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({ "&":"&amp;","<":"&lt;",">":"&#39;" ,'"':"&quot;","'":"&#39;" }[c]));
+    const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
 
     /* KPIs */
     function computeKPIs(){
@@ -300,9 +311,10 @@
           <td>${esc(r.referredBy || "—")}</td>
           <td><span class="pill ${r.status==='Done'?'done':'pending'}">${r.status==='Done'?'✔ Done':'⏳ Pending'}</span></td>
           <td>
-            <div class="filters">
+            <div class="filters" style="flex-wrap:wrap;gap:8px">
               <button class="chip act" data-act="open" data-id="${r.id}">Open</button>
               <button class="chip act" data-act="rx" data-id="${r.id}">Prescription</button>
+              <button class="chip act" data-act="wa" data-id="${r.id}">📲 WhatsApp</button>
             </div>
           </td>
         `;
@@ -332,9 +344,17 @@
       $('pAdvice').value = "";
 
       renderVisitsPanel(currentPid);
+
+      document.body.classList.add('no-scroll');
+      $('scrim').classList.add('show');
       $('drawer').classList.add('show');
     }
-    function closeDrawer(){ $('drawer').classList.remove('show'); currentVisit=null; currentPid=null; }
+    function closeDrawer(){
+      $('drawer').classList.remove('show');
+      $('scrim').classList.remove('show');
+      document.body.classList.remove('no-scroll');
+      currentVisit=null; currentPid=null;
+    }
 
     function savePatient(){
       if(!currentVisit || !currentPid) return;
@@ -406,7 +426,7 @@
             <div class="mini">Diagnosis</div>
             <div class="nowrap">${esc(v.diagnosis||"-")}</div>
             <div class="filters" style="margin-top:6px">
-              <button class="chip vact" data-act="view" data-id="${v.bookingId}">View</button>
+              <button class="chip vact" data-act="view" data-book="${v.bookingId||''}">View</button>
             </div>
           </div>
         `;
@@ -415,17 +435,19 @@
 
       wrap.querySelectorAll('.vact').forEach(btn=>{
         btn.onclick=()=>{
-          const id=btn.getAttribute('data-id');
+          const id=btn.getAttribute('data-book');
           const vv = (p.history||[]).find(h=>h.bookingId===id);
           if(!vv) return;
           $('pDiagnosis').value = vv.diagnosis||"";
           $('pTreatment').value = vv.treatment||"";
           $('pMedicines').value = vv.medicines||"";
           $('pAdvice').value = vv.advice||"";
-        }
+        };
       });
     }
 
+    /* CSV export for a single patient */
+    const csv=v=>{const s=String(v??"");return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s};
     function exportPatientCsv(pid){
       const patients = loadPatients();
       const p = patients[pid]; if(!p || !p.history || !p.history.length){ alert('No history to export.'); return; }
@@ -435,14 +457,13 @@
         h.date||"", h.token||"", h.slot||"", csv(h.reason||""),
         csv(h.diagnosis||""), csv(h.treatment||""), csv(h.medicines||""), csv(h.advice||"")
       ]);
-      const text = [head.join(","), ...rows.map(r=>r.join(","))].join("\n");
+      const text = [head.join(","), ...rows.map(r=>r.join(","))].join("\\n");
       const blob = new Blob([text], {type:"text/csv;charset=utf-8"});
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
       a.download = `patient_${pid}_history_${Date.now()}.csv`;
       a.click(); URL.revokeObjectURL(a.href);
     }
-    const csv=v=>{const s=String(v??"");return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s};
 
     /* Prescription */
     function printPrescription(visit){
@@ -503,6 +524,11 @@
       frame.document.open(); frame.document.write(html); frame.document.close();
     }
 
+    /* Next Visit: helpers */
+    const csvEsc = v => { const s=String(v??""); return /[",\\n]/.test(s) ? \`"\${s.replace(/"/g,'""')}"\` : s; };
+    function phoneByPid(pid){ const list=bookings(); const hit=list.find(b=>(b.patientId||'').toLowerCase()===String(pid||'').toLowerCase()); return hit?.mobile || ''; }
+    function nameByPid(pid){ const list=bookings(); const hit=list.find(b=>(b.patientId||'').toLowerCase()===String(pid||'').toLowerCase()); return hit?.name || ''; }
+
     /* Trend */
     let chart;
     function renderChart(days=7){
@@ -530,7 +556,7 @@
         btn.classList.add('active');
         const r=btn.dataset.range;
         renderChart(r==='30d'?30:r==='90d'?90:7);
-      }
+      };
     });
 
     /* Events */
@@ -546,17 +572,88 @@
         if(!visit) return;
         if(act==='open'){ openDrawer(visit); }
         if(act==='rx'){ printPrescription(visit); }
+        if(act==='wa'){
+          const pid=visit.patientId||''; const mobile=visit.mobile||phoneByPid(pid);
+          const msg = encodeURIComponent(\`Reminder: Your visit today at \${visit.slot} (Token #\${visit.token||'-'}). Patient: \${pid||'-'}\`);
+          const url = mobile ? \`https://wa.me/\${mobile}?text=\${msg}\` : \`https://wa.me/?text=\${msg}\`;
+          window.open(url, "_blank");
+        }
       });
 
-      $('btnClose').onclick = ()=>{ document.getElementById('drawer').classList.remove('show'); };
+      $('btnClose').onclick = closeDrawer;
+      $('scrim').onclick = closeDrawer;
       $('btnSavePatient').onclick = savePatient;
       $('btnPrintRx').onclick = ()=>{ if(currentVisit) printPrescription(currentVisit); };
       $('btnExportCsv').onclick = ()=>{ if(currentPid) exportPatientCsv(currentPid); };
+
+      // Next Visit actions
+      $('btnSaveNext').onclick = ()=>{
+        if(!currentPid || !currentVisit) return alert('Open a patient first.');
+        const date = $('nvDate').value; const notes = $('nvNotes').value.trim();
+        if(!date) return alert('Select Next Visit Date');
+        const arr=getVisits();
+        const item={ id: crypto.randomUUID(), pid: currentPid, date, notes, mobile: phoneByPid(currentPid), name: nameByPid(currentPid) };
+        arr.push(item); saveVisits(arr);
+
+        // mirror into patients
+        const pts=loadPatients(); const p=pts[currentPid]||{id:currentPid, name:nameByPid(currentPid)||currentVisit.name||'', mobile:currentVisit.mobile, history:[]};
+        p.history=p.history||[]; p.history.push({ type:'next_visit', date, notes, createdAt:new Date().toISOString() }); pts[currentPid]=p; savePatients(pts);
+
+        $('nvDate').value=''; $('nvNotes').value='';
+        alert('Next visit saved.');
+      };
+
+      $('btnWhatsApp').onclick = ()=>{
+        if(!currentPid || !currentVisit) return alert('Open a patient first.');
+        const date=$('nvDate').value; const notes=$('nvNotes').value.trim();
+        if(!date) return alert('Select Next Visit Date');
+        const mobile = phoneByPid(currentPid) || currentVisit.mobile;
+        const msg = encodeURIComponent(\`Reminder: Your next visit is scheduled on \${date} (Patient: \${currentPid}). \${notes?('Notes: '+notes):''}\`);
+        const url = mobile ? \`https://wa.me/\${mobile}?text=\${msg}\` : \`https://wa.me/?text=\${msg}\`;
+        window.open(url, "_blank");
+      };
+
+      $('btnExportVisits').onclick = ()=>{
+        const rows=getVisits(); const head=['id','patientId','name','mobile','date','notes','createdAt'];
+        const now=new Date().toISOString();
+        const csv=[ head.join(','), ...rows.map(r=>[ r.id, csvEsc(r.pid), csvEsc(r.name||''), csvEsc(r.mobile||''), r.date||'', csvEsc(r.notes||''), now ].join(',')) ].join('\\n');
+        const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}); const a=document.createElement('a');
+        a.href=URL.createObjectURL(blob); a.download=\`visits_\${Date.now()}.csv\`; a.click(); URL.revokeObjectURL(a.href);
+      };
+
+      $('inpImportVisits').addEventListener('change',(e)=>{
+        const f=e.target.files?.[0]; if(!f) return;
+        const r=new FileReader();
+        r.onload=()=>{
+          try{
+            const text=String(r.result||'').replace(/\\r/g,''); const lines=text.split('\\n').filter(Boolean);
+            const H=lines[0].split(',').map(h=>h.trim().toLowerCase());
+            const pos=k=>H.indexOf(k); const out=getVisits(); const pts=loadPatients();
+            for(let i=1;i<lines.length;i++){
+              const cols=lines[i].match(/(?:^|,)(?:"([^"]*(?:""[^"]*)*)"|([^",]*))/g).map(s=>s.replace(/^,?/,'')); // coarse CSV split
+              const val=idx=>(cols[idx]||'').replace(/^"|"$/g,'').replace(/""/g,'"');
+              const pid=val(pos('patientid'));
+              const rec={ id: val(pos('id'))||crypto.randomUUID(), pid, name: val(pos('name'))||'', mobile: val(pos('mobile'))||'', date: val(pos('date'))||'', notes: val(pos('notes'))||'' };
+              if(!out.some(x=>x.id===rec.id)) out.push(rec);
+              if(pid){
+                const p=pts[pid]||{id:pid, name:rec.name||'', mobile:rec.mobile||'', history:[]};
+                p.name=p.name||rec.name||''; p.mobile=p.mobile||rec.mobile||'';
+                p.history=p.history||[]; p.history.push({type:'next_visit', date:rec.date, notes:rec.notes, createdAt:new Date().toISOString()});
+                pts[pid]=p;
+              }
+            }
+            saveVisits(out); savePatients(pts);
+            alert('visits.csv imported.');
+          }catch(err){ console.error(err); alert('Import failed. Check CSV.'); }
+          e.target.value='';
+        };
+        r.readAsText(f);
+      });
     }
 
-    /* Init */
+    /* Init + bindings */
     function init(){
-      $('whoami').textContent = `Role: ${(JSON.parse(localStorage.getItem('session')||'{}').role)||'Guest'}`;
+      $('whoami').textContent = \`Role: \${(JSON.parse(localStorage.getItem('session')||'{}').role)||'Doctor'}\`;
       $('pickDate').value = today;
       computeKPIs();
       bind();
