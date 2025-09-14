@@ -6,7 +6,7 @@
   <title>Bookings · Supervisor</title>
   <link rel="manifest" href="manifest.webmanifest"/>
   <link rel="icon" href="assets/logo.png"/>
-  <link rel="stylesheet" href="styles.css?v=34"/>
+  <link rel="stylesheet" href="styles.css?v=35"/>
   <style>
     .section{margin:12px}
     .card{border-radius:16px;padding:16px;box-shadow:var(--shadow);border:1px solid var(--border);background:var(--card-bg)}
@@ -39,7 +39,8 @@
     <a class="chip" href="supervisor.html">Supervisor Home</a>
     <a class="chip" href="booking-status.html">Doctor · Booking Status</a>
     <a class="chip" href="patients.html">Patients</a>
-    <span id="whoami" class="chip" style="pointer-events:none">Role: Supervisor</span>
+    <button id="miniScan" class="chip">🔎 Scan</button>
+    <span class="chip" style="pointer-events:none">Role: Supervisor</span>
     <button id="clearCacheBtn" class="chip">Clear Cache</button>
   </nav>
 
@@ -73,7 +74,7 @@
           <input id="bName" placeholder="e.g., Ramesh Kumar"/>
         </label>
         <label>Mobile (unique)
-          <input id="bMobile" placeholder="10-digit number" inputmode="numeric" maxlength="15"/>
+          <input id="bMobile" placeholder="10–15 digits" inputmode="numeric" maxlength="15"/>
         </label>
         <label>Referred By
           <input id="bReferredBy" placeholder="Doctor/Hospital (optional)"/>
@@ -103,7 +104,23 @@
           <input id="inpImport" type="file" accept=".csv" style="display:none"/>
         </label>
       </div>
-      <div class="muted mini" style="margin-top:6px">• Patient ID is generated from <strong>Name + Mobile</strong> to keep it unique and consistent across pages.</div>
+
+      <!-- Patient ID barcode preview -->
+      <div id="pidBarcodeBox" class="card" style="margin-top:8px">
+        <div class="filters" style="justify-content:space-between;align-items:center">
+          <div>
+            <div class="muted">Patient ID Barcode</div>
+            <div id="pidText" class="mini">—</div>
+          </div>
+          <div class="filters">
+            <button class="chip" id="btnPrintPid">Print ID Label</button>
+          </div>
+        </div>
+        <div style="background:var(--card-bg);border:1px dashed var(--border);border-radius:12px;padding:12px;margin-top:8px;display:flex;justify-content:center">
+          <svg id="pidBarcode" role="img" aria-label="Patient ID barcode"></svg>
+        </div>
+      </div>
+      <div class="muted mini" style="margin-top:6px">• Patient ID is generated from <strong>Name + Mobile</strong> to keep it unique across pages.</div>
     </div>
   </section>
 
@@ -159,6 +176,9 @@
     <div class="muted mini" id="countLbl" style="margin-top:6px"></div>
   </section>
 
+  <!-- Barcode lib -->
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+
   <script type="module">
     /* ---------- Theme ---------- */
     const tt=document.getElementById('themeToggle');
@@ -166,6 +186,7 @@
     tt.onclick=()=>{const cur=document.documentElement.dataset.theme||'light';const nxt=cur==='light'?'dark':'light';document.documentElement.dataset.theme=nxt;localStorage.theme=nxt;tt.textContent=nxt==='light'?'🌞':'🌙'}
 
     /* ---------- Actions ---------- */
+    document.getElementById('miniScan')?.addEventListener('click', ()=>{ location.href='patients.html#scan'; });
     clearCacheBtn.onclick=async()=>{localStorage.clear();if('caches'in window){const ks=await caches.keys();await Promise.all(ks.map(k=>caches.delete(k)))};location.reload()}
 
     /* ---------- Stores & helpers ---------- */
@@ -181,7 +202,7 @@
     const bookings=()=>JSON.parse(localStorage.getItem(BK)||'[]');
     const saveBookings=a=>localStorage.setItem(BK, JSON.stringify(a));
 
-    function normName(n){ return (n||'').normalize('NFKD').replace(/[^a-zA-Z\s]/g,' ').trim().replace(/\s+/g,' '); }
+    function normName(n){ return (n||'').normalize('NFKD').replace(/[^a-zA-Z\s]/g,' ').trim().replace(/\s+/g, ' '); }
     function makePid(name, mobile){
       const nm = normName(name).toUpperCase();
       const ini = nm.split(' ').map(w=>w[0]).join('').slice(0,3) || 'P';
@@ -189,9 +210,45 @@
       return `PID-${ini}${tail}`;
     }
 
+    /* ===== Barcode helpers ===== */
+    function drawPidBarcode(svgEl, pid){
+      if(!window.JsBarcode || !svgEl || !pid) { if(svgEl) svgEl.innerHTML=''; return; }
+      try { JsBarcode(svgEl, pid, { format:"CODE128", width:2, height:64, displayValue:true, fontSize:14, margin:8 }); }
+      catch(_) { svgEl.innerHTML=''; }
+    }
+    function printPidLabel(pid, name="", mobile=""){
+      const html = `
+        <html><head><meta charset="utf-8"><title>${pid} Label</title>
+          <style>
+            body{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto; padding:16px}
+            .card{width:320px;border:1px solid #000;padding:10px;border-radius:8px}
+            .h{font-weight:700}
+            svg{width:100%}
+            .mini{font-size:12px;opacity:.8}
+          </style>
+        </head>
+        <body onload="window.print(); setTimeout(()=>window.close(), 300);">
+          <div class="card">
+            <div class="h">Patient ID</div>
+            <div style="margin:6px 0 10px 0">${pid}</div>
+            <div id="wrap"></div>
+            <div class="mini" style="margin-top:8px">${name||""} ${mobile?("• "+mobile):""}</div>
+          </div>
+          <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"><\/script>
+          <script>
+            (function(){
+              var s=document.createElement('svg');
+              document.getElementById('wrap').appendChild(s);
+              try{ JsBarcode(s, ${JSON.stringify(pid)}, {format:'CODE128', width:2, height:64, displayValue:true, fontSize:14, margin:8}); }catch(e){}
+            })();
+          <\/script>
+        </body></html>`;
+      const w = window.open('', '_blank', 'width=420,height=420');
+      w.document.open(); w.document.write(html); w.document.close();
+    }
+
     function fillSlots(){
       const sel=$('bSlot'); sel.innerHTML='';
-      // 15-min slots 09:00–13:00 & 16:00–20:00 (example)
       const blocks=[['09:00','13:00'], ['16:00','20:00']];
       for(const [start,end] of blocks){
         let [h,m]=start.split(':').map(Number);
@@ -203,12 +260,10 @@
         }
       }
     }
-
     function nextTokenFor(date){
       const list=bookings().filter(b=>b.date===date);
       return (Math.max(0, ...list.map(b=>Number(b.token)||0)) + 1);
     }
-
     function computeKPIs(){
       const all=bookings();
       const t=all.filter(b=>b.date===today).length;
@@ -218,7 +273,7 @@
       $('kAll').textContent=all.length;
     }
 
-    /* ---------- Form actions ---------- */
+    /* ---------- Form ---------- */
     function resetForm(){
       $('bName').value='';
       $('bMobile').value='';
@@ -227,8 +282,8 @@
       $('bDate').value=today;
       $('bSlot').selectedIndex=0;
       $('bPid').value='';
+      refreshPidBarcode();
     }
-
     function validateForm(){
       const name=$('bName').value.trim();
       const mobile=$('bMobile').value.trim();
@@ -240,7 +295,6 @@
       if(!slot) return alert('Select a slot'), false;
       return true;
     }
-
     function addBooking(){
       if(!validateForm()) return;
 
@@ -250,13 +304,9 @@
       const reason=$('bReason').value.trim();
       const date=$('bDate').value;
       const slot=$('bSlot').value;
-
-      // patient id
       const pid = $('bPid').value || makePid(name, mobile);
 
       const list=bookings();
-
-      // prevent same date+slot double booking
       if(list.some(b=>b.date===date && b.slot===slot)){
         alert('That slot is already booked. Please choose another slot.');
         return;
@@ -264,36 +314,41 @@
 
       const id=crypto.randomUUID();
       const token = nextTokenFor(date);
-      const row = {
-        id, token, date, slot,
-        name, mobile,
-        patientId: pid,
-        reason, referredBy,
-        status: 'Pending',
-        createdAt: new Date().toISOString()
-      };
-
+      const row = { id, token, date, slot, name, mobile, patientId:pid, reason, referredBy, status:'Pending', createdAt:new Date().toISOString() };
       list.push(row); saveBookings(list);
       renderTable(); computeKPIs();
-      $('bPid').value = pid; // show generated
+      $('bPid').value = pid;
+      refreshPidBarcode();
       alert(`Booked. Token #${token}, PID ${pid}`);
     }
 
+    /* live barcode preview */
+    function refreshPidBarcode(){
+      const pid = ($('bPid')?.value||'').trim();
+      $('pidText').textContent = pid || '—';
+      drawPidBarcode($('pidBarcode'), pid);
+    }
+    $('btnMakePid').addEventListener('click', ()=>{
+      const pid = makePid($('bName').value, $('bMobile').value);
+      $('bPid').value = pid; refreshPidBarcode();
+    });
+    $('btnPrintPid').addEventListener('click', ()=>{
+      const pid=$('bPid').value.trim(); if(!pid) return alert('Generate Patient ID first.');
+      printPidLabel(pid, $('bName').value.trim(), $('bMobile').value.trim());
+    });
+
     /* ---------- Filters & table ---------- */
     const state={ scope:'today', q:'', pickDate: today, status:'' };
-
     const scopes={
       today: list => list.filter(r=>r.date===today),
       date:  list => list.filter(r=>r.date===(state.pickDate||today)),
-      month: list => list.filter(r=> inRange(r.date, monthStart, today)),
+      month: list => list.filter(r=> r.date>=ISO(new Date(new Date().getFullYear(), new Date().getMonth(), 1)) && r.date<=today),
       all:   list => list
     };
-
     function filtered(){
       let list=[...bookings()];
       list=(scopes[state.scope]||scopes.today)(list);
       if(state.status) list=list.filter(r=> r.status===state.status);
-
       const q=(state.q||'').toLowerCase().trim();
       if(q){
         list=list.filter(r=>
@@ -305,21 +360,16 @@
           (r.slot||'').toLowerCase().includes(q)
         );
       }
-
       list.sort((a,b)=> a.date.localeCompare(b.date) || a.slot.localeCompare(b.slot) || (a.token||0)-(b.token||0));
       return list;
     }
-
     function renderTable(){
       const tbody=$('rows'); tbody.innerHTML='';
       const list=filtered();
-
       $('countLbl').textContent = `${list.length} record(s)`;
-
       if(!list.length){
         const tr=document.createElement('tr'); const td=document.createElement('td'); td.colSpan=10; td.className='muted'; td.textContent='No records.'; tr.appendChild(td); tbody.appendChild(tr); return;
       }
-
       for(const r of list){
         const tr=document.createElement('tr');
         tr.innerHTML=`
@@ -328,12 +378,10 @@
           <td>${r.slot}</td>
           <td>${esc(r.name||'')}</td>
           <td>${r.patientId||''}</td>
-          <td><a href="${phoneLink(r.mobile)}">${r.mobile}</a></td>
+          <td><a href="tel:${r.mobile}">${r.mobile}</a></td>
           <td>${esc(r.reason||'')}</td>
           <td>${esc(r.referredBy||'—')}</td>
-          <td>
-            <span class="pill ${r.status==='Done'?'done':r.status==='Checked-In'?'checked':r.status==='Cancelled'?'':'pending'}">${r.status||'Pending'}</span>
-          </td>
+          <td><span class="pill ${r.status==='Done'?'done':r.status==='Checked-In'?'checked':r.status==='Cancelled'?'':'pending'}">${r.status||'Pending'}</span></td>
           <td>
             <div class="filters" style="flex-wrap:wrap;gap:8px">
               <button class="chip act" data-act="edit" data-id="${r.id}">Edit</button>
@@ -347,8 +395,6 @@
         tbody.appendChild(tr);
       }
     }
-
-    /* ---------- Edit / status actions ---------- */
     function editRow(id){
       const list=bookings(); const i=list.findIndex(r=>r.id===id); if(i<0) return;
       const r=list[i];
@@ -358,25 +404,18 @@
       const reason = prompt('Reason', r.reason||''); if(reason===null) return;
       const date = prompt('Date (YYYY-MM-DD)', r.date||''); if(date===null) return;
       const slot = prompt('Slot (HH:MM)', r.slot||''); if(slot===null) return;
-
-      // if date/slot changed, check conflict
       if((date!==r.date || slot!==r.slot) && list.some(x=>x.id!==id && x.date===date && x.slot===slot)){
-        alert('That slot is already booked for the selected date.');
-        return;
+        alert('That slot is already booked for the selected date.'); return;
       }
-
-      // patient id may need recompute if name/mobile changed
       const pid = makePid(name, mobile);
       list[i] = {...r, name, mobile, referredBy, reason, date, slot, patientId: pid};
       saveBookings(list); renderTable(); computeKPIs();
     }
-
     function setStatus(id, status){
       const list=bookings(); const i=list.findIndex(r=>r.id===id); if(i<0) return;
       list[i].status = status;
       saveBookings(list); renderTable();
     }
-
     function deleteRow(id){
       const list=bookings(); const i=list.findIndex(r=>r.id===id); if(i<0) return;
       if(!confirm('Delete this booking?')) return;
@@ -385,7 +424,6 @@
 
     /* ---------- CSV Import/Export ---------- */
     const csvEsc = v => { const s=String(v??""); return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s; };
-
     function exportCsv(){
       const head=['id','token','date','slot','name','mobile','patientId','reason','referredBy','status','createdAt'];
       const rows=bookings().map(r=>[
@@ -396,8 +434,9 @@
       const blob=new Blob([text],{type:'text/csv;charset=utf-8'});
       const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`bookings_${Date.now()}.csv`; a.click(); URL.revokeObjectURL(a.href);
     }
+    document.getElementById('btnExport').onclick = exportCsv;
 
-    $('inpImport').addEventListener('change',(e)=>{
+    document.getElementById('inpImport').addEventListener('change',(e)=>{
       const f=e.target.files?.[0]; if(!f) return;
       const r=new FileReader();
       r.onload=()=>{
@@ -437,15 +476,8 @@
 
     /* ---------- Bindings ---------- */
     function bind(){
-      // slots + defaults
       fillSlots(); resetForm();
-
       $('bDate').value = today;
-
-      $('btnMakePid').onclick = ()=>{
-        const pid = makePid($('bName').value, $('bMobile').value);
-        $('bPid').value = pid;
-      };
       $('btnAdd').onclick = addBooking;
       $('btnResetForm').onclick = resetForm;
 
@@ -464,8 +496,6 @@
         if(act==='cancel') setStatus(id,'Cancelled');
         if(act==='delete') deleteRow(id);
       });
-
-      $('btnExport').onclick = exportCsv;
     }
 
     /* ---------- Init ---------- */
@@ -473,6 +503,7 @@
       bind();
       computeKPIs();
       renderTable();
+      refreshPidBarcode();
       if('serviceWorker' in navigator){ navigator.serviceWorker.register('service-worker.js').catch(()=>{}) }
     }
     init();
