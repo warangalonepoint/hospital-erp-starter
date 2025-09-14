@@ -1,141 +1,569 @@
 <!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Booking Status – Doctor</title>
+  <link rel="manifest" href="manifest.webmanifest"/>
+  <link rel="icon" href="assets/logo.png"/>
+  <link rel="stylesheet" href="styles.css?v=27"/>
+  <style>
+    .section{margin:12px}
+    .tint{border-radius:16px;padding:16px;box-shadow:var(--shadow);border:1px solid rgba(0,0,0,.06)}
+    .tint-blue{background: color-mix(in srgb, #2563eb 16%, var(--card-bg))}
+    .tint-mint{background: color-mix(in srgb, #22c55e 14%, var(--card-bg))}
+    .tint-peach{background: color-mix(in srgb, #fb923c 14%, var(--card-bg))}
+    .kpi-grid{display:grid;gap:14px;grid-template-columns:repeat(3,1fr)}
+    @media (max-width:760px){.kpi-grid{grid-template-columns:1fr}}
+    .kpi{border-radius:16px;padding:16px;box-shadow:var(--shadow);border:1px solid rgba(0,0,0,.06)}
+    .kpi h4{font-size:14px;opacity:.85;margin-bottom:6px}
+    .kpi .num{font-size:32px;font-weight:800}
+    .filters{display:flex;gap:10px;flex-wrap:wrap}
+    .chip{height:40px;padding:0 14px;border-radius:999px;background:var(--card-bg);border:1px solid rgba(0,0,0,.06);cursor:pointer}
+    .chart-card,.card{border-radius:16px;padding:16px;box-shadow:var(--shadow);border:1px solid rgba(0,0,0,.06)}
+    .muted{color:var(--muted);font-size:13px}
+    .table-wrap{overflow:auto;border-radius:16px;border:1px solid rgba(0,0,0,.06)}
+    table{width:100%;min-width:980px;border-collapse:separate;border-spacing:0}
+    thead th{position:sticky;top:0;background:var(--card-bg);z-index:1}
+    th,td{padding:10px 12px;border-bottom:1px solid rgba(0,0,0,.06);text-align:left;font-size:13px}
+    tr:hover td{background:color-mix(in srgb, var(--card-bg) 92%, #2563eb 8%)}
+    .pill{font-size:12px;padding:4px 8px;border-radius:999px;border:1px solid rgba(0,0,0,.1)}
+    .pill.pending{background:color-mix(in srgb, #f59e0b 16%, var(--card-bg))}
+    .pill.done{background:color-mix(in srgb, #22c55e 16%, var(--card-bg))}
 
-<html lang="en" data-theme="light">  
-<head>  
-  <meta charset="utf-8"/>  
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>  
-  <title>Booking Status – Doctor</title>  
-  <link rel="manifest" href="manifest.webmanifest"/>  
-  <link rel="icon" href="assets/logo.png"/>  
-  <link rel="stylesheet" href="styles.css?v=25"/>  
-  <style>  
-    .section{margin:12px}  
-    .tint{border-radius:16px;padding:16px;box-shadow:var(--shadow);border:1px solid rgba(0,0,0,.06)}  
-    .tint-blue{background: color-mix(in srgb, #2563eb 16%, var(--card-bg))}  
-    .tint-mint{background: color-mix(in srgb, #22c55e 14%, var(--card-bg))}  
-    .tint-peach{background: color-mix(in srgb, #fb923c 14%, var(--card-bg))}  
-    .kpi-grid{display:grid;gap:14px;grid-template-columns:repeat(3,1fr)}  
-    @media (max-width:760px){.kpi-grid{grid-template-columns:1fr}}  
-    .kpi{border-radius:16px;padding:16px;box-shadow:var(--shadow);border:1px solid rgba(0,0,0,.06)}  
-    .kpi h4{font-size:14px;opacity:.85;margin-bottom:6px}  
-    .kpi .num{font-size:32px;font-weight:800}  
-    .filters{display:flex;gap:10px;flex-wrap:wrap}  
-    .chip{height:40px;padding:0 14px;border-radius:999px;background:var(--card-bg);border:1px solid rgba(0,0,0,.06)}  
-    .chart-card{border-radius:16px;padding:16px;box-shadow:var(--shadow);border:1px solid rgba(0,0,0,.06)}  
-    canvas{width:100%;height:280px}  
-    .muted{color:var(--muted);font-size:13px}  
-  </style>  
-</head>  
-<body>  
-  <!-- Banner -->  
-  <header class="banner">  
-    <button id="themeToggle" class="chip floating-toggle" aria-label="Theme">🌙</button>  
-  </header>    <!-- Actions -->    <nav class="fixed-actions">  
-    <a class="chip" href="dashboard.html">← Dashboard</a>  
-    <button id="logoutBtn" class="chip">Logout</button>  
-    <button id="clearCacheBtn" class="chip">Clear Cache</button>  
-  </nav>    <!-- KPIs -->    <section class="section">  
-    <div class="kpi-grid">  
-      <div class="kpi tint-blue">  
-        <h4>Today</h4>  
-        <div class="num" id="kToday">0</div>  
-        <div class="muted" id="lblToday"></div>  
-      </div>  
-      <div class="kpi tint-mint">  
-        <h4>This Week</h4>  
-        <div class="num" id="kWeek">0</div>  
-        <div class="muted" id="lblWeek"></div>  
-      </div>  
-      <div class="kpi tint-peach">  
-        <h4>This Month</h4>  
-        <div class="num" id="kMonth">0</div>  
-        <div class="muted" id="lblMonth"></div>  
-      </div>  
-    </div>  
-  </section>    <!-- Chart -->    <section class="section">  
-    <div class="chart-card">  
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">  
-        <h2>Bookings Trend</h2>  
-        <div class="filters">  
-          <button class="chip" data-range="7d">7D</button>  
-          <button class="chip" data-range="30d">30D</button>  
-          <button class="chip" data-range="90d">90D</button>  
-        </div>  
-      </div>  
-      <canvas id="trend"></canvas>  
-      <div class="muted" id="rangeLbl" style="margin-top:8px"></div>  
-    </div>  
-  </section>    <script src="assets/chart.umd.min.js"></script>    <script type="module">  
-    // --- Theme  
-    const tt=document.getElementById('themeToggle');  
-    if(localStorage.theme){document.documentElement.dataset.theme=localStorage.theme;tt.textContent=localStorage.theme==='light'?'🌞':'🌙'}  
-    tt.onclick=()=>{const cur=document.documentElement.dataset.theme||'light';const nxt=cur==='light'?'dark':'light';document.documentElement.dataset.theme=nxt;localStorage.theme=nxt;tt.textContent=nxt==='light'?'🌞':'🌙'}  
-  
-    // --- Guard: doctor only  
-    const ses=JSON.parse(localStorage.getItem('session')||'{}');  
-    if(ses.role!=='doctor'){location.replace('login.html')}  
-  
-    // --- Actions  
-    logoutBtn.onclick=()=>{localStorage.removeItem('session');location.href='login.html'}  
-    clearCacheBtn.onclick=async()=>{localStorage.clear();if('caches'in window){const ks=await caches.keys();await Promise.all(ks.map(k=>caches.delete(k)))};location.reload()}  
-  
-    // --- Data  
-    const bookings=()=>JSON.parse(localStorage.getItem('bookings')||'[]'); // supervisor creates  
-    const ISO=(d)=>new Date(d).toISOString().slice(0,10);  
-    const today=ISO(new Date());  
-    const weekStart=(()=>{const d=new Date();const n=(d.getDay()+6)%7;d.setDate(d.getDate()-n);d.setHours(0,0,0,0);return ISO(d)})();  
-    const monthStart=ISO(new Date(new Date().getFullYear(), new Date().getMonth(), 1));  
-    const inRange=(iso,a,b)=> iso>=a && iso<=b;  
-  
-    function computeKPIs(){  
-      const all=bookings();  
-      const t=all.filter(b=>b.date===today).length;  
-      const w=all.filter(b=> inRange(b.date, weekStart, today)).length;  
-      const m=all.filter(b=> inRange(b.date, monthStart, today)).length;  
-      kToday.textContent=t; kWeek.textContent=w; kMonth.textContent=m;  
-      lblToday.textContent=today;  
-      lblWeek.textContent=weekStart+' → '+today;  
-      lblMonth.textContent=monthStart+' → '+today;  
-    }  
-  
-    // chart  
-    let chart;  
-    function renderChart(days=7){  
-      const end=new Date(); const start=new Date(); start.setDate(end.getDate()-days+1);  
-      const startISO=ISO(start); const endISO=ISO(end);  
-      rangeLbl.textContent=startISO+' → '+endISO;  
-  
-      const map={};  
-      for(let d=new Date(start); d<=end; d.setDate(d.getDate()+1)){  
-        map[ISO(d)]=0;  
-      }  
-      bookings().forEach(b=>{ if(map[b.date]!=null) map[b.date]++ });  
-  
-      const labels=Object.keys(map);  
-      const data=labels.map(k=>map[k]);  
-  
-      if(chart) chart.destroy();  
-      chart=new Chart(document.getElementById('trend'),{  
-        type:'line',  
-        data:{labels, datasets:[{label:'Bookings', data, tension:.35}]},  
-        options:{responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}}  
-      });  
-    }  
-  
-    // filters  
-    document.querySelectorAll('.filters .chip').forEach(btn=>{  
-      btn.onclick=()=>{  
-        document.querySelectorAll('.filters .chip').forEach(x=>x.classList.remove('active'));  
-        btn.classList.add('active');  
-        const r=btn.dataset.range;  
-        renderChart(r==='30d'?30:r==='90d'?90:7);  
-      }  
-    });  
-  
-    computeKPIs();  
-    renderChart(7);  
-  
-    // SW  
-    if('serviceWorker' in navigator){ navigator.serviceWorker.register('service-worker.js').catch(()=>{}) }  
-  </script>  </body>  
+    /* Drawer */
+    .drawer{position:fixed;right:-560px;top:0;height:100vh;width:560px;max-width:98vw;background:var(--card-bg);
+      border-left:1px solid rgba(0,0,0,.08);box-shadow:-8px 0 24px rgba(0,0,0,.15);transition:right .25s ease;padding:16px 14px 110px;z-index:100}
+    .drawer.show{right:0}
+    .grid2{display:grid;gap:10px;grid-template-columns:1fr 1fr}
+    @media (max-width:560px){.grid2{grid-template-columns:1fr}}
+    input,select,textarea{width:100%}
+
+    /* Visits panel */
+    .visits{margin-top:14px;border:1px solid rgba(0,0,0,.08);border-radius:12px;overflow:hidden}
+    .visits header{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:color-mix(in srgb, #2563eb 10%, var(--card-bg))}
+    .visits header .title{font-weight:700}
+    .visits .list{max-height:220px;overflow:auto}
+    .vrow{display:grid;grid-template-columns:84px 1fr;gap:8px;padding:10px 12px;border-top:1px solid rgba(0,0,0,.06)}
+    .vrow:nth-child(odd){background:color-mix(in srgb, var(--card-bg) 96%, #fff 4%)}
+    .mini{font-size:12px;opacity:.8}
+    .nowrap{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  </style>
+</head>
+<body>
+  <!-- Banner -->
+  <header class="banner">
+    <button id="themeToggle" class="chip floating-toggle" aria-label="Theme">🌙</button>
+  </header>
+
+  <!-- Actions -->
+  <nav class="fixed-actions">
+    <a class="chip" href="dashboard.html">← Dashboard</a>
+    <button id="logoutBtn" class="chip">Logout</button>
+    <button id="clearCacheBtn" class="chip">Clear Cache</button>
+  </nav>
+
+  <!-- KPIs -->
+  <section class="section">
+    <div class="kpi-grid">
+      <div class="kpi tint-blue">
+        <h4>Today</h4>
+        <div class="num" id="kToday">0</div>
+        <div class="muted" id="lblToday"></div>
+      </div>
+      <div class="kpi tint-mint">
+        <h4>This Month</h4>
+        <div class="num" id="kMonth">0</div>
+        <div class="muted" id="lblMonth"></div>
+      </div>
+      <div class="kpi tint-peach">
+        <h4>YTD</h4>
+        <div class="num" id="kYTD">0</div>
+        <div class="muted" id="lblYTD"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Filters -->
+  <section class="section">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <h2 style="margin:0">Bookings</h2>
+        <div class="filters">
+          <button class="chip scope" data-scope="today">Today</button>
+          <button class="chip scope" data-scope="month">This Month</button>
+          <button class="chip scope" data-scope="ytd">YTD</button>
+          <button class="chip scope" data-scope="all">All</button>
+        </div>
+      </div>
+      <div class="filters" style="margin-top:10px">
+        <input id="q" class="chip" placeholder="Search name, mobile, Patient ID, reason, slot…"/>
+        <input id="pickDate" type="date" class="chip" title="When scope = Today"/>
+        <button id="btnApply" class="chip">Apply</button>
+        <button id="btnReset" class="chip">Reset</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Table -->
+  <section class="section">
+    <div class="table-wrap">
+      <table id="tbl">
+        <thead>
+          <tr>
+            <th style="width:72px">Token</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Patient</th>
+            <th>Patient ID</th>
+            <th>Mobile</th>
+            <th>Reason</th>
+            <th>Status</th>
+            <th style="width:280px">Doctor</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Chart -->
+  <section class="section">
+    <div class="chart-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <h2>Bookings Trend</h2>
+        <div class="filters">
+          <button class="chip range" data-range="7d">7D</button>
+          <button class="chip range" data-range="30d">30D</button>
+          <button class="chip range" data-range="90d">90D</button>
+        </div>
+      </div>
+      <canvas id="trend"></canvas>
+      <div class="muted" id="rangeLbl" style="margin-top:8px"></div>
+    </div>
+  </section>
+
+  <!-- Doctor Drawer -->
+  <div class="drawer" id="drawer">
+    <h2 id="dwTitle" style="margin:0 0 6px 0">Patient</h2>
+    <div class="muted" id="dwSub">—</div>
+    <hr style="border:none;border-top:1px solid rgba(0,0,0,.08);margin:10px 0 12px"/>
+
+    <div class="grid2">
+      <div>
+        <label class="muted">Name</label>
+        <input id="pName" placeholder="Full name"/>
+      </div>
+      <div>
+        <label class="muted">Mobile</label>
+        <input id="pMobile" disabled/>
+      </div>
+      <div>
+        <label class="muted">Age</label>
+        <input id="pAge" type="number" min="0" max="120" placeholder="Age"/>
+      </div>
+      <div>
+        <label class="muted">Gender</label>
+        <select id="pGender">
+          <option value="">—</option>
+          <option>Male</option>
+          <option>Female</option>
+          <option>Other</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="margin-top:10px">
+      <label class="muted">Diagnosis</label>
+      <textarea id="pDiagnosis" rows="2" placeholder="e.g., Acute gastritis"></textarea>
+    </div>
+    <div style="margin-top:10px">
+      <label class="muted">Treatment / Procedure</label>
+      <textarea id="pTreatment" rows="2" placeholder="e.g., IV fluids, rest"></textarea>
+    </div>
+    <div style="margin-top:10px">
+      <label class="muted">Medicines</label>
+      <textarea id="pMedicines" rows="3" placeholder="e.g., Pantoprazole 40mg OD × 5 days"></textarea>
+    </div>
+    <div style="margin-top:10px">
+      <label class="muted">Advice / Notes</label>
+      <textarea id="pAdvice" rows="2" placeholder="e.g., Avoid spicy food, review after 5 days"></textarea>
+    </div>
+
+    <div class="filters" style="margin-top:12px">
+      <button class="chip" id="btnSavePatient">Save</button>
+      <button class="chip" id="btnPrintRx">Print Prescription</button>
+      <button class="chip" id="btnExportCsv">Export History CSV</button>
+      <button class="chip" id="btnClose">Close</button>
+    </div>
+
+    <!-- Visits Panel -->
+    <div class="visits">
+      <header>
+        <div class="title">Previous Visits</div>
+        <div class="mini"><span id="vCount">0</span> visit(s)</div>
+      </header>
+      <div class="list" id="visitList"></div>
+    </div>
+  </div>
+
+  <iframe id="printFrame" style="display:none"></iframe>
+  <script src="assets/chart.umd.min.js"></script>
+
+  <script type="module">
+    /* ===== Theme ===== */
+    const tt=document.getElementById('themeToggle');
+    if(localStorage.theme){document.documentElement.dataset.theme=localStorage.theme;tt.textContent=localStorage.theme==='light'?'🌞':'🌙'}
+    tt.onclick=()=>{const cur=document.documentElement.dataset.theme||'light';const nxt=cur==='light'?'dark':'light';document.documentElement.dataset.theme=nxt;localStorage.theme=nxt;tt.textContent=nxt==='light'?'🌞':'🌙'}
+
+    /* ===== Guard: doctor only ===== */
+    const ses=JSON.parse(localStorage.getItem('session')||'{}');
+    if(ses.role!=='doctor'){location.replace('login.html')}
+
+    /* ===== Actions ===== */
+    logoutBtn.onclick=()=>{localStorage.removeItem('session');location.href='login.html'}
+    clearCacheBtn.onclick=async()=>{localStorage.clear();if('caches'in window){const ks=await caches.keys();await Promise.all(ks.map(k=>caches.delete(k)))};location.reload()}
+
+    /* ===== Data Stores ===== */
+    const BK="bookings";      // created by Supervisor
+    const PT="patients";      // doctor patient master + visit history
+
+    const $=id=>document.getElementById(id);
+    const bookings=()=>JSON.parse(localStorage.getItem(BK)||'[]');
+    const loadPatients=()=>JSON.parse(localStorage.getItem(PT)||'{}');
+    const savePatients=o=>localStorage.setItem(PT, JSON.stringify(o));
+
+    const ISO=d=>new Date(d).toISOString().slice(0,10);
+    const today=ISO(new Date());
+    const monthStart=ISO(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+    const ytdStart=ISO(new Date(new Date().getFullYear(), 0, 1));
+    const inRange=(iso,a,b)=> iso>=a && iso<=b;
+
+    const phoneLink=n=>`tel:${n}`;
+    const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+
+    /* ===== KPIs ===== */
+    function computeKPIs(){
+      const all=bookings();
+      const t=all.filter(b=>b.date===today).length;
+      const m=all.filter(b=> inRange(b.date, monthStart, today)).length;
+      const y=all.filter(b=> inRange(b.date, ytdStart, today)).length;
+      kToday.textContent=t;   lblToday.textContent=today;
+      kMonth.textContent=m;   lblMonth.textContent=`${monthStart} → ${today}`;
+      kYTD.textContent=y;     lblYTD.textContent=`${ytdStart} → ${today}`;
+    }
+
+    /* ===== List + Filters ===== */
+    const state={scope:"today", q:"", pickDate: today};
+    const scopes={
+      today: list => list.filter(r=>r.date===state.pickDate||r.date===today),
+      month: list => list.filter(r=> inRange(r.date, monthStart, today)),
+      ytd:   list => list.filter(r=> inRange(r.date, ytdStart, today)),
+      all:   list => list
+    };
+
+    function filtered(){
+      let list=[...bookings()];
+      list = (scopes[state.scope]||scopes.today)(list);
+      const q=(state.q||"").toLowerCase().trim();
+      if(q){
+        list=list.filter(r=>
+          (r.name||"").toLowerCase().includes(q) ||
+          (r.mobile||"").includes(q) ||
+          (r.patientId||"").toLowerCase().includes(q) ||
+          (r.reason||"").toLowerCase().includes(q) ||
+          (r.slot||"").toLowerCase().includes(q)
+        );
+      }
+      list.sort((a,b)=> a.date.localeCompare(b.date) || a.slot.localeCompare(b.slot) || (a.token||0)-(b.token||0));
+      return list;
+    }
+
+    function renderTable(){
+      const tbody=$('rows'); tbody.innerHTML='';
+      const list=filtered();
+      if(!list.length){
+        const tr=document.createElement('tr'); const td=document.createElement('td'); td.colSpan=9; td.className='muted'; td.textContent='No records.'; tr.appendChild(td); tbody.appendChild(tr); return;
+      }
+      for(const r of list){
+        const tr=document.createElement('tr');
+        tr.innerHTML=`
+          <td><strong>#${r.token||"-"}</strong></td>
+          <td>${r.date}</td>
+          <td>${r.slot}</td>
+          <td>${esc(r.name||"")}</td>
+          <td>${r.patientId||""}</td>
+          <td><a href="${phoneLink(r.mobile)}">${r.mobile}</a></td>
+          <td>${esc(r.reason||"")}</td>
+          <td><span class="pill ${r.status==='Done'?'done':'pending'}">${r.status==='Done'?'✔ Done':'⏳ Pending'}</span></td>
+          <td>
+            <div class="filters">
+              <button class="chip act" data-act="open" data-id="${r.id}">Open</button>
+              <button class="chip act" data-act="rx" data-id="${r.id}">Prescription</button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    /* ===== Drawer (Doctor edit) ===== */
+    let currentVisit=null, currentPid=null;
+    function openDrawer(visit){
+      currentVisit = visit;
+      currentPid = visit.patientId || "";
+      const patients = loadPatients();
+      const p = patients[currentPid] || { id: currentPid, mobile: visit.mobile, name: visit.name||"", age:"", gender:"", history:[] };
+
+      $('dwTitle').textContent = p.name || visit.name || 'Patient';
+      $('dwSub').textContent = `${currentPid||'—'} • ${visit.date} • ${visit.slot} • Token #${visit.token||'-'}`;
+
+      $('pName').value = p.name || visit.name || "";
+      $('pMobile').value = p.mobile || visit.mobile || "";
+      $('pAge').value = p.age || "";
+      $('pGender').value = p.gender || "";
+
+      $('pDiagnosis').value = "";
+      $('pTreatment').value = "";
+      $('pMedicines').value = "";
+      $('pAdvice').value = "";
+
+      renderVisitsPanel(currentPid);
+      $('drawer').classList.add('show');
+    }
+    function closeDrawer(){ $('drawer').classList.remove('show'); currentVisit=null; currentPid=null; }
+
+    function savePatient(){
+      if(!currentVisit || !currentPid) return;
+      const patients = loadPatients();
+
+      const name = $('pName').value.trim();
+      const age = $('pAge').value.trim();
+      const gender = $('pGender').value;
+      const diagnosis = $('pDiagnosis').value.trim();
+      const treatment = $('pTreatment').value.trim();
+      const medicines = $('pMedicines').value.trim();
+      const advice = $('pAdvice').value.trim();
+
+      const p = patients[currentPid] || { id: currentPid, mobile: currentVisit.mobile, history: [] };
+      p.name = name || p.name || currentVisit.name || "";
+      p.age = age;
+      p.gender = gender;
+      p.mobile = currentVisit.mobile;
+      p.lastVisit = currentVisit.date;
+
+      p.history.push({
+        bookingId: currentVisit.id,
+        token: currentVisit.token,
+        date: currentVisit.date,
+        slot: currentVisit.slot,
+        diagnosis, treatment, medicines, advice,
+        reason: currentVisit.reason || ""
+      });
+
+      patients[currentPid] = p;
+      savePatients(patients);
+
+      // Also reflect updated name in bookings (display only)
+      const all = bookings();
+      const i = all.findIndex(x=>x.id===currentVisit.id);
+      if(i>=0 && name){ all[i].name = name; localStorage.setItem(BK, JSON.stringify(all)); }
+
+      alert('Saved.');
+      renderTable();
+      renderVisitsPanel(currentPid);
+    }
+
+    /* ===== Visits panel ===== */
+    function renderVisitsPanel(pid){
+      const patients = loadPatients();
+      const p = patients[pid] || {history:[]};
+      const list = (p.history||[]).slice().sort((a,b)=> (b.date||"").localeCompare(a.date||"") || (b.token||0)-(a.token||0));
+
+      $('vCount').textContent = list.length;
+      const wrap = $('visitList'); wrap.innerHTML = "";
+
+      if(!list.length){
+        const div=document.createElement('div');
+        div.className="mini"; div.style.padding="10px 12px"; div.textContent="No previous visits found.";
+        wrap.appendChild(div);
+        return;
+      }
+
+      for(const v of list){
+        const row=document.createElement('div');
+        row.className="vrow";
+        row.innerHTML = `
+          <div>
+            <div class="mini">Date</div>
+            <div class="nowrap"><strong>${v.date||"-"}</strong></div>
+            <div class="mini">Token #${v.token||"-"}</div>
+          </div>
+          <div>
+            <div class="mini">Diagnosis</div>
+            <div class="nowrap">${esc(v.diagnosis||"-")}</div>
+            <div class="filters" style="margin-top:6px">
+              <button class="chip vact" data-act="view" data-id="${v.bookingId}">View</button>
+            </div>
+          </div>
+        `;
+        wrap.appendChild(row);
+      }
+
+      // view handler
+      wrap.querySelectorAll('.vact').forEach(btn=>{
+        btn.onclick=()=>{
+          const id=btn.getAttribute('data-id');
+          const vv = (p.history||[]).find(h=>h.bookingId===id);
+          if(!vv) return;
+          $('pDiagnosis').value = vv.diagnosis||"";
+          $('pTreatment').value = vv.treatment||"";
+          $('pMedicines').value = vv.medicines||"";
+          $('pAdvice').value = vv.advice||"";
+        }
+      });
+    }
+
+    function exportPatientCsv(pid){
+      const patients = loadPatients();
+      const p = patients[pid]; if(!p || !p.history || !p.history.length){ alert('No history to export.'); return; }
+      const head = ["patientId","name","mobile","age","gender","date","token","slot","reason","diagnosis","treatment","medicines","advice"];
+      const rows = p.history.map(h=>[
+        pid, csv(p.name||""), p.mobile||"", p.age||"", p.gender||"",
+        h.date||"", h.token||"", h.slot||"", csv(h.reason||""),
+        csv(h.diagnosis||""), csv(h.treatment||""), csv(h.medicines||""), csv(h.advice||"")
+      ]);
+      const text = [head.join(","), ...rows.map(r=>r.join(","))].join("\n");
+      const blob = new Blob([text], {type:"text/csv;charset=utf-8"});
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `patient_${pid}_history_${Date.now()}.csv`;
+      a.click(); URL.revokeObjectURL(a.href);
+    }
+    const csv=v=>{const s=String(v??"");return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s};
+
+    /* ===== Prescription ===== */
+    function printPrescription(visit){
+      const pid = visit.patientId || "";
+      const patients = loadPatients();
+      const p = patients[pid] || {};
+      const hist = (p.history||[]).filter(h=>h.bookingId===visit.id).slice(-1)[0] || {};
+
+      const docName = "Onestop Clinic — Doctor";
+      const addr = "Warangal, Telangana • +91-00000 00000";
+
+      const html = `
+        <html><head><meta charset="utf-8"><title>Prescription ${pid}</title>
+        <style>
+          body{font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto; padding:18px}
+          .rx{max-width:720px;margin:0 auto;border:1px solid #111;padding:18px}
+          h1{font-size:20px;margin:0}
+          .muted{color:#444}
+          .row{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+          .sec{margin-top:12px}
+          .box{border:1px dashed #333;padding:10px;border-radius:8px;white-space:pre-wrap}
+          .hl{font-weight:700}
+        </style></head>
+        <body onload="window.print(); setTimeout(()=>window.close(), 300);">
+          <div class="rx">
+            <div class="row">
+              <div>
+                <h1>${docName}</h1>
+                <div class="muted">${addr}</div>
+              </div>
+              <div>
+                <div><span class="hl">Date:</span> ${visit.date}</div>
+                <div><span class="hl">Token:</span> #${visit.token||"-"}</div>
+                <div><span class="hl">Time:</span> ${visit.slot}</div>
+              </div>
+            </div>
+            <hr/>
+            <div class="row">
+              <div><span class="hl">Patient:</span> ${esc(p.name || visit.name || "")}</div>
+              <div><span class="hl">Patient ID:</span> ${pid||"—"}</div>
+            </div>
+            <div class="row">
+              <div><span class="hl">Age/Gender:</span> ${(p.age||"-")}/${(p.gender||"-")}</div>
+              <div><span class="hl">Mobile:</span> ${visit.mobile}</div>
+            </div>
+
+            <div class="sec"><div class="hl">Diagnosis</div><div class="box">${esc(hist.diagnosis||"")}</div></div>
+            <div class="sec"><div class="hl">Treatment / Procedure</div><div class="box">${esc(hist.treatment||"")}</div></div>
+            <div class="sec"><div class="hl">Medicines</div><div class="box">${esc(hist.medicines||"")}</div></div>
+            <div class="sec"><div class="hl">Advice / Notes</div><div class="box">${esc(hist.advice||"")}</div></div>
+
+            <hr/>
+            <div class="muted">Computer generated prescription • ${new Date().toLocaleString()}</div>
+          </div>
+        </body></html>
+      `;
+      const frame = $('printFrame').contentWindow || $('printFrame');
+      frame.document.open(); frame.document.write(html); frame.document.close();
+    }
+
+    /* ===== Trend Chart ===== */
+    let chart;
+    function renderChart(days=7){
+      const end=new Date(); const start=new Date(); start.setDate(end.getDate()-days+1);
+      const startISO=ISO(start); const endISO=ISO(end);
+      $('rangeLbl').textContent=startISO+' → '+endISO;
+
+      const map={};
+      for(let d=new Date(start); d<=end; d.setDate(d.getDate()+1)){ map[ISO(d)]=0; }
+      bookings().forEach(b=>{ if(map[b.date]!=null) map[b.date]++ });
+
+      const labels=Object.keys(map);
+      const data=labels.map(k=>map[k]);
+
+      if(chart) chart.destroy();
+      chart=new Chart(document.getElementById('trend'),{
+        type:'line',
+        data:{labels, datasets:[{label:'Bookings', data, tension:.35}]},
+        options:{responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}}
+      });
+    }
+    document.querySelectorAll('.range').forEach(btn=>{
+      btn.onclick=()=>{
+        document.querySelectorAll('.range').forEach(x=>x.classList.remove('active'));
+        btn.classList.add('active');
+        const r=btn.dataset.range;
+        renderChart(r==='30d'?30:r==='90d'?90:7);
+      }
+    });
+
+    /* ===== Events ===== */
+    function bind(){
+      // scope chips
+      document.querySelectorAll('.scope').forEach(b=> b.onclick=()=>{ state.scope=b.dataset.scope; renderTable(); });
+      $('btnApply').onclick=()=>{ state.q=$('q').value; state.pickDate=$('pickDate').value||today; renderTable(); };
+      $('btnReset').onclick=()=>{ $('q').value=''; $('pickDate').value=''; state.q=''; state.scope='today'; state.pickDate=today; renderTable(); };
+
+      // table actions
+      $('rows').addEventListener('click', (e)=>{
+        const btn=e.target.closest('.act'); if(!btn) return;
+        const id=btn.getAttribute('data-id'); const act=btn.getAttribute('data-act');
+        const visit = bookings().find(x=>x.id===id);
+        if(!visit) return;
+        if(act==='open'){ openDrawer(visit); }
+        if(act==='rx'){ printPrescription(visit); }
+      });
+
+      $('btnClose').onclick = closeDrawer;
+      $('btnSavePatient').onclick = savePatient;
+      $('btnPrintRx').onclick = ()=>{ if(currentVisit) printPrescription(currentVisit); };
+      $('btnExportCsv').onclick = ()=>{ if(currentPid) exportPatientCsv(currentPid); };
+    }
+
+    /* ===== Init ===== */
+    function init(){
+      $('pickDate').value = today;
+      computeKPIs();
+      bind();
+      renderTable();
+      renderChart(7);
+      if('serviceWorker' in navigator){ navigator.serviceWorker.register('service-worker.js').catch(()=>{}) }
+    }
+    init();
+  </script>
+</body>
 </html>
