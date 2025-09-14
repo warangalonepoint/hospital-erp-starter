@@ -1,549 +1,227 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="en" data-theme="light">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Supervisor — Bookings (OPD)</title>
-  <link rel="manifest" href="manifest.json"/>
-  <link rel="stylesheet" href="styles.css"/>
+  <title>Bookings / Tokens</title>
+  <link rel="manifest" href="manifest.webmanifest"/>
+  <link rel="icon" href="assets/logo.png"/>
+  <link rel="stylesheet" href="styles.css?v=23"/>
   <style>
-    :root { --bg:#0b0f14; --card:#121821; --muted:#96a0af; --text:#eaf0ff; --accent:#4ade80; --danger:#ef4444; --warn:#f59e0b; --line:#1d2631; }
-    body { background: var(--bg); color: var(--text); font-family: system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial; }
-    a { color: var(--accent); text-decoration: none; }
-    .wrap { max-width: 1100px; margin: 16px auto 120px; padding: 0 12px; }
-    .header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:10px 0 16px; }
-    .brand { font-weight:700; font-size:18px; opacity:.95; }
-    .tabs { display:flex; gap:8px; flex-wrap:wrap; }
-    .tab { background:#0f1620; border:1px solid var(--line); padding:8px 12px; border-radius:10px; color:var(--text); }
-    .tab.active { background: var(--card); border-color:#243040; }
-    .row { display:grid; grid-template-columns: 1fr; gap:12px; }
-    @media (min-width: 860px){ .row.two { grid-template-columns: 1fr 1fr; } .row.three { grid-template-columns: repeat(3, 1fr); } }
-    .card { background: var(--card); border:1px solid var(--line); border-radius:16px; padding:14px; }
-    .card h3 { margin:0 0 10px 0; font-size:14px; color: var(--muted); font-weight:600; letter-spacing:.2px; }
-    .metric { font-size:28px; font-weight:700; }
-    .muted { color: var(--muted); font-size:12px; }
-    .grid2 { display:grid; grid-template-columns:1fr; gap:10px; }
-    @media (min-width:640px){ .grid2 { grid-template-columns: 1fr 1fr; } }
-    label { font-size:12px; color: var(--muted); margin-bottom:6px; display:block; }
-    input, select, textarea { width:100%; background:#0c121a; color:var(--text); border:1px solid #1a2431; border-radius:10px; padding:10px 12px; outline:none; }
-    input:focus, select:focus, textarea:focus { border-color:#304156; }
-    .btns { display:flex; gap:8px; flex-wrap:wrap; }
-    .btn { background:#16202b; border:1px solid #233245; color:var(--text); padding:10px 12px; border-radius:12px; cursor:pointer; font-weight:600; }
-    .btn.primary { background:#1c2c20; border-color:#244a33; color:#c8fadc; }
-    .btn.warn { background:#2a2215; border-color:#3f3216; color:#ffe0b2; }
-    .btn.danger { background:#2a1717; border-color:#492121; color:#ffd1d1; }
-    .btn.ghost { background: transparent; border:1px dashed #2b3646; }
-    .table-wrap { overflow:auto; border:1px solid var(--line); border-radius:14px; }
-    table { width:100%; border-collapse: collapse; min-width: 980px; }
-    th, td { text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); font-size:13px; }
-    th { position:sticky; top:0; background:#101722; z-index:1; color:#b8c2d0; font-weight:700; }
-    tr:hover td { background:#0e1520; }
-    .pill { font-size:12px; padding:4px 8px; border-radius:999px; display:inline-flex; align-items:center; gap:6px; border:1px solid #253246; background:#0d1621; }
-    .pill.done { border-color:#244a33; background:#0f2016; color:#c8fadc; }
-    .pill.pending { border-color:#43380f; background:#1c1607; color:#ffe5a3; }
-    .searchbar { display:flex; gap:8px; flex-wrap:wrap; }
-    .footerbar {
-      position:fixed; left:0; right:0; bottom:0;
-      background:linear-gradient(180deg, rgba(11,15,20,0), rgba(11,15,20,.8) 12%, rgba(11,15,20,1) 40%);
-      padding:12px; display:flex; gap:8px; justify-content:center; backdrop-filter: blur(6px); border-top:1px solid var(--line);
-    }
+    .section { margin:12px; }
+    .tint { border-radius:16px; padding:16px; box-shadow:var(--shadow); border:1px solid rgba(0,0,0,.06); }
+    .tint-blue   { background: color-mix(in srgb, #3b82f6 12%, var(--card-bg)); }
+    .tint-purple { background: color-mix(in srgb, #8b5cf6 12%, var(--card-bg)); }
+    .grid-2 { display:grid; gap:10px; grid-template-columns:1fr; }
+    @media (min-width:720px){ .grid-2 { grid-template-columns:1fr 1fr; } }
+    .field { display:grid; gap:6px; }
+    .label { font-size:12px; color:var(--muted); }
+    .input, select { height:44px; border-radius:12px; border:1px solid rgba(0,0,0,.12); padding:0 12px; background:var(--card-bg); }
+    .textarea { min-height:44px; padding:10px 12px; border-radius:12px; border:1px solid rgba(0,0,0,.12); background:var(--card-bg); resize:vertical; }
+    .toolbar { display:flex; flex-wrap:wrap; gap:10px; margin:10px 12px; }
+    .btn { height:44px; padding:0 16px; border-radius:12px; }
+    .chip { height:40px; padding:0 14px; border-radius:999px; }
+    .filters { display:flex; gap:10px; flex-wrap:wrap; margin:10px 0 0; }
+    .filters .chip { background:var(--card-bg); border:1px solid rgba(0,0,0,.06); }
+    .list { width:100%; border-collapse:collapse; background:var(--card-bg); border-radius:12px; overflow:hidden; }
+    .list th,.list td{ padding:10px; border-bottom:1px solid rgba(0,0,0,.06); font-size:13px; text-align:left; }
+    .list th{ background:rgba(0,0,0,.04); font-weight:600; }
+    html[data-theme="dark"] .list th{ background:rgba(255,255,255,.06); }
+    .muted-note{ font-size:12px; color:var(--muted); margin-top:10px; }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="header">
-      <div class="brand">🛠️ Supervisor • <strong>Bookings (OPD)</strong></div>
-      <div class="tabs">
-        <a class="tab" href="supervisor.html">Supervisor</a>
-        <button class="tab active" type="button">Bookings</button>
-        <a class="tab" href="analytics.html">Doctor Dashboard</a>
-        <a class="tab" href="booking-status.html">Doctor: Booking Status</a>
-        <a class="tab" href="patients.html">Patients</a>
-        <a class="tab" href="pharmacy.html">Pharmacy</a>
+  <!-- Banner -->
+  <header class="banner">
+    <button id="themeToggle" class="chip floating-toggle" aria-label="Theme">🌙</button>
+  </header>
+
+  <!-- Toolbar -->
+  <nav class="toolbar">
+    <a class="chip" href="admin.html">← Supervisor</a>
+    <a class="chip" href="dashboard.html">Doctor</a>
+    <button id="logoutBtn" class="chip">Logout</button>
+    <button id="clearCacheBtn" class="chip">Clear Cache</button>
+  </nav>
+
+  <!-- Create Booking -->
+  <section class="section tint tint-blue">
+    <h2 style="font-size:22px; margin-bottom:10px;">Create Booking (Token)</h2>
+
+    <div class="tint tint-purple" style="margin-top:8px;">
+      <div class="grid-2">
+        <div class="field">
+          <label class="label" for="patName">Patient Name</label>
+          <input id="patName" class="input" placeholder="Full name" autocomplete="name" required/>
+        </div>
+        <div class="field">
+          <label class="label" for="patPhone">Phone</label>
+          <input id="patPhone" class="input" inputmode="numeric" maxlength="10" placeholder="10-digit" autocomplete="tel" required/>
+        </div>
+
+        <div class="field">
+          <label class="label" for="visitDate">Visit Date</label>
+          <input id="visitDate" class="input" type="date" required/>
+        </div>
+        <div class="field">
+          <label class="label" for="visitTime">Time</label>
+          <input id="visitTime" class="input" type="time" required/>
+        </div>
+
+        <div class="field" style="grid-column:1/-1">
+          <label class="label" for="reason">Reason / Notes</label>
+          <textarea id="reason" class="textarea" placeholder="Reason or short note"></textarea>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;">
+        <button id="createBtn" class="btn">Create Token</button>
+        <button id="waBtn" class="chip">Share via WhatsApp</button>
+      </div>
+
+      <p class="muted-note">
+        Supervisor creates tokens. Doctor sees them on Patients/Bookings views.  
+        Token numbers auto-increment per day.
+      </p>
+    </div>
+  </section>
+
+  <!-- Upcoming -->
+  <section class="section tint" style="background: color-mix(in srgb, #22c55e 10%, var(--card-bg));">
+    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+      <h2 style="font-size:22px;">Upcoming Tokens</h2>
+      <div class="filters">
+        <button class="chip" id="fToday">Today</button>
+        <button class="chip" id="fAll">All</button>
+        <button class="chip" id="fClear">Clear List</button>
       </div>
     </div>
 
-    <!-- KPIs -->
-    <div class="row three">
-      <div class="card"><h3>Today</h3><div class="metric" id="mToday">0</div><div class="muted">Appointments</div></div>
-      <div class="card"><h3>This Week</h3><div class="metric" id="mWeek">0</div><div class="muted">Mon–Sun</div></div>
-      <div class="card"><h3>This Month</h3><div class="metric" id="mMonth">0</div><div class="muted">Calendar month</div></div>
-    </div>
+    <table class="list" style="margin-top:10px;">
+      <thead>
+        <tr>
+          <th>#</th><th>Name</th><th>Phone</th><th>Date</th><th>Time</th><th>Notes</th>
+        </tr>
+      </thead>
+      <tbody id="bookRows">
+        <!-- rows injected -->
+      </tbody>
+    </table>
+  </section>
 
-    <!-- Create Booking -->
-    <div class="card" style="margin-top:12px">
-      <h3>Create Booking</h3>
-      <form id="bookingForm">
-        <div class="grid2">
-          <div>
-            <label>Date</label>
-            <input type="date" id="bkDate" required/>
-          </div>
-          <div>
-            <label>Time Slot</label>
-            <select id="bkSlot" required></select>
-          </div>
-          <div>
-            <label>Patient Name</label>
-            <input type="text" id="bkName" placeholder="Patient full name" required/>
-          </div>
-          <div>
-            <label>Mobile (10 digits) → Patient ID</label>
-            <input type="tel" id="bkMobile" pattern="[0-9]{10}" placeholder="e.g., 9000000001" required/>
-            <div class="muted" id="pidPreview" style="margin-top:4px">Patient ID: —</div>
-          </div>
-        </div>
-        <div style="margin-top:10px">
-          <label>Reason / Notes</label>
-          <textarea id="bkReason" rows="2" placeholder="Consultation reason (optional)"></textarea>
-        </div>
-        <div class="btns" style="margin-top:12px">
-          <button type="submit" class="btn primary">Save Booking</button>
-          <button type="button" id="btnPrintTicket" class="btn ghost">Quick Print Ticket</button>
-          <button type="button" id="btnClearForm" class="btn">Clear</button>
-        </div>
-        <div class="muted" style="margin-top:8px">
-          • <b>Unique slot rule:</b> one booking per Date + Time Slot.  
-          • <b>Patient ID:</b> auto-generated as <code>PT-&lt;mobile&gt;</code> and stored with the booking.
-        </div>
-      </form>
-    </div>
+  <script type="module">
+    // --- Theme toggle
+    const tt=document.getElementById('themeToggle');
+    if(localStorage.theme){ document.documentElement.dataset.theme=localStorage.theme; tt.textContent=localStorage.theme==='light'?'🌞':'🌙'; }
+    tt.onclick=()=>{ const cur=document.documentElement.dataset.theme||'light'; const next=cur==='light'?'dark':'light'; document.documentElement.dataset.theme=next; localStorage.theme=next; tt.textContent=next==='light'?'🌞':'🌙'; };
 
-    <!-- Filters / Actions -->
-    <div class="card" style="margin-top:12px">
-      <h3>Search & Filters</h3>
-      <div class="searchbar">
-        <input id="q" placeholder="Search name, mobile, patient ID, reason, slot…"/>
-        <input id="fDateFrom" type="date"/>
-        <input id="fDateTo" type="date"/>
-        <select id="fStatus">
-          <option value="">All Status</option>
-          <option value="Pending">Pending</option>
-          <option value="Done">Done</option>
-        </select>
-        <button class="btn" id="btnApply">Apply</button>
-        <button class="btn" id="btnReset">Reset</button>
-        <button class="btn warn" id="btnExport">Export CSV</button>
-        <label class="btn ghost" for="importFile" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer">
-          Import CSV<input id="importFile" type="file" accept=".csv" style="display:none"/>
-        </label>
-      </div>
-    </div>
+    // --- Guard: Supervisor only
+    const sess = JSON.parse(localStorage.getItem('session')||'{}');
+    if(sess.role!=='supervisor'){ location.replace('login.html'); }
 
-    <!-- Table -->
-    <div class="table-wrap card">
-      <table id="tbl">
-        <thead>
-          <tr>
-            <th style="width:72px">Token</th>
-            <th>Date</th>
-            <th>Slot</th>
-            <th>Patient</th>
-            <th>Patient ID</th>
-            <th>Mobile</th>
-            <th>Reason</th>
-            <th>Status</th>
-            <th style="width:280px">Actions</th>
-          </tr>
-        </thead>
-        <tbody id="rows"></tbody>
-      </table>
-    </div>
-  </div>
+    // --- Buttons
+    document.getElementById('logoutBtn').onclick=()=>{ localStorage.removeItem('session'); location.href='login.html'; };
+    document.getElementById('clearCacheBtn').onclick=async()=>{
+      localStorage.clear(); sessionStorage.clear();
+      if('caches' in window){ const ks=await caches.keys(); await Promise.all(ks.map(k=>caches.delete(k))); }
+      alert('Cleared. Reloading…'); location.reload();
+    };
 
-  <!-- Footer actions -->
-  <div class="footerbar">
-    <button class="btn primary" id="btnToday">Today</button>
-    <button class="btn" id="btnWeek">This Week</button>
-    <button class="btn" id="btnMonth">This Month</button>
-    <button class="btn ghost" id="btnAll">All</button>
-    <button class="btn danger" id="btnWipe">Wipe (Local)</button>
-  </div>
+    // --- Elements
+    const nameEl=document.getElementById('patName');
+    const phoneEl=document.getElementById('patPhone');
+    const dateEl=document.getElementById('visitDate');
+    const timeEl=document.getElementById('visitTime');
+    const noteEl=document.getElementById('reason');
+    const rowsEl=document.getElementById('bookRows');
 
-  <!-- Hidden print iframe -->
-  <iframe id="printFrame" style="display:none"></iframe>
+    // Defaults
+    const todayISO = new Date().toISOString().slice(0,10);
+    dateEl.value = todayISO;
+    timeEl.value = new Date(Date.now()+15*60000).toTimeString().slice(0,5); // +15m
 
-  <script>
-    /********** Constants & Helpers **********/
-    const LS_KEY = "erp_bookings_v1"; // shared with Doctor's booking-status.html
-    const timeSlots = [
-      "09:00 AM","09:15 AM","09:30 AM","09:45 AM",
-      "10:00 AM","10:15 AM","10:30 AM","10:45 AM",
-      "11:00 AM","11:15 AM","11:30 AM","11:45 AM",
-      "12:00 PM","12:15 PM","12:30 PM","12:45 PM",
-      "04:00 PM","04:15 PM","04:30 PM","04:45 PM",
-      "05:00 PM","05:15 PM","05:30 PM","05:45 PM",
-      "06:00 PM","06:15 PM","06:30 PM","06:45 PM"
-    ];
+    // Storage helpers (local for now; swap to Supabase later)
+    const load = () => JSON.parse(localStorage.getItem('bookings')||'[]');
+    const save = (arr) => localStorage.setItem('bookings', JSON.stringify(arr));
 
-    const $ = (id) => document.getElementById(id);
-    const fmtDate = (d) => new Date(d).toISOString().slice(0,10);
-    const todayStr = () => fmtDate(new Date());
-    const patientIdFromMobile = mob => `PT-${String(mob||"").replace(/\D/g,"")}`;
-
-    function getWeekRange(date = new Date()){
-      const d = new Date(date);
-      const day = (d.getDay()+6)%7; // Mon=0
-      const start = new Date(d); start.setDate(d.getDate()-day);
-      const end = new Date(start); end.setDate(start.getDate()+6);
-      return {start: fmtDate(start), end: fmtDate(end)};
-    }
-    function getMonthRange(date = new Date()){
-      const d = new Date(date);
-      const start = new Date(d.getFullYear(), d.getMonth(), 1);
-      const end = new Date(d.getFullYear(), d.getMonth()+1, 0);
-      return {start: fmtDate(start), end: fmtDate(end)};
+    // Generate next token number for a given date
+    function nextTokenFor(dateISO){
+      const all=load().filter(b=>b.date===dateISO);
+      const last = all.sort((a,b)=>a.token-b.token).pop();
+      return last ? last.token+1 : 1;
     }
 
-    function loadAll(){ try { return JSON.parse(localStorage.getItem(LS_KEY) || "[]"); } catch { return []; } }
-    function saveAll(list){ localStorage.setItem(LS_KEY, JSON.stringify(list)); }
+    function render(filter='today'){
+      const all=load();
+      let list = all;
+      if(filter==='today') list = all.filter(b=>b.date===todayISO);
 
-    function nextTokenForDate(list, dateStr){
-      const max = list.filter(r => r.date===dateStr).reduce((m,r)=>Math.max(m, r.token||0), 0);
-      return max + 1;
-    }
-    function duplicateExists(list, dateStr, slotStr){
-      return list.some(r => r.date===dateStr && r.slot===slotStr);
-    }
-
-    function toCSV(list){
-      const header = ["token","date","slot","name","mobile","patientId","reason","status","id"];
-      const rows = list.map(r => [r.token, r.date, r.slot, csvSafe(r.name), r.mobile, r.patientId, csvSafe(r.reason||""), r.status, r.id]);
-      return [header.join(","), ...rows.map(r=>r.join(","))].join("\n");
-    }
-    function csvSafe(v){ if(v==null) return ""; const s=String(v); return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s; }
-    function fromCSV(text){
-      const lines = text.replace(/\r/g,"").split("\n").filter(Boolean);
-      const [hdr, ...rows] = lines;
-      const idx = {};
-      hdr.split(",").forEach((h,i)=> idx[h.trim().toLowerCase()] = i);
-      return rows.map(line=>{
-        const parts = parseCSVLine(line);
-        return {
-          token: Number(parts[idx.token]||0) || 0,
-          date: parts[idx.date] || todayStr(),
-          slot: parts[idx.slot] || "",
-          name: parts[idx.name] || "",
-          mobile: parts[idx.mobile] || "",
-          patientId: parts[idx.patientid] || patientIdFromMobile(parts[idx.mobile]||""),
-          reason: parts[idx.reason] || "",
-          status: parts[idx.status] || "Pending",
-          id: parts[idx.id] || crypto.randomUUID()
-        }
-      });
-    }
-    function parseCSVLine(line){
-      const out=[], re=/(?:^|,)(?:"([^"]*(?:""[^"]*)*)"|([^",]*))/g; let m;
-      while((m=re.exec(line))){
-        out.push( (m[1] ? m[1].replace(/""/g,'"') : m[2]) || "" );
-      }
-      return out;
+      rowsEl.innerHTML = list
+        .sort((a,b)=> a.date.localeCompare(b.date) || a.time.localeCompare(b.time) || a.token-b.token)
+        .map(b=>`<tr>
+          <td>${b.token}</td>
+          <td>${b.name}</td>
+          <td>${b.phone}</td>
+          <td>${b.date}</td>
+          <td>${b.time}</td>
+          <td>${b.note||''}</td>
+        </tr>`).join('') || `<tr><td colspan="6" class="muted-note">No tokens.</td></tr>`;
     }
 
-    function phoneLink(num){ return `tel:${num}`; }
-    function waLink(num, msg){
-      const t = encodeURIComponent(msg);
-      const n = encodeURIComponent(num.startsWith("+")?num:`+91${num}`);
-      return `https://wa.me/${n}?text=${t}`;
-    }
-    const escapeHtml = s => String(s).replace(/[&<>"']/g,c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+    // Create Token
+    document.getElementById('createBtn').onclick=()=>{
+      const name=(nameEl.value||'').trim();
+      const phone=(phoneEl.value||'').trim();
+      const date=dateEl.value;
+      const time=timeEl.value;
+      const note=(noteEl.value||'').trim();
 
-    /********** State **********/
-    let all = loadAll();
-    let view = { q:"", from:"", to:"", status:"", scope:"all" };
-
-    function renderSlots(){
-      const s = $("bkSlot"); s.innerHTML = "";
-      timeSlots.forEach(t=>{
-        const opt = document.createElement("option");
-        opt.value=t; opt.textContent=t; s.appendChild(opt);
-      });
-    }
-
-    function renderMetrics(){
-      const t = todayStr();
-      const week = getWeekRange();
-      const month = getMonthRange();
-      $("mToday").textContent = all.filter(r=>r.date===t).length;
-      $("mWeek").textContent = all.filter(r=>r.date>=week.start && r.date<=week.end).length;
-      $("mMonth").textContent = all.filter(r=>r.date>=month.start && r.date<=month.end).length;
-    }
-
-    function applyFilters(){
-      const q = view.q.trim().toLowerCase();
-      const from = view.from || "";
-      const to = view.to || "";
-      const status = view.status || "";
-      let list = [...all];
-
-      if(view.scope==="today"){
-        list = list.filter(r=>r.date===todayStr());
-      } else if(view.scope==="week"){
-        const w = getWeekRange(); list = list.filter(r=>r.date>=w.start && r.date<=w.end);
-      } else if(view.scope==="month"){
-        const m = getMonthRange(); list = list.filter(r=>r.date>=m.start && r.date<=m.end);
-      }
-
-      if(q){
-        list = list.filter(r =>
-          (r.name||"").toLowerCase().includes(q) ||
-          (r.mobile||"").includes(q) ||
-          (r.patientId||"").toLowerCase().includes(q) ||
-          (r.reason||"").toLowerCase().includes(q) ||
-          (r.slot||"").toLowerCase().includes(q)
-        );
-      }
-      if(from){ list = list.filter(r=>r.date>=from); }
-      if(to){ list = list.filter(r=>r.date<=to); }
-      if(status){ list = list.filter(r=>r.status===status); }
-
-      list.sort((a,b)=> (a.date.localeCompare(b.date) || a.slot.localeCompare(b.slot) || (a.token||0)-(b.token||0)));
-      return list;
-    }
-
-    function renderTable(){
-      const tbody = $("rows");
-      const list = applyFilters();
-      tbody.innerHTML = "";
-      if(!list.length){
-        const tr = document.createElement("tr");
-        const td = document.createElement("td"); td.colSpan = 9; td.className="muted"; td.textContent="No bookings found.";
-        tr.appendChild(td); tbody.appendChild(tr);
+      if(!name || !/^\d{10}$/.test(phone) || !date || !time){
+        alert('Please enter a name, a 10-digit phone, date and time.');
         return;
       }
-      for(const r of list){
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td><strong>#${r.token||"-"}</strong></td>
-          <td>${r.date}</td>
-          <td>${r.slot}</td>
-          <td>${escapeHtml(r.name||"")}</td>
-          <td>${r.patientId||""}</td>
-          <td><a href="${phoneLink(r.mobile)}">${r.mobile}</a></td>
-          <td>${escapeHtml(r.reason||"")}</td>
-          <td><span class="pill ${r.status==='Done'?'done':'pending'}">${r.status==='Done'?'✔ Done':'⏳ Pending'}</span></td>
-          <td>
-            <div style="display:flex;gap:8px;flex-wrap:wrap">
-              <button class="btn" data-act="toggle" data-id="${r.id}">${r.status==='Done'?'Mark Pending':'Mark Done'}</button>
-              <a class="btn" href="${waLink(r.mobile, buildWhatsAppMsg(r))}" target="_blank" rel="noopener">WhatsApp</a>
-              <button class="btn warn" data-act="ticket" data-id="${r.id}">Ticket</button>
-              <button class="btn danger" data-act="del" data-id="${r.id}">Delete</button>
-            </div>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      }
-    }
 
-    function buildWhatsAppMsg(r){
-      return `Hello ${r.name},
+      const token = nextTokenFor(date);
+      const rec = { id: crypto.randomUUID(), token, name, phone, date, time, note, createdAt: Date.now() };
 
-Your OPD booking is confirmed.
-Date: ${r.date}
-Time: ${r.slot}
-Token: ${r.token}
-Patient ID: ${r.patientId}
+      const arr = load(); arr.push(rec); save(arr);
+      render('today');
 
-Location: Warangal OneStop Clinic.
-Reply YES to confirm or call if you need changes.`;
-    }
+      // Reset name/note only
+      nameEl.value=''; noteEl.value='';
+      nameEl.focus();
 
-    function setScope(scope){
-      view.scope = scope; renderMetrics(); renderTable();
-    }
+      // Keep a copy for Share button
+      lastShared = rec;
+    };
 
-    /********** Events **********/
-    function init(){
-      $("bkDate").value = todayStr();
-      renderSlots();
-      renderMetrics();
-      renderTable();
+    // Share via WhatsApp
+    let lastShared = null;
+    document.getElementById('waBtn').onclick=()=>{
+      const name=(nameEl.value||'').trim();
+      const phone=(phoneEl.value||'').trim();
+      const date=dateEl.value, time=timeEl.value, note=noteEl.value||'';
+      const tok = nextTokenFor(date); // preview
+      const msg = encodeURIComponent(
+        `Dr. Charan Hospital\nToken: ${tok}\nName: ${name||'-'}\nDate: ${date}\nTime: ${time}\n${note?('Note: '+note+'\n'):''}Please arrive 10 min early.`
+      );
+      const tel = phone ? `91${phone}` : '';
+      const url = tel ? `https://wa.me/${tel}?text=${msg}` : `https://wa.me/?text=${msg}`;
+      window.open(url, '_blank');
+    };
 
-      // live Patient ID preview
-      $("bkMobile").addEventListener("input", ()=>{
-        const m = $("bkMobile").value.trim();
-        $("pidPreview").textContent = m && /^[0-9]{10}$/.test(m) ? `Patient ID: ${patientIdFromMobile(m)}` : "Patient ID: —";
-      });
+    // Filters
+    document.getElementById('fToday').onclick=()=>render('today');
+    document.getElementById('fAll').onclick=()=>render('all');
+    document.getElementById('fClear').onclick=()=>{
+      if(confirm('Clear all tokens (local only)?')){ save([]); render('today'); }
+    };
 
-      $("bookingForm").addEventListener("submit", onSave);
-      $("btnClearForm").addEventListener("click", () => { $("bookingForm").reset(); $("bkDate").value=todayStr(); renderSlots(); $("pidPreview").textContent="Patient ID: —"; });
-      $("btnPrintTicket").addEventListener("click", () => {
-        const m = $("bkMobile").value.trim();
-        const temp = {
-          token: "—",
-          date: $("bkDate").value || todayStr(),
-          slot: $("bkSlot").value || "",
-          name: $("bkName").value || "",
-          mobile: m || "",
-          patientId: m && /^[0-9]{10}$/.test(m) ? patientIdFromMobile(m) : "",
-          reason: $("bkReason").value || "",
-          status: "Pending",
-        };
-        printTicket(temp);
-      });
+    // Initial render
+    render('today');
 
-      $("btnApply").addEventListener("click", ()=>{
-        view.q = $("q").value; view.from = $("fDateFrom").value; view.to = $("fDateTo").value; view.status = $("fStatus").value; renderTable();
-      });
-      $("btnReset").addEventListener("click", ()=>{
-        $("q").value=""; $("fDateFrom").value=""; $("fDateTo").value=""; $("fStatus").value="";
-        view = { q:"", from:"", to:"", status:"", scope:"all" }; renderMetrics(); renderTable();
-      });
-
-      $("btnToday").addEventListener("click", ()=>setScope("today"));
-      $("btnWeek").addEventListener("click", ()=>setScope("week"));
-      $("btnMonth").addEventListener("click", ()=>setScope("month"));
-      $("btnAll").addEventListener("click", ()=>setScope("all"));
-
-      $("btnExport").addEventListener("click", ()=>{
-        const list = applyFilters();
-        const blob = new Blob([toCSV(list)], {type:"text/csv;charset=utf-8"});
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = `bookings_${Date.now()}.csv`;
-        a.click();
-        URL.revokeObjectURL(a.href);
-      });
-
-      $("importFile").addEventListener("change", (e)=>{
-        const file = e.target.files?.[0]; if(!file) return;
-        const reader = new FileReader();
-        reader.onload = () => {
-          try{
-            const incoming = fromCSV(String(reader.result||""));
-            incoming.forEach(x=>{
-              x.id = x.id || crypto.randomUUID();
-              if(!x.token){ x.token = nextTokenForDate(all, x.date); }
-              x.status = x.status==="Done" ? "Done" : "Pending";
-              x.patientId = x.patientId || patientIdFromMobile(x.mobile||"");
-            });
-            all = mergeAvoidingDup(all, incoming);
-            saveAll(all); renderMetrics(); renderTable();
-            alert("Imported successfully.");
-          }catch(err){ alert("Import failed."); }
-        };
-        reader.readAsText(file);
-        e.target.value = "";
-      });
-
-      $("rows").addEventListener("click", (e)=>{
-        const btn = e.target.closest("button.btn");
-        if(!btn) return;
-        const id = btn.getAttribute("data-id");
-        const act = btn.getAttribute("data-act");
-        const r = all.find(x=>x.id===id);
-        if(!r) return;
-
-        if(act==="del"){
-          if(confirm("Delete this booking?")){
-            all = all.filter(x=>x.id!==id); saveAll(all); renderMetrics(); renderTable();
-          }
-        } else if(act==="toggle"){
-          r.status = (r.status==="Done") ? "Pending" : "Done"; saveAll(all); renderMetrics(); renderTable();
-        } else if(act==="ticket"){
-          printTicket(r);
-        }
-      });
-
-      $("btnWipe").addEventListener("click", ()=>{
-        if(confirm("Wipe all local bookings? This cannot be undone.")){
-          all = []; saveAll(all); renderMetrics(); renderTable();
-        }
-      });
-
-      seedIfEmpty();
-    }
-
-    function mergeAvoidingDup(base, incoming){
-      // Supervisor rule: unique by date+slot; merging keeps first occurrence
-      const key = (r)=>`${r.date}__${r.slot}`;
-      const seen = new Set(base.map(key));
-      const out = base.slice();
-      for(const r of incoming){
-        const k = key(r);
-        if(seen.has(k)) continue;
-        seen.add(k);
-        out.push(r);
-      }
-      return out;
-    }
-
-    async function onSave(e){
-      e.preventDefault();
-      const date = $("bkDate").value || todayStr();
-      const slot = $("bkSlot").value;
-      const name = $("bkName").value.trim();
-      const mobile = $("bkMobile").value.trim();
-      const reason = $("bkReason").value.trim();
-
-      if(!date || !slot || !name || !/^[0-9]{10}$/.test(mobile)){
-        alert("Please fill Date, Slot, Name, and a valid 10-digit Mobile."); return;
-      }
-      if(duplicateExists(all, date, slot)){
-        alert("This slot is already booked for the selected date."); return;
-      }
-
-      const token = nextTokenForDate(all, date);
-      const rec = {
-        id: crypto.randomUUID(),
-        token, date, slot, name, mobile,
-        patientId: patientIdFromMobile(mobile),
-        reason, status:"Pending"
-      };
-      all.push(rec);
-      saveAll(all);
-      renderMetrics();
-      renderTable();
-      printTicket(rec);
-      $("bkReason").value = "";
-    }
-
-    function printTicket(r){
-      const html = `
-        <html><head><meta charset="utf-8"><title>Ticket #${r.token}</title>
-        <style>
-          body{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; padding:16px;}
-          .box{border:1px dashed #111; padding:12px; max-width: 320px;}
-          h2{margin:0 0 4px 0;}
-          .muted{color:#333;font-size:12px}
-          .row{display:flex; justify-content:space-between}
-          .big{font-size:24px; font-weight:700}
-        </style></head>
-        <body onload="window.print(); setTimeout(()=>window.close(), 300);">
-          <div class="box">
-            <h2>Warangal OneStop Clinic</h2>
-            <div class="muted">OPD Token Ticket</div>
-            <hr/>
-            <div class="row"><div>Token</div><div class="big">#${r.token}</div></div>
-            <div class="row"><div>Date</div><div>${r.date}</div></div>
-            <div class="row"><div>Time</div><div>${r.slot}</div></div>
-            <div class="row"><div>Patient</div><div>${escapeHtml(r.name)}</div></div>
-            <div class="row"><div>Mobile</div><div>${r.mobile}</div></div>
-            <div class="row"><div>Patient ID</div><div>${r.patientId}</div></div>
-            <div class="row"><div>Status</div><div>${r.status}</div></div>
-            ${r.reason ? `<div class="row"><div>Notes</div><div>${escapeHtml(r.reason)}</div></div>` : ""}
-            <hr/>
-            <div class="muted">Please arrive 10 minutes early.</div>
-          </div>
-        </body></html>
-      `;
-      const frame = $("printFrame").contentWindow || $("printFrame");
-      frame.document.open(); frame.document.write(html); frame.document.close();
-    }
-
-    function seedIfEmpty(){
-      if(all.length) return;
-      const d = todayStr();
-      const sample = [
-        {id:crypto.randomUUID(), token:1, date:d, slot:"09:00 AM", name:"Vijay Kumar", mobile:"9000000001", patientId:patientIdFromMobile("9000000001"), reason:"Fever", status:"Pending"},
-        {id:crypto.randomUUID(), token:2, date:d, slot:"09:15 AM", name:"Suma R", mobile:"9000000002", patientId:patientIdFromMobile("9000000002"), reason:"BP check", status:"Pending"},
-        {id:crypto.randomUUID(), token:3, date:d, slot:"05:15 PM", name:"Rahul", mobile:"9000000003", patientId:patientIdFromMobile("9000000003"), reason:"Follow-up", status:"Done"},
-      ];
-      all.push(...sample); saveAll(all); renderMetrics(); renderTable();
-    }
-
-    // boot
-    init();
+    // SW
+    if('serviceWorker' in navigator){ navigator.serviceWorker.register('service-worker.js').catch(()=>{}); }
   </script>
 </body>
 </html>
