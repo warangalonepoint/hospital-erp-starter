@@ -3,41 +3,35 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Booking Status · Doctor</title>
+  <title>Doctor · Booking Status</title>
   <link rel="manifest" href="manifest.webmanifest"/>
   <link rel="icon" href="assets/logo.png"/>
-  <link rel="stylesheet" href="styles.css?v=32"/>
+  <link rel="stylesheet" href="styles.css?v=40"/>
+  <!-- Charts (for trend) -->
+  <script src="assets/chart.umd.min.js"></script>
+  <!-- Barcode -->
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
   <style>
     .section{margin:12px}
+    .card{border-radius:16px;padding:16px;box-shadow:var(--shadow);border:1px solid var(--border);background:var(--card-bg)}
     .kpi-grid{display:grid;gap:14px;grid-template-columns:repeat(3,1fr)}
     @media (max-width:760px){.kpi-grid{grid-template-columns:1fr}}
-    .chart-card,.card{border-radius:16px;padding:16px;box-shadow:var(--shadow);border:1px solid var(--border);background:var(--card-bg)}
+    .kpi{border-radius:16px;padding:16px;box-shadow:var(--shadow);border:1px solid var(--border)}
+    .tint-blue{background: color-mix(in srgb, #2563eb 16%, var(--card-bg))}
+    .tint-mint{background: color-mix(in srgb, #22c55e 14%, var(--card-bg))}
+    .tint-peach{background: color-mix(in srgb, #fb923c 14%, var(--card-bg))}
     .muted{color:var(--muted);font-size:13px}
-    .table-wrap{overflow:auto;border-radius:16px;border:1px solid var(--border)}
-    table{width:100%;min-width:1200px;border-collapse:separate;border-spacing:0}
+    .table-wrap{overflow:auto;border-radius:16px;border:1px solid var(--border);background:var(--card-bg)}
+    table{width:100%;min-width:1080px;border-collapse:separate;border-spacing:0}
     thead th{position:sticky;top:0;background:var(--card-bg);z-index:1}
     th,td{padding:10px 12px;border-bottom:1px solid var(--border);text-align:left;font-size:13px}
     tr:hover td{background:color-mix(in srgb, var(--card-bg) 92%, #2563eb 8%)}
-    .pill{font-size:12px;padding:4px 8px;border-radius:999px;border:1px solid var(--border)}
-    .pill.pending{background:color-mix(in srgb, #f59e0b 16%, var(--card-bg))}
-    .pill.done{background:color-mix(in srgb, #22c55e 16%, var(--card-bg))}
-    .grid2{display:grid;gap:10px;grid-template-columns:1fr 1fr}
-    @media (max-width:560px){.grid2{grid-template-columns:1fr}}
-    /* Drawer + scrim */
-    .scrim{position:fixed;inset:0;background:rgba(0,0,0,.32);opacity:0;pointer-events:none;transition:opacity .2s ease;z-index:999}
-    .scrim.show{opacity:1;pointer-events:auto}
-    .drawer{position:fixed;right:0;top:0;height:100vh;width:560px;max-width:100vw;background:var(--card-bg);border-left:1px solid var(--border);box-shadow:-10px 0 28px rgba(0,0,0,.25);transform:translateX(100%);transition:transform .25s ease;padding:16px 14px 110px;z-index:1000;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
-    .drawer.show{transform:translateX(0)}
-    body.no-scroll{overflow:hidden}
-    /* Visits panel */
-    .visits{margin-top:14px;border:1px solid var(--border);border-radius:12px;overflow:hidden}
-    .visits header{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:color-mix(in srgb, #2563eb 10%, var(--card-bg))}
-    .visits header .title{font-weight:700}
-    .visits .list{max-height:220px;overflow:auto}
-    .vrow{display:grid;grid-template-columns:84px 1fr;gap:8px;padding:10px 12px;border-top:1px solid var(--border)}
-    .vrow:nth-child(odd){background:color-mix(in srgb, var(--card-bg) 96%, #fff 4%)}
+    .chip{height:40px;padding:0 14px;border-radius:999px;background:var(--card-bg);border:1px solid var(--border)}
+    .filters{display:flex;gap:10px;flex-wrap:wrap}
+    .drawer .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media (max-width:640px){.drawer .grid2{grid-template-columns:1fr}}
     .mini{font-size:12px;opacity:.8}
-    .nowrap{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .scrim,.drawer{ /* provided by styles.css; kept for safety */ }
   </style>
 </head>
 <body>
@@ -46,14 +40,13 @@
     <button id="themeToggle" class="chip floating-toggle" aria-label="Theme">🌙</button>
   </header>
 
-  <!-- Top actions -->
+  <!-- Actions -->
   <nav class="fixed-actions">
     <a class="chip" href="dashboard.html">← Dashboard</a>
-    <a class="chip" href="supervisor.html">Supervisor</a>
-    <a class="chip" href="bookings.html">Bookings</a>
-    <a class="chip" href="admin.html">Admin</a>
-    <a class="chip" href="login.html">Role Tabs</a>
-    <span id="whoami" class="chip" style="pointer-events:none">Role: Doctor</span>
+    <a class="chip" href="patients.html">Patients</a>
+    <a class="chip" href="bookings.html">Supervisor · Bookings</a>
+    <button id="miniScan" class="chip">🔎 Scan</button>
+    <span class="chip" style="pointer-events:none">Role: Doctor</span>
     <button id="clearCacheBtn" class="chip">Clear Cache</button>
   </nav>
 
@@ -71,38 +64,53 @@
         <div class="muted" id="lblMonth"></div>
       </div>
       <div class="kpi tint-peach">
-        <h4>YTD</h4>
-        <div class="num" id="kYTD">0</div>
-        <div class="muted" id="lblYTD"></div>
+        <h4>Year to Date</h4>
+        <div class="num" id="kYtd">0</div>
+        <div class="muted" id="lblYtd"></div>
       </div>
     </div>
   </section>
 
-  <!-- Filters -->
+  <!-- Trend -->
   <section class="section">
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
-        <h2 style="margin:0">Bookings</h2>
+        <h2 style="margin:0">Bookings Trend</h2>
         <div class="filters">
-          <button class="chip scope" data-scope="today">Today</button>
-          <button class="chip scope" data-scope="month">This Month</button>
-          <button class="chip scope" data-scope="ytd">YTD</button>
-          <button class="chip scope" data-scope="all">All</button>
+          <button class="chip r" data-range="7">7D</button>
+          <button class="chip r" data-range="30">30D</button>
+          <button class="chip r" data-range="90">90D</button>
         </div>
       </div>
-      <div class="filters" style="margin-top:10px">
-        <input id="q" class="chip" placeholder="Search name, mobile, PID, reason, referred by, slot…"/>
-        <input id="pickDate" type="date" class="chip" title="When scope = Today"/>
-        <button id="btnApply" class="chip">Apply</button>
-        <button id="btnReset" class="chip">Reset</button>
+      <canvas id="trend" height="260"></canvas>
+      <div class="muted mini" id="rangeLbl" style="margin-top:6px"></div>
+    </div>
+  </section>
+
+  <!-- Filters + Table -->
+  <section class="section">
+    <div class="card">
+      <div class="filters">
+        <button class="chip scope" data-scope="day">Day</button>
+        <button class="chip scope" data-scope="month">Month</button>
+        <button class="chip scope" data-scope="ytd">YTD</button>
+        <input id="q" class="chip" placeholder="Search name, PID, mobile, referred by…"/>
+        <select id="statusFilter" class="chip">
+          <option value="">Any Status</option>
+          <option>Pending</option>
+          <option>Checked-In</option>
+          <option>Done</option>
+          <option>Cancelled</option>
+        </select>
+        <button class="chip" id="btnApply">Apply</button>
+        <button class="chip" id="btnReset">Reset</button>
       </div>
     </div>
   </section>
 
-  <!-- Table -->
   <section class="section">
     <div class="table-wrap">
-      <table id="tbl">
+      <table>
         <thead>
           <tr>
             <th style="width:72px">Token</th>
@@ -111,181 +119,162 @@
             <th>Patient</th>
             <th>Patient ID</th>
             <th>Mobile</th>
-            <th>Reason</th>
             <th>Referred By</th>
             <th>Status</th>
-            <th style="width:300px">Doctor</th>
+            <th style="width:220px">Actions</th>
           </tr>
         </thead>
         <tbody id="rows"></tbody>
       </table>
     </div>
+    <div class="muted mini" id="countLbl" style="margin-top:6px"></div>
   </section>
 
-  <!-- Chart -->
-  <section class="section">
-    <div class="chart-card">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
-        <h2>Bookings Trend</h2>
-        <div class="filters">
-          <button class="chip range" data-range="7d">7D</button>
-          <button class="chip range" data-range="30d">30D</button>
-          <button class="chip range" data-range="90d">90D</button>
-        </div>
-      </div>
-      <canvas id="trend"></canvas>
-      <div class="muted" id="rangeLbl" style="margin-top:8px"></div>
-    </div>
-  </section>
-
-  <!-- Scrim + Drawer -->
+  <!-- Drawer (doctor can edit patient details + clinical notes + next visit) -->
   <div class="scrim" id="scrim"></div>
   <div class="drawer" id="drawer">
     <h2 id="dwTitle" style="margin:0 0 6px 0">Patient</h2>
-    <div class="muted" id="dwSub">—</div>
+    <div class="muted mini" id="dwSub">—</div>
     <hr style="border:none;border-top:1px solid var(--border);margin:10px 0 12px"/>
 
     <div class="grid2">
-      <div>
-        <label class="muted">Name</label>
-        <input id="pName" placeholder="Full name"/>
-      </div>
-      <div>
-        <label class="muted">Mobile</label>
-        <input id="pMobile" disabled/>
-      </div>
-      <div>
-        <label class="muted">Age</label>
-        <input id="pAge" type="number" min="0" max="120" placeholder="Age"/>
-      </div>
-      <div>
-        <label class="muted">Gender</label>
+      <label>Name <input id="pName" placeholder="Full name"/></label>
+      <label>Mobile <input id="pMobile" placeholder="+91…" /></label>
+      <label>Age <input id="pAge" type="number" min="0" max="120" placeholder="Age"/></label>
+      <label>Gender
         <select id="pGender"><option value="">—</option><option>Male</option><option>Female</option><option>Other</option></select>
-      </div>
+      </label>
+      <label>Referred By <input id="pReferredBy" placeholder="Doctor/Hospital"/></label>
+      <label>Patient ID <input id="pPid" disabled/></label>
     </div>
 
-    <div style="margin-top:10px">
-      <label class="muted">Diagnosis</label>
-      <textarea id="pDiagnosis" rows="2" placeholder="e.g., Acute gastritis"></textarea>
-    </div>
-    <div style="margin-top:10px">
-      <label class="muted">Treatment / Procedure</label>
-      <textarea id="pTreatment" rows="2" placeholder="e.g., IV fluids, rest"></textarea>
-    </div>
-    <div style="margin-top:10px">
-      <label class="muted">Medicines</label>
-      <textarea id="pMedicines" rows="3" placeholder="e.g., Pantoprazole 40mg OD × 5 days"></textarea>
-    </div>
-    <div style="margin-top:10px">
-      <label class="muted">Advice / Notes</label>
-      <textarea id="pAdvice" rows="2" placeholder="e.g., Avoid spicy food, review after 5 days"></textarea>
-    </div>
-
-    <div class="filters" style="margin-top:12px">
-      <button class="chip" id="btnSavePatient">Save</button>
-      <button class="chip" id="btnPrintRx">Print Prescription</button>
-      <button class="chip" id="btnExportCsv">Export History CSV</button>
-      <button class="chip" id="btnClose">Close</button>
-    </div>
-
-    <!-- Next Visit entry -->
     <div class="card" style="margin-top:12px">
-      <h3 style="margin:0 0 6px 0">Next Visit Details</h3>
+      <h3 style="margin:0 0 6px 0">Clinical Notes</h3>
       <div class="grid2">
-        <div>
-          <label class="muted">Next Visit Date</label>
-          <input id="nvDate" type="date"/>
-        </div>
-        <div>
-          <label class="muted">Notes</label>
-          <input id="nvNotes" placeholder="Follow-up on tests, etc."/>
-        </div>
-      </div>
-      <div class="filters" style="margin-top:10px">
-        <button class="chip" id="btnSaveNext">Save Next Visit</button>
-        <button class="chip" id="btnWhatsApp">📲 WhatsApp Reminder</button>
-        <button class="chip" id="btnExportVisits">Export visits.csv</button>
-        <label class="chip" for="inpImportVisits" style="cursor:pointer">Import visits.csv
-          <input id="inpImportVisits" type="file" accept=".csv" style="display:none"/>
+        <label>Diagnosis / Notes
+          <textarea id="pNotes" rows="4" placeholder="Diagnosis, vitals, observations…"></textarea>
+        </label>
+        <label>Medicines / Treatment
+          <textarea id="pRx" rows="4" placeholder="Rx: Paracetamol 500mg BD 3 days …"></textarea>
         </label>
       </div>
     </div>
 
-    <!-- Visits Panel -->
-    <div class="visits">
-      <header>
-        <div class="title">Previous Visits</div>
-        <div class="mini"><span id="vCount">0</span> visit(s)</div>
-      </header>
-      <div class="list" id="visitList"></div>
+    <div class="card" style="margin-top:12px">
+      <h3 style="margin:0 0 6px 0">Next Visit</h3>
+      <div class="grid2">
+        <label>Next Visit Date <input id="nextDate" type="date"/></label>
+        <label>Notes (optional) <input id="nextNotes" placeholder="e.g., Review after tests"/></label>
+      </div>
+      <div class="filters" style="margin-top:10px">
+        <button class="chip" id="btnSaveNext">Save Next Visit</button>
+        <a class="chip" id="btnWhatsApp" target="_blank" rel="noopener">📲 WhatsApp Reminder</a>
+      </div>
+      <div class="mini muted" style="margin-top:6px">Sends a prefilled message via WhatsApp to the patient number.</div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <div class="filters" style="justify-content:space-between;align-items:center">
+        <div>
+          <div class="muted">Patient ID Barcode</div>
+          <div id="dwPidText" class="mini">—</div>
+        </div>
+        <button class="chip" id="btnPrintPid">Print ID Label</button>
+      </div>
+      <div style="background:var(--card-bg);border:1px dashed var(--border);border-radius:12px;padding:12px;margin-top:8px;display:flex;justify-content:center">
+        <svg id="dwPidBarcode"></svg>
+      </div>
+    </div>
+
+    <div class="filters" style="margin-top:12px">
+      <button class="chip" id="btnSavePatient">Save Patient</button>
+      <button class="chip" id="btnClose">Close</button>
     </div>
   </div>
 
-  <iframe id="printFrame" style="display:none"></iframe>
-  <script src="assets/chart.umd.min.js"></script>
-
   <script type="module">
-    /* Theme */
+    /* ===== Theme ===== */
     const tt=document.getElementById('themeToggle');
     if(localStorage.theme){document.documentElement.dataset.theme=localStorage.theme;tt.textContent=localStorage.theme==='light'?'🌞':'🌙'}
     tt.onclick=()=>{const cur=document.documentElement.dataset.theme||'light';const nxt=cur==='light'?'dark':'light';document.documentElement.dataset.theme=nxt;localStorage.theme=nxt;tt.textContent=nxt==='light'?'🌞':'🌙'}
 
-    /* Soft role badge only */
-    (function(){ const ses=JSON.parse(localStorage.getItem('session')||'{}'); const who=document.getElementById('whoami'); if(who) who.textContent=`Role: ${ses.role||'Doctor'}`; })();
+    /* ===== Nav helpers ===== */
+    document.getElementById('miniScan').addEventListener('click',()=>{ location.href='patients.html#scan'; });
+    document.getElementById('clearCacheBtn').onclick=async()=>{localStorage.clear(); if('caches'in window){const ks=await caches.keys(); await Promise.all(ks.map(k=>caches.delete(k)))}; location.reload();};
 
-    /* Actions */
-    clearCacheBtn.onclick=async()=>{localStorage.clear();if('caches'in window){const ks=await caches.keys();await Promise.all(ks.map(k=>caches.delete(k)))};location.reload()}
-
-    /* Stores */
-    const BK="bookings", PT="patients", NV="nextVisits";
+    /* ===== Stores ===== */
+    const BK='bookings', PT='patients', NV='nextVisits', CL='clinicals';
     const $=id=>document.getElementById(id);
-    const bookings=()=>JSON.parse(localStorage.getItem(BK)||'[]');
-    const loadPatients=()=>JSON.parse(localStorage.getItem(PT)||'{}');
-    const savePatients=o=>localStorage.setItem(PT, JSON.stringify(o));
-    const getVisits=()=>JSON.parse(localStorage.getItem(NV)||'[]');
-    const saveVisits=a=>localStorage.setItem(NV, JSON.stringify(a));
-
+    const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
     const ISO=d=>new Date(d).toISOString().slice(0,10);
     const today=ISO(new Date());
     const monthStart=ISO(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
     const ytdStart=ISO(new Date(new Date().getFullYear(), 0, 1));
     const inRange=(iso,a,b)=> iso>=a && iso<=b;
 
-    const phoneLink=n=>`tel:${n}`;
-    const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+    const bookings=()=>JSON.parse(localStorage.getItem(BK)||'[]');
+    const loadPatients=()=>JSON.parse(localStorage.getItem(PT)||'{}');
+    const savePatients=o=>localStorage.setItem(PT, JSON.stringify(o));
+    const loadNext=()=>JSON.parse(localStorage.getItem(NV)||'[]');
+    const saveNext=a=>localStorage.setItem(NV, JSON.stringify(a));
+    const loadClinicals=()=>JSON.parse(localStorage.getItem(CL)||'{}');
+    const saveClinicals=o=>localStorage.setItem(CL, JSON.stringify(o));
 
-    /* KPIs */
+    /* ===== KPIs ===== */
     function computeKPIs(){
       const all=bookings();
       const t=all.filter(b=>b.date===today).length;
       const m=all.filter(b=> inRange(b.date, monthStart, today)).length;
       const y=all.filter(b=> inRange(b.date, ytdStart, today)).length;
-      kToday.textContent=t;   lblToday.textContent=today;
-      kMonth.textContent=m;   lblMonth.textContent=`${monthStart} → ${today}`;
-      kYTD.textContent=y;     lblYTD.textContent=`${ytdStart} → ${today}`;
+      $('kToday').textContent=t; $('lblToday').textContent=today;
+      $('kMonth').textContent=m; $('lblMonth').textContent=`${monthStart} → ${today}`;
+      $('kYtd').textContent=y; $('lblYtd').textContent=`${ytdStart} → ${today}`;
     }
 
-    /* List + Filters */
-    const state={scope:"today", q:"", pickDate: today};
+    /* ===== Trend ===== */
+    let chart;
+    function renderTrend(days=7){
+      const end=new Date(); const start=new Date(); start.setDate(end.getDate()-days+1);
+      const mkISO=d=>new Date(d).toISOString().slice(0,10);
+      const startISO=mkISO(start), endISO=mkISO(end);
+      $('rangeLbl').textContent=`${startISO} → ${endISO}`;
+
+      const map={};
+      for(let d=new Date(start); d<=end; d.setDate(d.getDate()+1)){
+        map[mkISO(d)]=0;
+      }
+      bookings().forEach(b=>{ if(map[b.date]!=null) map[b.date]++; });
+
+      const labels=Object.keys(map), data=labels.map(k=>map[k]);
+      if(chart) chart.destroy();
+      chart=new Chart($('trend'),{
+        type:'line',
+        data:{labels, datasets:[{label:'Bookings', data, tension:.35}]},
+        options:{responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}}
+      });
+    }
+    document.querySelectorAll('.r').forEach(b=> b.onclick=()=> renderTrend(Number(b.dataset.range)||7) );
+
+    /* ===== Table (read-only queue) ===== */
+    const state={scope:'day', q:'', status:''};
     const scopes={
-      today: list => list.filter(r=>r.date===(state.pickDate||today)),
+      day: list => list.filter(r=>r.date===today),
       month: list => list.filter(r=> inRange(r.date, monthStart, today)),
-      ytd:   list => list.filter(r=> inRange(r.date, ytdStart, today)),
-      all:   list => list
+      ytd: list => list.filter(r=> inRange(r.date, ytdStart, today)),
     };
+    document.querySelectorAll('.scope').forEach(b=> b.onclick=()=>{state.scope=b.dataset.scope; renderTable();});
 
     function filtered(){
       let list=[...bookings()];
-      list = (scopes[state.scope]||scopes.today)(list);
-      const q=(state.q||"").toLowerCase().trim();
+      list=(scopes[state.scope]||scopes.day)(list);
+      if(state.status) list=list.filter(r=>r.status===state.status);
+      const q=(state.q||'').toLowerCase().trim();
       if(q){
         list=list.filter(r=>
-          (r.name||"").toLowerCase().includes(q) ||
-          (r.mobile||"").includes(q) ||
-          (r.patientId||"").toLowerCase().includes(q) ||
-          (r.reason||"").toLowerCase().includes(q) ||
-          (r.referredBy||"").toLowerCase().includes(q) ||
-          (r.slot||"").toLowerCase().includes(q)
+          (r.name||'').toLowerCase().includes(q) ||
+          (r.patientId||'').toLowerCase().includes(q) ||
+          (r.mobile||'').includes(q) ||
+          (r.referredBy||'').toLowerCase().includes(q)
         );
       }
       list.sort((a,b)=> a.date.localeCompare(b.date) || a.slot.localeCompare(b.slot) || (a.token||0)-(b.token||0));
@@ -295,26 +284,25 @@
     function renderTable(){
       const tbody=$('rows'); tbody.innerHTML='';
       const list=filtered();
+      $('countLbl').textContent=`${list.length} record(s)`;
       if(!list.length){
-        const tr=document.createElement('tr'); const td=document.createElement('td'); td.colSpan=10; td.className='muted'; td.textContent='No records.'; tr.appendChild(td); tbody.appendChild(tr); return;
+        const tr=document.createElement('tr'); const td=document.createElement('td'); td.colSpan=9; td.className='muted'; td.textContent='No records.'; tr.appendChild(td); tbody.appendChild(tr); return;
       }
       for(const r of list){
         const tr=document.createElement('tr');
         tr.innerHTML=`
-          <td><strong>#${r.token||"-"}</strong></td>
+          <td><strong>#${r.token||'-'}</strong></td>
           <td>${r.date}</td>
           <td>${r.slot}</td>
-          <td>${esc(r.name||"")}</td>
-          <td>${r.patientId||""}</td>
-          <td><a href="${phoneLink(r.mobile)}">${r.mobile}</a></td>
-          <td>${esc(r.reason||"")}</td>
-          <td>${esc(r.referredBy || "—")}</td>
-          <td><span class="pill ${r.status==='Done'?'done':'pending'}">${r.status==='Done'?'✔ Done':'⏳ Pending'}</span></td>
+          <td>${esc(r.name||'')}</td>
+          <td>${r.patientId||''}</td>
+          <td><a href="tel:${r.mobile||''}">${r.mobile||''}</a></td>
+          <td>${esc(r.referredBy||'—')}</td>
+          <td>${r.status||'Pending'}</td>
           <td>
-            <div class="filters" style="flex-wrap:wrap;gap:8px">
+            <div class="filters" style="gap:8px;flex-wrap:wrap">
               <button class="chip act" data-act="open" data-id="${r.id}">Open</button>
-              <button class="chip act" data-act="rx" data-id="${r.id}">Prescription</button>
-              <button class="chip act" data-act="wa" data-id="${r.id}">📲 WhatsApp</button>
+              <a class="chip" target="_blank" rel="noopener" href="${r.mobile?`https://wa.me/${r.mobile}?text=${encodeURIComponent('Hello '+(r.name||'')+', please reach the clinic at your appointment time.')}`:`https://wa.me/`}">📲 WhatsApp</a>
             </div>
           </td>
         `;
@@ -322,343 +310,137 @@
       }
     }
 
-    /* Drawer (Doctor edit) */
-    let currentVisit=null, currentPid=null;
-    function openDrawer(visit){
-      currentVisit = visit;
-      currentPid = visit.patientId || "";
-      const patients = loadPatients();
-      const p = patients[currentPid] || { id: currentPid, mobile: visit.mobile, name: visit.name||"", age:"", gender:"", history:[] };
+    $('btnApply').onclick=()=>{ state.q=$('q').value; state.status=$('statusFilter').value; renderTable(); };
+    $('btnReset').onclick=()=>{ $('q').value=''; $('statusFilter').value=''; state.q=''; state.status=''; renderTable(); };
 
-      $('dwTitle').textContent = p.name || visit.name || 'Patient';
-      $('dwSub').textContent = `${currentPid||'—'} • ${visit.date} • ${visit.slot} • Token #${visit.token||'-'}`;
+    $('rows').addEventListener('click', (e)=>{
+      const btn=e.target.closest('.act'); if(!btn) return;
+      if(btn.dataset.act==='open'){
+        const id=btn.dataset.id;
+        const r=bookings().find(x=>x.id===id);
+        if(r) openDrawerFor(r);
+      }
+    });
 
-      $('pName').value = p.name || visit.name || "";
-      $('pMobile').value = p.mobile || visit.mobile || "";
-      $('pAge').value = p.age || "";
-      $('pGender').value = p.gender || "";
+    /* ===== Drawer logic ===== */
+    let currentPid=null, currentBooking=null;
 
-      $('pDiagnosis').value = "";
-      $('pTreatment').value = "";
-      $('pMedicines').value = "";
-      $('pAdvice').value = "";
+    function drawPidBarcode(svgEl, pid){
+      if(!window.JsBarcode || !svgEl || !pid) return;
+      try { JsBarcode(svgEl, pid, { format:"CODE128", width:2, height:64, displayValue:true, fontSize:14, margin:8 }); } catch(_) {}
+    }
+    function printPidLabel(pid, name="", mobile=""){
+      const html = `
+      <html><head><meta charset="utf-8"><title>${pid} Label</title>
+      <style>body{font-family:system-ui;padding:16px}.card{width:320px;border:1px solid #000;padding:10px;border-radius:8px}svg{width:100%}.mini{font-size:12px;opacity:.8}</style>
+      </head><body onload="window.print();setTimeout(()=>window.close(),300)">
+      <div class="card">
+        <div style="font-weight:700">Patient ID</div>
+        <div style="margin:6px 0 10px 0">${pid}</div>
+        <div id="wrap"></div>
+        <div class="mini" style="margin-top:8px">${name||""} ${mobile?("• "+mobile):""}</div>
+      </div>
+      <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"><\/script>
+      <script>(function(){var s=document.createElement('svg');document.getElementById('wrap').appendChild(s);try{JsBarcode(s, ${JSON.stringify(pid)}, {format:'CODE128', width:2, height:64, displayValue:true, fontSize:14, margin:8});}catch(e){}})();<\/script>
+      </body></html>`;
+      const w=window.open('', '_blank', 'width=420,height=420'); w.document.open(); w.document.write(html); w.document.close();
+    }
 
-      renderVisitsPanel(currentPid);
+    function openDrawerFor(b){
+      currentBooking=b; currentPid=b.patientId||'';
+      const pts=loadPatients(); const p = pts[currentPid] || { id: currentPid };
+      $('dwTitle').textContent = b.name || 'Patient';
+      $('dwSub').textContent = `${currentPid} • ${b.mobile||''} • Token #${b.token||'-'}`;
+      $('pPid').value=currentPid;
+      $('pName').value=p.name || b.name || '';
+      $('pMobile').value=p.mobile || b.mobile || '';
+      $('pAge').value=p.age||'';
+      $('pGender').value=p.gender||'';
+      $('pReferredBy').value=p.referredBy || b.referredBy || '';
+
+      // clinicals
+      const cl=loadClinicals()[currentPid] || {};
+      $('pNotes').value = cl.notes || '';
+      $('pRx').value = cl.rx || '';
+
+      // next visit existing
+      const next=loadNext().find(x=>x.pid===currentPid);
+      $('nextDate').value = next?.date || '';
+      $('nextNotes').value = next?.notes || '';
+
+      // barcode
+      $('dwPidText').textContent = currentPid || '—';
+      drawPidBarcode($('dwPidBarcode'), currentPid);
 
       document.body.classList.add('no-scroll');
       $('scrim').classList.add('show');
       $('drawer').classList.add('show');
+
+      refreshWhatsAppLink();
     }
+
     function closeDrawer(){
-      $('drawer').classList.remove('show');
-      $('scrim').classList.remove('show');
-      document.body.classList.remove('no-scroll');
-      currentVisit=null; currentPid=null;
+      $('drawer').classList.remove('show'); $('scrim').classList.remove('show'); document.body.classList.remove('no-scroll');
+      currentPid=null; currentBooking=null;
     }
+    $('btnClose').onclick=closeDrawer; $('scrim').onclick=closeDrawer;
 
-    function savePatient(){
-      if(!currentVisit || !currentPid) return;
-      const patients = loadPatients();
+    // Save patient master (doctor allowed)
+    $('btnSavePatient').onclick=()=>{
+      if(!currentPid) return;
+      const pts=loadPatients();
+      const p=pts[currentPid] || { id: currentPid, history: [] };
+      p.name=$('pName').value.trim();
+      p.mobile=$('pMobile').value.trim();
+      p.age=$('pAge').value.trim();
+      p.gender=$('pGender').value;
+      p.referredBy=$('pReferredBy').value.trim();
+      pts[currentPid]=p; savePatients(pts);
 
-      const name = $('pName').value.trim();
-      const age = $('pAge').value.trim();
-      const gender = $('pGender').value;
-      const diagnosis = $('pDiagnosis').value.trim();
-      const treatment = $('pTreatment').value.trim();
-      const medicines = $('pMedicines').value.trim();
-      const advice = $('pAdvice').value.trim();
-
-      const p = patients[currentPid] || { id: currentPid, mobile: currentVisit.mobile, history: [] };
-      p.name = name || p.name || currentVisit.name || "";
-      p.age = age;
-      p.gender = gender;
-      p.mobile = currentVisit.mobile;
-      p.lastVisit = currentVisit.date;
-
-      p.history.push({
-        bookingId: currentVisit.id,
-        token: currentVisit.token,
-        date: currentVisit.date,
-        slot: currentVisit.slot,
-        diagnosis, treatment, medicines, advice,
-        reason: currentVisit.reason || ""
-      });
-
-      patients[currentPid] = p;
-      savePatients(patients);
-
-      // reflect updated name in bookings for display
-      const all = bookings();
-      const i = all.findIndex(x=>x.id===currentVisit.id);
-      if(i>=0 && name){ all[i].name = name; localStorage.setItem(BK, JSON.stringify(all)); }
+      // clinical notes saved per PID
+      const cl=loadClinicals();
+      cl[currentPid]={ notes:$('pNotes').value.trim(), rx:$('pRx').value.trim(), updatedAt:new Date().toISOString() };
+      saveClinicals(cl);
 
       alert('Saved.');
-      renderTable();
-      renderVisitsPanel(currentPid);
+    };
+
+    // Next visit save
+    function refreshWhatsAppLink(){
+      const phone=$('pMobile').value.trim();
+      const name=$('pName').value.trim();
+      const d=$('nextDate').value;
+      const notes=$('nextNotes').value.trim();
+      const msg = d ? 
+        `Hello ${name||''}, your next clinic visit is scheduled on ${d}.${notes?(' Note: '+notes):''}` :
+        `Hello ${name||''}, please confirm your next clinic visit.`;
+      $('btnWhatsApp').href = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : 'https://wa.me/';
     }
+    $('pName').addEventListener('input', refreshWhatsAppLink);
+    $('pMobile').addEventListener('input', refreshWhatsAppLink);
+    $('nextDate').addEventListener('change', refreshWhatsAppLink);
+    $('nextNotes').addEventListener('input', refreshWhatsAppLink);
 
-    /* Visits panel */
-    function renderVisitsPanel(pid){
-      const patients = loadPatients();
-      const p = patients[pid] || {history:[]};
-      const list = (p.history||[]).slice().sort((a,b)=> (b.date||"").localeCompare(a.date||"") || (b.token||0)-(a.token||0));
+    $('btnSaveNext').onclick=()=>{
+      if(!currentPid) return;
+      const d=$('nextDate').value;
+      const notes=$('nextNotes').value.trim();
+      const arr=loadNext().filter(x=>x.pid!==currentPid);
+      if(d){ arr.push({ pid: currentPid, date:d, notes, name:$('pName').value.trim(), mobile:$('pMobile').value.trim() }); }
+      saveNext(arr);
+      alert('Next visit saved.');
+      refreshWhatsAppLink();
+    };
 
-      $('vCount').textContent = list.length;
-      const wrap = $('visitList'); wrap.innerHTML = "";
+    // Print PID label
+    $('btnPrintPid').onclick=()=>{
+      if(!currentPid) return;
+      printPidLabel(currentPid, $('pName').value.trim(), $('pMobile').value.trim());
+    };
 
-      if(!list.length){
-        const div=document.createElement('div');
-        div.className="mini"; div.style.padding="10px 12px"; div.textContent="No previous visits found.";
-        wrap.appendChild(div);
-        return;
-      }
-
-      for(const v of list){
-        const row=document.createElement('div');
-        row.className="vrow";
-        row.innerHTML = `
-          <div>
-            <div class="mini">Date</div>
-            <div class="nowrap"><strong>${v.date||"-"}</strong></div>
-            <div class="mini">Token #${v.token||"-"}</div>
-          </div>
-          <div>
-            <div class="mini">Diagnosis</div>
-            <div class="nowrap">${esc(v.diagnosis||"-")}</div>
-            <div class="filters" style="margin-top:6px">
-              <button class="chip vact" data-act="view" data-book="${v.bookingId||''}">View</button>
-            </div>
-          </div>
-        `;
-        wrap.appendChild(row);
-      }
-
-      wrap.querySelectorAll('.vact').forEach(btn=>{
-        btn.onclick=()=>{
-          const id=btn.getAttribute('data-book');
-          const vv = (p.history||[]).find(h=>h.bookingId===id);
-          if(!vv) return;
-          $('pDiagnosis').value = vv.diagnosis||"";
-          $('pTreatment').value = vv.treatment||"";
-          $('pMedicines').value = vv.medicines||"";
-          $('pAdvice').value = vv.advice||"";
-        };
-      });
-    }
-
-    /* CSV export for a single patient */
-    const csv=v=>{const s=String(v??"");return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s};
-    function exportPatientCsv(pid){
-      const patients = loadPatients();
-      const p = patients[pid]; if(!p || !p.history || !p.history.length){ alert('No history to export.'); return; }
-      const head = ["patientId","name","mobile","age","gender","date","token","slot","reason","diagnosis","treatment","medicines","advice"];
-      const rows = p.history.map(h=>[
-        pid, csv(p.name||""), p.mobile||"", p.age||"", p.gender||"",
-        h.date||"", h.token||"", h.slot||"", csv(h.reason||""),
-        csv(h.diagnosis||""), csv(h.treatment||""), csv(h.medicines||""), csv(h.advice||"")
-      ]);
-      const text = [head.join(","), ...rows.map(r=>r.join(","))].join("\\n");
-      const blob = new Blob([text], {type:"text/csv;charset=utf-8"});
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = `patient_${pid}_history_${Date.now()}.csv`;
-      a.click(); URL.revokeObjectURL(a.href);
-    }
-
-    /* Prescription */
-    function printPrescription(visit){
-      const pid = visit.patientId || "";
-      const patients = loadPatients();
-      const p = patients[pid] || {};
-      const hist = (p.history||[]).filter(h=>h.bookingId===visit.id).slice(-1)[0] || {};
-
-      const docName = "Onestop Clinic — Doctor";
-      const addr = "Warangal, Telangana • +91-00000 00000";
-
-      const html = `
-        <html><head><meta charset="utf-8"><title>Prescription ${pid}</title>
-        <style>
-          body{font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto; padding:18px}
-          .rx{max-width:720px;margin:0 auto;border:1px solid #111;padding:18px}
-          h1{font-size:20px;margin:0}
-          .muted{color:#444}
-          .row{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
-          .sec{margin-top:12px}
-          .box{border:1px dashed #333;padding:10px;border-radius:8px;white-space:pre-wrap}
-          .hl{font-weight:700}
-        </style></head>
-        <body onload="window.print(); setTimeout(()=>window.close(), 300);">
-          <div class="rx">
-            <div class="row">
-              <div>
-                <h1>${docName}</h1>
-                <div class="muted">${addr}</div>
-              </div>
-              <div>
-                <div><span class="hl">Date:</span> ${visit.date}</div>
-                <div><span class="hl">Token:</span> #${visit.token||"-"}</div>
-                <div><span class="hl">Time:</span> ${visit.slot}</div>
-              </div>
-            </div>
-            <hr/>
-            <div class="row">
-              <div><span class="hl">Patient:</span> ${esc(p.name || visit.name || "")}</div>
-              <div><span class="hl">Patient ID:</span> ${pid||"—"}</div>
-            </div>
-            <div class="row">
-              <div><span class="hl">Age/Gender:</span> ${(p.age||"-")}/${(p.gender||"-")}</div>
-              <div><span class="hl">Mobile:</span> ${visit.mobile}</div>
-            </div>
-
-            <div class="sec"><div class="hl">Diagnosis</div><div class="box">${esc(hist.diagnosis||"")}</div></div>
-            <div class="sec"><div class="hl">Treatment / Procedure</div><div class="box">${esc(hist.treatment||"")}</div></div>
-            <div class="sec"><div class="hl">Medicines</div><div class="box">${esc(hist.medicines||"")}</div></div>
-            <div class="sec"><div class="hl">Advice / Notes</div><div class="box">${esc(hist.advice||"")}</div></div>
-
-            <hr/>
-            <div class="muted">Computer generated prescription • ${new Date().toLocaleString()}</div>
-          </div>
-        </body></html>
-      `;
-      const frame = $('printFrame').contentWindow || $('printFrame');
-      frame.document.open(); frame.document.write(html); frame.document.close();
-    }
-
-    /* Next Visit: helpers */
-    const csvEsc = v => { const s=String(v??""); return /[",\\n]/.test(s) ? \`"\${s.replace(/"/g,'""')}"\` : s; };
-    function phoneByPid(pid){ const list=bookings(); const hit=list.find(b=>(b.patientId||'').toLowerCase()===String(pid||'').toLowerCase()); return hit?.mobile || ''; }
-    function nameByPid(pid){ const list=bookings(); const hit=list.find(b=>(b.patientId||'').toLowerCase()===String(pid||'').toLowerCase()); return hit?.name || ''; }
-
-    /* Trend */
-    let chart;
-    function renderChart(days=7){
-      const end=new Date(); const start=new Date(); start.setDate(end.getDate()-days+1);
-      const startISO=ISO(start); const endISO=ISO(end);
-      $('rangeLbl').textContent=startISO+' → '+endISO;
-
-      const map={};
-      for(let d=new Date(start); d<=end; d.setDate(d.getDate()+1)){ map[ISO(d)]=0; }
-      bookings().forEach(b=>{ if(map[b.date]!=null) map[b.date]++ });
-
-      const labels=Object.keys(map);
-      const data=labels.map(k=>map[k]);
-
-      if(chart) chart.destroy();
-      chart=new Chart(document.getElementById('trend'),{
-        type:'line',
-        data:{labels, datasets:[{label:'Bookings', data, tension:.35}]},
-        options:{responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}}
-      });
-    }
-    document.querySelectorAll('.range').forEach(btn=>{
-      btn.onclick=()=>{
-        document.querySelectorAll('.range').forEach(x=>x.classList.remove('active'));
-        btn.classList.add('active');
-        const r=btn.dataset.range;
-        renderChart(r==='30d'?30:r==='90d'?90:7);
-      };
-    });
-
-    /* Events */
-    function bind(){
-      document.querySelectorAll('.scope').forEach(b=> b.onclick=()=>{ state.scope=b.dataset.scope; renderTable(); });
-      $('btnApply').onclick=()=>{ state.q=$('q').value; state.pickDate=$('pickDate').value||today; renderTable(); };
-      $('btnReset').onclick=()=>{ $('q').value=''; $('pickDate').value=''; state.q=''; state.scope='today'; state.pickDate=today; renderTable(); };
-
-      $('rows').addEventListener('click', (e)=>{
-        const btn=e.target.closest('.act'); if(!btn) return;
-        const id=btn.getAttribute('data-id'); const act=btn.getAttribute('data-act');
-        const visit = bookings().find(x=>x.id===id);
-        if(!visit) return;
-        if(act==='open'){ openDrawer(visit); }
-        if(act==='rx'){ printPrescription(visit); }
-        if(act==='wa'){
-          const pid=visit.patientId||''; const mobile=visit.mobile||phoneByPid(pid);
-          const msg = encodeURIComponent(\`Reminder: Your visit today at \${visit.slot} (Token #\${visit.token||'-'}). Patient: \${pid||'-'}\`);
-          const url = mobile ? \`https://wa.me/\${mobile}?text=\${msg}\` : \`https://wa.me/?text=\${msg}\`;
-          window.open(url, "_blank");
-        }
-      });
-
-      $('btnClose').onclick = closeDrawer;
-      $('scrim').onclick = closeDrawer;
-      $('btnSavePatient').onclick = savePatient;
-      $('btnPrintRx').onclick = ()=>{ if(currentVisit) printPrescription(currentVisit); };
-      $('btnExportCsv').onclick = ()=>{ if(currentPid) exportPatientCsv(currentPid); };
-
-      // Next Visit actions
-      $('btnSaveNext').onclick = ()=>{
-        if(!currentPid || !currentVisit) return alert('Open a patient first.');
-        const date = $('nvDate').value; const notes = $('nvNotes').value.trim();
-        if(!date) return alert('Select Next Visit Date');
-        const arr=getVisits();
-        const item={ id: crypto.randomUUID(), pid: currentPid, date, notes, mobile: phoneByPid(currentPid), name: nameByPid(currentPid) };
-        arr.push(item); saveVisits(arr);
-
-        // mirror into patients
-        const pts=loadPatients(); const p=pts[currentPid]||{id:currentPid, name:nameByPid(currentPid)||currentVisit.name||'', mobile:currentVisit.mobile, history:[]};
-        p.history=p.history||[]; p.history.push({ type:'next_visit', date, notes, createdAt:new Date().toISOString() }); pts[currentPid]=p; savePatients(pts);
-
-        $('nvDate').value=''; $('nvNotes').value='';
-        alert('Next visit saved.');
-      };
-
-      $('btnWhatsApp').onclick = ()=>{
-        if(!currentPid || !currentVisit) return alert('Open a patient first.');
-        const date=$('nvDate').value; const notes=$('nvNotes').value.trim();
-        if(!date) return alert('Select Next Visit Date');
-        const mobile = phoneByPid(currentPid) || currentVisit.mobile;
-        const msg = encodeURIComponent(\`Reminder: Your next visit is scheduled on \${date} (Patient: \${currentPid}). \${notes?('Notes: '+notes):''}\`);
-        const url = mobile ? \`https://wa.me/\${mobile}?text=\${msg}\` : \`https://wa.me/?text=\${msg}\`;
-        window.open(url, "_blank");
-      };
-
-      $('btnExportVisits').onclick = ()=>{
-        const rows=getVisits(); const head=['id','patientId','name','mobile','date','notes','createdAt'];
-        const now=new Date().toISOString();
-        const csv=[ head.join(','), ...rows.map(r=>[ r.id, csvEsc(r.pid), csvEsc(r.name||''), csvEsc(r.mobile||''), r.date||'', csvEsc(r.notes||''), now ].join(',')) ].join('\\n');
-        const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}); const a=document.createElement('a');
-        a.href=URL.createObjectURL(blob); a.download=\`visits_\${Date.now()}.csv\`; a.click(); URL.revokeObjectURL(a.href);
-      };
-
-      $('inpImportVisits').addEventListener('change',(e)=>{
-        const f=e.target.files?.[0]; if(!f) return;
-        const r=new FileReader();
-        r.onload=()=>{
-          try{
-            const text=String(r.result||'').replace(/\\r/g,''); const lines=text.split('\\n').filter(Boolean);
-            const H=lines[0].split(',').map(h=>h.trim().toLowerCase());
-            const pos=k=>H.indexOf(k); const out=getVisits(); const pts=loadPatients();
-            for(let i=1;i<lines.length;i++){
-              const cols=lines[i].match(/(?:^|,)(?:"([^"]*(?:""[^"]*)*)"|([^",]*))/g).map(s=>s.replace(/^,?/,'')); // coarse CSV split
-              const val=idx=>(cols[idx]||'').replace(/^"|"$/g,'').replace(/""/g,'"');
-              const pid=val(pos('patientid'));
-              const rec={ id: val(pos('id'))||crypto.randomUUID(), pid, name: val(pos('name'))||'', mobile: val(pos('mobile'))||'', date: val(pos('date'))||'', notes: val(pos('notes'))||'' };
-              if(!out.some(x=>x.id===rec.id)) out.push(rec);
-              if(pid){
-                const p=pts[pid]||{id:pid, name:rec.name||'', mobile:rec.mobile||'', history:[]};
-                p.name=p.name||rec.name||''; p.mobile=p.mobile||rec.mobile||'';
-                p.history=p.history||[]; p.history.push({type:'next_visit', date:rec.date, notes:rec.notes, createdAt:new Date().toISOString()});
-                pts[pid]=p;
-              }
-            }
-            saveVisits(out); savePatients(pts);
-            alert('visits.csv imported.');
-          }catch(err){ console.error(err); alert('Import failed. Check CSV.'); }
-          e.target.value='';
-        };
-        r.readAsText(f);
-      });
-    }
-
-    /* Init + bindings */
+    /* ===== Init ===== */
     function init(){
-      $('whoami').textContent = \`Role: \${(JSON.parse(localStorage.getItem('session')||'{}').role)||'Doctor'}\`;
-      $('pickDate').value = today;
-      computeKPIs();
-      bind();
-      renderTable();
-      renderChart(7);
+      computeKPIs(); renderTrend(7); renderTable();
       if('serviceWorker' in navigator){ navigator.serviceWorker.register('service-worker.js').catch(()=>{}) }
     }
     init();
