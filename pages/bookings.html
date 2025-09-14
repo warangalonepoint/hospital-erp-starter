@@ -34,7 +34,7 @@
     .btn.danger { background:#2a1717; border-color:#492121; color:#ffd1d1; }
     .btn.ghost { background: transparent; border:1px dashed #2b3646; }
     .table-wrap { overflow:auto; border:1px solid var(--line); border-radius:14px; }
-    table { width:100%; border-collapse: collapse; min-width: 880px; }
+    table { width:100%; border-collapse: collapse; min-width: 980px; }
     th, td { text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); font-size:13px; }
     th { position:sticky; top:0; background:#101722; z-index:1; color:#b8c2d0; font-weight:700; }
     tr:hover td { background:#0e1520; }
@@ -63,7 +63,7 @@
       </div>
     </div>
 
-    <!-- KPI -->
+    <!-- KPIs -->
     <div class="row three">
       <div class="card"><h3>Today</h3><div class="metric" id="mToday">0</div><div class="muted">Appointments</div></div>
       <div class="card"><h3>This Week</h3><div class="metric" id="mWeek">0</div><div class="muted">Mon–Sun</div></div>
@@ -88,8 +88,9 @@
             <input type="text" id="bkName" placeholder="Patient full name" required/>
           </div>
           <div>
-            <label>Mobile (10 digits)</label>
+            <label>Mobile (10 digits) → Patient ID</label>
             <input type="tel" id="bkMobile" pattern="[0-9]{10}" placeholder="e.g., 9000000001" required/>
+            <div class="muted" id="pidPreview" style="margin-top:4px">Patient ID: —</div>
           </div>
         </div>
         <div style="margin-top:10px">
@@ -102,8 +103,8 @@
           <button type="button" id="btnClearForm" class="btn">Clear</button>
         </div>
         <div class="muted" style="margin-top:8px">
-          Tokens auto-start at 1 per day. Duplicate guard prevents same Date+Slot double-booking.
-          Patient ID is derived in Doctor view as <strong>PT-&lt;mobile&gt;</strong>.
+          • <b>Unique slot rule:</b> one booking per Date + Time Slot.  
+          • <b>Patient ID:</b> auto-generated as <code>PT-&lt;mobile&gt;</code> and stored with the booking.
         </div>
       </form>
     </div>
@@ -112,7 +113,7 @@
     <div class="card" style="margin-top:12px">
       <h3>Search & Filters</h3>
       <div class="searchbar">
-        <input id="q" placeholder="Search name, mobile, reason, slot…"/>
+        <input id="q" placeholder="Search name, mobile, patient ID, reason, slot…"/>
         <input id="fDateFrom" type="date"/>
         <input id="fDateTo" type="date"/>
         <select id="fStatus">
@@ -138,10 +139,11 @@
             <th>Date</th>
             <th>Slot</th>
             <th>Patient</th>
+            <th>Patient ID</th>
             <th>Mobile</th>
             <th>Reason</th>
             <th>Status</th>
-            <th style="width:260px">Actions</th>
+            <th style="width:280px">Actions</th>
           </tr>
         </thead>
         <tbody id="rows"></tbody>
@@ -177,6 +179,7 @@
     const $ = (id) => document.getElementById(id);
     const fmtDate = (d) => new Date(d).toISOString().slice(0,10);
     const todayStr = () => fmtDate(new Date());
+    const patientIdFromMobile = mob => `PT-${String(mob||"").replace(/\D/g,"")}`;
 
     function getWeekRange(date = new Date()){
       const d = new Date(date);
@@ -192,10 +195,7 @@
       return {start: fmtDate(start), end: fmtDate(end)};
     }
 
-    function loadAll(){
-      try { return JSON.parse(localStorage.getItem(LS_KEY) || "[]"); }
-      catch { return []; }
-    }
+    function loadAll(){ try { return JSON.parse(localStorage.getItem(LS_KEY) || "[]"); } catch { return []; } }
     function saveAll(list){ localStorage.setItem(LS_KEY, JSON.stringify(list)); }
 
     function nextTokenForDate(list, dateStr){
@@ -207,8 +207,8 @@
     }
 
     function toCSV(list){
-      const header = ["token","date","slot","name","mobile","reason","status","id"];
-      const rows = list.map(r => [r.token, r.date, r.slot, csvSafe(r.name), r.mobile, csvSafe(r.reason||""), r.status, r.id]);
+      const header = ["token","date","slot","name","mobile","patientId","reason","status","id"];
+      const rows = list.map(r => [r.token, r.date, r.slot, csvSafe(r.name), r.mobile, r.patientId, csvSafe(r.reason||""), r.status, r.id]);
       return [header.join(","), ...rows.map(r=>r.join(","))].join("\n");
     }
     function csvSafe(v){ if(v==null) return ""; const s=String(v); return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s; }
@@ -225,6 +225,7 @@
           slot: parts[idx.slot] || "",
           name: parts[idx.name] || "",
           mobile: parts[idx.mobile] || "",
+          patientId: parts[idx.patientid] || patientIdFromMobile(parts[idx.mobile]||""),
           reason: parts[idx.reason] || "",
           status: parts[idx.status] || "Pending",
           id: parts[idx.id] || crypto.randomUUID()
@@ -287,6 +288,7 @@
         list = list.filter(r =>
           (r.name||"").toLowerCase().includes(q) ||
           (r.mobile||"").includes(q) ||
+          (r.patientId||"").toLowerCase().includes(q) ||
           (r.reason||"").toLowerCase().includes(q) ||
           (r.slot||"").toLowerCase().includes(q)
         );
@@ -305,7 +307,7 @@
       tbody.innerHTML = "";
       if(!list.length){
         const tr = document.createElement("tr");
-        const td = document.createElement("td"); td.colSpan = 8; td.className="muted"; td.textContent="No bookings found.";
+        const td = document.createElement("td"); td.colSpan = 9; td.className="muted"; td.textContent="No bookings found.";
         tr.appendChild(td); tbody.appendChild(tr);
         return;
       }
@@ -316,6 +318,7 @@
           <td>${r.date}</td>
           <td>${r.slot}</td>
           <td>${escapeHtml(r.name||"")}</td>
+          <td>${r.patientId||""}</td>
           <td><a href="${phoneLink(r.mobile)}">${r.mobile}</a></td>
           <td>${escapeHtml(r.reason||"")}</td>
           <td><span class="pill ${r.status==='Done'?'done':'pending'}">${r.status==='Done'?'✔ Done':'⏳ Pending'}</span></td>
@@ -339,6 +342,7 @@ Your OPD booking is confirmed.
 Date: ${r.date}
 Time: ${r.slot}
 Token: ${r.token}
+Patient ID: ${r.patientId}
 
 Location: Warangal OneStop Clinic.
 Reply YES to confirm or call if you need changes.`;
@@ -355,15 +359,23 @@ Reply YES to confirm or call if you need changes.`;
       renderMetrics();
       renderTable();
 
+      // live Patient ID preview
+      $("bkMobile").addEventListener("input", ()=>{
+        const m = $("bkMobile").value.trim();
+        $("pidPreview").textContent = m && /^[0-9]{10}$/.test(m) ? `Patient ID: ${patientIdFromMobile(m)}` : "Patient ID: —";
+      });
+
       $("bookingForm").addEventListener("submit", onSave);
-      $("btnClearForm").addEventListener("click", () => { $("bookingForm").reset(); $("bkDate").value=todayStr(); renderSlots(); });
+      $("btnClearForm").addEventListener("click", () => { $("bookingForm").reset(); $("bkDate").value=todayStr(); renderSlots(); $("pidPreview").textContent="Patient ID: —"; });
       $("btnPrintTicket").addEventListener("click", () => {
+        const m = $("bkMobile").value.trim();
         const temp = {
           token: "—",
           date: $("bkDate").value || todayStr(),
           slot: $("bkSlot").value || "",
           name: $("bkName").value || "",
-          mobile: $("bkMobile").value || "",
+          mobile: m || "",
+          patientId: m && /^[0-9]{10}$/.test(m) ? patientIdFromMobile(m) : "",
           reason: $("bkReason").value || "",
           status: "Pending",
         };
@@ -403,6 +415,7 @@ Reply YES to confirm or call if you need changes.`;
               x.id = x.id || crypto.randomUUID();
               if(!x.token){ x.token = nextTokenForDate(all, x.date); }
               x.status = x.status==="Done" ? "Done" : "Pending";
+              x.patientId = x.patientId || patientIdFromMobile(x.mobile||"");
             });
             all = mergeAvoidingDup(all, incoming);
             saveAll(all); renderMetrics(); renderTable();
@@ -442,12 +455,13 @@ Reply YES to confirm or call if you need changes.`;
     }
 
     function mergeAvoidingDup(base, incoming){
+      // Supervisor rule: unique by date+slot; merging keeps first occurrence
       const key = (r)=>`${r.date}__${r.slot}`;
       const seen = new Set(base.map(key));
       const out = base.slice();
       for(const r of incoming){
         const k = key(r);
-        if(seen.has(k)) continue; // keep Supervisor rule: unique by date+slot
+        if(seen.has(k)) continue;
         seen.add(k);
         out.push(r);
       }
@@ -463,20 +477,24 @@ Reply YES to confirm or call if you need changes.`;
       const reason = $("bkReason").value.trim();
 
       if(!date || !slot || !name || !/^[0-9]{10}$/.test(mobile)){
-        alert("Please fill Date, Slot, Name, and 10-digit Mobile."); return;
+        alert("Please fill Date, Slot, Name, and a valid 10-digit Mobile."); return;
       }
       if(duplicateExists(all, date, slot)){
         alert("This slot is already booked for the selected date."); return;
       }
 
       const token = nextTokenForDate(all, date);
-      const rec = { id: crypto.randomUUID(), token, date, slot, name, mobile, reason, status:"Pending" };
+      const rec = {
+        id: crypto.randomUUID(),
+        token, date, slot, name, mobile,
+        patientId: patientIdFromMobile(mobile),
+        reason, status:"Pending"
+      };
       all.push(rec);
       saveAll(all);
       renderMetrics();
       renderTable();
       printTicket(rec);
-      // Keep inputs for fast next entry except reason
       $("bkReason").value = "";
     }
 
@@ -501,6 +519,7 @@ Reply YES to confirm or call if you need changes.`;
             <div class="row"><div>Time</div><div>${r.slot}</div></div>
             <div class="row"><div>Patient</div><div>${escapeHtml(r.name)}</div></div>
             <div class="row"><div>Mobile</div><div>${r.mobile}</div></div>
+            <div class="row"><div>Patient ID</div><div>${r.patientId}</div></div>
             <div class="row"><div>Status</div><div>${r.status}</div></div>
             ${r.reason ? `<div class="row"><div>Notes</div><div>${escapeHtml(r.reason)}</div></div>` : ""}
             <hr/>
@@ -516,9 +535,9 @@ Reply YES to confirm or call if you need changes.`;
       if(all.length) return;
       const d = todayStr();
       const sample = [
-        {id:crypto.randomUUID(), token:1, date:d, slot:"09:00 AM", name:"Vijay Kumar", mobile:"9000000001", reason:"Fever", status:"Pending"},
-        {id:crypto.randomUUID(), token:2, date:d, slot:"09:15 AM", name:"Suma R", mobile:"9000000002", reason:"BP check", status:"Pending"},
-        {id:crypto.randomUUID(), token:3, date:d, slot:"05:15 PM", name:"Rahul", mobile:"9000000003", reason:"Follow-up", status:"Done"},
+        {id:crypto.randomUUID(), token:1, date:d, slot:"09:00 AM", name:"Vijay Kumar", mobile:"9000000001", patientId:patientIdFromMobile("9000000001"), reason:"Fever", status:"Pending"},
+        {id:crypto.randomUUID(), token:2, date:d, slot:"09:15 AM", name:"Suma R", mobile:"9000000002", patientId:patientIdFromMobile("9000000002"), reason:"BP check", status:"Pending"},
+        {id:crypto.randomUUID(), token:3, date:d, slot:"05:15 PM", name:"Rahul", mobile:"9000000003", patientId:patientIdFromMobile("9000000003"), reason:"Follow-up", status:"Done"},
       ];
       all.push(...sample); saveAll(all); renderMetrics(); renderTable();
     }
