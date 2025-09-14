@@ -1,95 +1,75 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" data-theme="light">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>PIN Login · Hospital ERP</title>
-  <link rel="stylesheet" href="../styles/styles.css" />
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Select Role</title>
+  <link rel="manifest" href="manifest.webmanifest"/>
+  <link rel="icon" href="assets/logo.png"/>
+  <link rel="stylesheet" href="styles.css?v=30"/>
   <style>
-    :root { --radius:16px; }
-    body { font-family: system-ui, Segoe UI, Roboto, sans-serif; background:#f5f7fb; min-height:100vh; margin:0; display:grid; place-items:center; }
-    .wrap { width:min(92vw, 420px); }
-    .login-card { background:#fff; border-radius:var(--radius); box-shadow:0 10px 30px rgba(2,6,23,.12), 0 3px 10px rgba(2,6,23,.06); padding:24px 22px; }
-    .title { margin:2px 0 14px; text-align:center; font-weight:800; font-size:1.6rem; color:#0b1220; }
-    .hint { color:#6b7280; font-size:.95rem; text-align:center; margin-bottom:14px; }
-    .input-group { display:flex; align-items:center; gap:10px; border-radius:12px; padding:12px 14px; background:#eef2ff; border:1px solid #dbe4ff; }
-    .input-group input { border:0; outline:0; background:transparent; flex:1; font-size:1.05rem; letter-spacing:.08em; }
-    .eye { cursor:pointer; user-select:none; opacity:.7 }
-    .row { display:flex; gap:12px; justify-content:center; margin:16px 0 10px }
-    .btn { border:0; border-radius:12px; padding:11px 18px; font-size:1rem; cursor:pointer; transition: transform .05s ease, background .15s ease, box-shadow .15s ease; }
-    .btn:active { transform: translateY(1px); }
-    .btn-primary { background:#2563eb; color:#fff; box-shadow:0 6px 16px rgba(37,99,235,.35) }
-    .btn-primary:hover { background:#1e4ed8; }
-    .btn-ghost { background:#f3f4f6; color:#111827; }
-    .btn-ghost:hover { background:#e5e7eb; }
-    .demo { text-align:center; color:#374151; font-size:.95rem; margin-top:6px; }
-    .demo b { font-weight:800; }
+    .wrap{min-height:100dvh;display:grid;place-items:center;padding:24px}
+    .card{max-width:520px;width:100%;border-radius:16px;padding:20px;box-shadow:var(--shadow);border:1px solid rgba(0,0,0,.06);background:var(--card-bg)}
+    .title{margin:0 0 8px 0}
+    .subtitle{color:var(--muted);margin:0 0 16px 0}
+    .tabs{display:flex;gap:10px;flex-wrap:wrap}
+    .tab{height:44px;display:inline-flex;align-items:center;justify-content:center;padding:0 18px;border-radius:999px;background:var(--card-bg);border:1px solid rgba(0,0,0,.08);cursor:pointer;font-weight:700}
+    .misc{display:flex;justify-content:space-between;align-items:center;margin-top:16px;gap:8px;flex-wrap:wrap}
+    .chip{height:40px;padding:0 14px;border-radius:999px;background:var(--card-bg);border:1px solid rgba(0,0,0,.06);cursor:pointer}
+    .center{display:flex;justify-content:center;margin-top:10px}
   </style>
 </head>
 <body>
+  <header class="banner">
+    <button id="themeToggle" class="chip floating-toggle" aria-label="Theme">🌙</button>
+  </header>
+
   <div class="wrap">
-    <div class="login-card">
-      <div class="title">🔒 PIN Login</div>
-      <div class="hint">Enter your 4–6 digit PIN to continue</div>
+    <div class="card">
+      <h1 class="title">Choose Role</h1>
+      <p class="subtitle">No PIN/password for now — pick a role to continue.</p>
 
-      <div class="input-group">
-        <span aria-hidden="true">🔑</span>
-        <input id="pinInput" type="password" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" maxlength="6" placeholder="4–6 digits" />
-        <span id="toggleEye" class="eye" title="Show/Hide PIN">👁️</span>
+      <div class="tabs">
+        <button class="tab" data-role="doctor">Doctor</button>
+        <button class="tab" data-role="supervisor">Supervisor</button>
+        <button class="tab" data-role="admin">Admin</button>
       </div>
 
-      <div class="row">
-        <button id="btnLogin" class="btn btn-primary">Login</button>
-        <button id="btnClear" class="btn btn-ghost">Clear Cache</button>
+      <div class="misc">
+        <span id="whoami" class="chip" style="pointer-events:none">Role: Guest</span>
+        <button id="clearCacheBtn" class="chip">Clear Cache</button>
       </div>
 
-      <div class="demo">PINs → <b>4321</b> Dashboard · <b>9876</b> Supervisor · <b>9999</b> Admin</div>
+      <div class="center">
+        <a class="chip" href="dashboard.html">Go to Dashboard</a>
+      </div>
     </div>
   </div>
 
-  <script>
-    // Safer redirect helper (works regardless of /pages/ depth)
-    function goto(file){
-      const base = location.pathname.replace(/[^/]+$/,''); // e.g., /pages/
-      location.href = base + file;
+  <script type="module">
+    // Theme
+    const tt=document.getElementById('themeToggle');
+    if(localStorage.theme){document.documentElement.dataset.theme=localStorage.theme;tt.textContent=localStorage.theme==='light'?'🌞':'🌙'}
+    tt.onclick=()=>{const cur=document.documentElement.dataset.theme||'light';const nxt=cur==='light'?'dark':'light';document.documentElement.dataset.theme=nxt;localStorage.theme=nxt;tt.textContent=nxt==='light'?'🌞':'🌙'}
+
+    // Utility
+    const who=document.getElementById('whoami');
+    const ses=JSON.parse(localStorage.getItem('session')||'{}');
+    if(who) who.textContent = ses.role ? `Role: ${ses.role}` : 'Role: Guest';
+
+    clearCacheBtn.onclick=async()=>{ localStorage.clear(); if('caches'in window){const ks=await caches.keys(); await Promise.all(ks.map(k=>caches.delete(k)))}; location.reload() }
+
+    function setRole(role){
+      const session = {role, name: role.toUpperCase(), loggedInAt: new Date().toISOString()};
+      localStorage.setItem('session', JSON.stringify(session));
+      if(role==='doctor')        location.href='dashboard.html';
+      else if(role==='supervisor')location.href='supervisor.html';
+      else if(role==='admin')     location.href='admin.html';
+      else                        location.href='dashboard.html';
     }
+    document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>setRole(b.dataset.role));
 
-    // Show/hide PIN
-    document.getElementById('toggleEye').addEventListener('click', () => {
-      const i = document.getElementById('pinInput');
-      i.type = i.type === 'password' ? 'text' : 'password';
-    });
-
-    // Digits only
-    document.getElementById('pinInput').addEventListener('input', (e) => {
-      e.target.value = e.target.value.replace(/\D+/g, '').slice(0, 6);
-    });
-
-    function handleLogin(){
-      const pin = (document.getElementById('pinInput').value || '').trim();
-      if (!/^\d{4,6}$/.test(pin)) { alert('Enter a 4–6 digit PIN'); return; }
-      if (pin === '4321') goto('dashboard.html');
-      else if (pin === '9876') goto('supervisor.html');
-      else if (pin === '9999') goto('admin.html');
-      else alert('Invalid PIN. Try 4321, 9876, or 9999.');
-    }
-
-    document.getElementById('btnLogin').addEventListener('click', handleLogin);
-    document.getElementById('pinInput').addEventListener('keydown', (e)=>{ if(e.key==='Enter') handleLogin(); });
-
-    // Clear cache (keep nothing except theme)
-    document.getElementById('btnClear').addEventListener('click', async ()=>{
-      const keep = new Set(['theme']);
-      for (const k of Object.keys(localStorage)) if (!keep.has(k)) localStorage.removeItem(k);
-      if ('caches' in window) {
-        const names = await caches.keys(); await Promise.all(names.map(n => caches.delete(n)));
-      }
-      alert('Cache cleared (kept theme).');
-      location.reload();
-    });
-
-    // Autofocus
-    setTimeout(()=> document.getElementById('pinInput')?.focus(), 50);
+    if('serviceWorker' in navigator){ navigator.serviceWorker.register('service-worker.js').catch(()=>{}) }
   </script>
 </body>
 </html>
