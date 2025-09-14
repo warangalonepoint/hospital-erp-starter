@@ -1,106 +1,247 @@
 /* ================================
-   Hospital ERP – Unified Styles
-   (cards-only dashboards)
+   Hospital ERP — Global Styles
+   Unifies dashboard look across pages
+   Includes mobile drawer/scrim fixes
    ================================ */
 
-/* Theme tokens */
+/* ---------- CSS Variables (Themes) ---------- */
 :root {
-  --bg: #0b1220;          /* dark default */
-  --panel: #0e1626;
-  --muted: #9aa8c7;
-  --line: #1c2740;
-  --fg: #e9eef7;
-
-  --chip-bg: #101a2c;
-  --chip-fg: var(--fg);
-
-  --radius: 18px;
-  --radius-xl: 22px;
-  --shadow-soft: 0 10px 28px rgba(0,0,0,.28), 0 3px 10px rgba(0,0,0,.18);
-}
-:root[data-theme="light"] {
-  --bg: #f6f7fb;
-  --panel: #ffffff;
-  --muted: #56607a;
-  --line: #e6e9f2;
-  --fg: #0e1630;
-
-  --chip-bg: #ffffff;
-  --chip-fg: #0e1630;
-  --shadow-soft: 0 10px 28px rgba(0,0,0,.09), 0 3px 10px rgba(0,0,0,.06);
+  --bg: #f7f7fb;
+  --text: #0f172a;
+  --muted: #64748b;
+  --card-bg: #ffffff;
+  --brand: #2563eb;
+  --brand-2: #8b5cf6;
+  --ok: #22c55e;
+  --warn: #f59e0b;
+  --danger: #ef4444;
+  --shadow: 0 1px 2px rgba(0,0,0,.04), 0 6px 16px rgba(0,0,0,.06);
+  --border: rgba(0,0,0,.08);
 }
 
-/* Base */
+html[data-theme="dark"] {
+  --bg: #0b1020;
+  --text: #e6e9f2;
+  --muted: #9aa5b1;
+  --card-bg: #0f162b;
+  --brand: #60a5fa;
+  --brand-2: #a78bfa;
+  --ok: #34d399;
+  --warn: #fbbf24;
+  --danger: #f87171;
+  --shadow: 0 1px 2px rgba(0,0,0,.35), 0 8px 24px rgba(0,0,0,.45);
+  --border: rgba(255,255,255,.12);
+}
+
+/* ---------- Base ---------- */
 * { box-sizing: border-box; }
-html,body { height: 100%; }
+html, body { height: 100%; }
 body {
   margin: 0;
-  font: 15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-  background: radial-gradient(1200px 800px at 10% -10%, rgba(63,94,251,.06), transparent),
-              radial-gradient(1000px 700px at 120% 10%, rgba(252,70,107,.06), transparent),
-              var(--bg);
-  color: var(--fg);
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.45 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji","Segoe UI Emoji";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Banner */
+a { color: var(--brand); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+h1,h2,h3,h4 { margin: 0 0 8px 0; line-height: 1.2; }
+h1 { font-size: 28px; }
+h2 { font-size: 20px; }
+h3 { font-size: 16px; }
+h4 { font-size: 14px; color: var(--muted); }
+
+p { margin: 0 0 10px 0; }
+.muted { color: var(--muted); }
+.mini { font-size: 12px; opacity: .85; }
+
+/* Tap-friendly input sizes (prevents iOS zoom jump) */
+input, select, textarea, button {
+  font: inherit;
+}
+input, select, textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--card-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  outline: none;
+}
+textarea { resize: vertical; }
+
+/* ---------- Layout ---------- */
+.section { margin: 12px; }
+.card, .kpi, .chart-card {
+  border-radius: 16px;
+  padding: 16px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+.grid { display: grid; gap: 12px; }
+.grid-2 { grid-template-columns: 1fr 1fr; }
+.grid-3 { grid-template-columns: repeat(3,1fr); }
+@media (max-width: 980px) { .grid-3, .grid-2 { grid-template-columns: 1fr; } }
+
+/* ---------- Banner / Top bar ---------- */
 .banner {
-  display:flex; align-items:center; justify-content:space-between;
-  padding: 14px 18px; background: var(--panel); border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0; left: 0; right: 0;
+  height: 54px;
+  backdrop-filter: saturate(180%) blur(12px);
+  background: color-mix(in srgb, var(--card-bg) 82%, transparent);
+  border-bottom: 1px solid var(--border);
+  z-index: 50;
 }
-.brand { display:flex; align-items:center; gap:10px; font-weight:800; }
-.brand .brand-mark { font-size: 22px; }
-.brand .brand-title { font-size: 18px; letter-spacing:.2px; }
+.floating-toggle {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 60;
+}
 
-/* Toolbar */
-.toolbar { display:flex; flex-wrap:wrap; gap:12px; padding: 16px 18px; }
+/* ---------- Fixed action bar ---------- */
+.fixed-actions {
+  position: sticky;
+  top: 54px;
+  display: flex; flex-wrap: wrap; gap: 10px;
+  padding: 8px 12px;
+  background: color-mix(in srgb, var(--card-bg) 90%, transparent);
+  border-bottom: 1px solid var(--border);
+  z-index: 40;
+}
+
+/* ---------- Chips / Buttons ---------- */
 .chip {
-  border: 1px solid var(--line);
-  background: var(--chip-bg);
-  color: var(--chip-fg);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 14px;
   border-radius: 999px;
-  padding: 10px 14px;
-  text-decoration: none;
-  display:inline-flex; align-items:center; gap:8px;
-  box-shadow: var(--shadow-soft);
+  background: var(--card-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
   cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
 }
-.chip:hover { filter: brightness(1.06); }
-.toggle { border:1px solid var(--line); background:var(--chip-bg); color:var(--chip-fg); border-radius:999px; padding:8px 10px; cursor:pointer; }
-
-/* Sections */
-.section { padding: 12px 18px 28px; max-width: 1080px; margin: 0 auto; }
-
-/* Cards grid */
-.card-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 18px;
+.chip.active,
+.chip:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--brand) 38%, transparent);
 }
 
-/* Card base */
-.card {
-  position: relative;
-  display:block;
-  padding: 18px;
-  border-radius: 18px;
-  color: #fff;
-  text-decoration: none;
-  box-shadow: var(--shadow-soft);
-  border: none;
-  overflow: hidden;
-  transition: transform .18s ease, box-shadow .18s ease;
+/* ---------- KPI Cards ---------- */
+.kpi-grid { display: grid; gap: 14px; grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 760px) { .kpi-grid { grid-template-columns: 1fr; } }
+.kpi h4 { font-size: 14px; opacity: .9; }
+.kpi .num { font-size: 32px; font-weight: 800; }
+.tint { background: color-mix(in srgb, #2563eb 8%, var(--card-bg)); }
+.tint-blue { background: color-mix(in srgb, #2563eb 16%, var(--card-bg)); }
+.tint-mint { background: color-mix(in srgb, #22c55e 14%, var(--card-bg)); }
+.tint-peach { background: color-mix(in srgb, #fb923c 14%, var(--card-bg)); }
+
+/* ---------- Tables ---------- */
+.table-wrap {
+  overflow: auto;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
 }
-.card:hover { transform: translateY(-4px); box-shadow: 0 14px 34px rgba(0,0,0,.28); }
-.card h2 { margin:0 0 6px; font-size: 20px; font-weight: 800; color: #fff; text-decoration: underline; text-underline-offset: 4px; }
-.card p { margin: 4px 0 0; color: rgba(255,255,255,.92); }
+table {
+  width: 100%;
+  min-width: 960px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+thead th {
+  position: sticky; top: 0;
+  background: var(--card-bg);
+  z-index: 1;
+  font-weight: 700;
+}
+th, td {
+  font-size: 13px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+tr:hover td {
+  background: color-mix(in srgb, var(--card-bg) 92%, var(--brand) 8%);
+}
+td .filters { flex-wrap: wrap; gap: 8px; }
 
-/* Gradient colors (bold) */
-.grad-purple  { background: linear-gradient(135deg,#6d28d9 0%,#8b5cf6 50%,#c4b5fd 100%); }
-.grad-mint    { background: linear-gradient(135deg,#059669 0%,#10b981 50%,#6ee7b7 100%); }
-.grad-sky     { background: linear-gradient(135deg,#0369a1 0%,#0ea5e9 50%,#7dd3fc 100%); }
-.grad-rose    { background: linear-gradient(135deg,#be123c 0%,#f43f5e 50%,#fecdd3 100%); }
-.grad-peach   { background: linear-gradient(135deg,#b45309 0%,#f59e0b 50%,#fde68a 100%); }
-.grad-lavender{ background: linear-gradient(135deg,#4c1d95 0%,#7c3aed 50%,#ddd6fe 100%); }
+/* ---------- Pills / Status ---------- */
+.pill {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--card-bg) 92%, #fff 8%);
+}
+.pill.pending { background: color-mix(in srgb, var(--warn) 18%, var(--card-bg)); }
+.pill.done    { background: color-mix(in srgb, var(--ok)   18%, var(--card-bg)); }
 
-/* Footer */
-.footer { text-align:center; opacity:.7; padding: 16px 0 24px; }
+/* ---------- Filters ---------- */
+.filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+/* ---------- Charts ---------- */
+canvas { width: 100%; height: 280px; }
+
+/* ---------- Drawer + Scrim (mobile-safe) ---------- */
+.scrim {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.32);
+  opacity: 0; pointer-events: none;
+  transition: opacity .2s ease;
+  z-index: 999;
+}
+.scrim.show { opacity: 1; pointer-events: auto; }
+
+.drawer {
+  position: fixed; right: 0; top: 0;
+  height: 100vh; width: 560px; max-width: 100vw;
+  background: var(--card-bg);
+  border-left: 1px solid var(--border);
+  box-shadow: -10px 0 28px rgba(0,0,0,.25);
+  transform: translateX(100%);
+  transition: transform .25s ease;
+  padding: 16px 14px 110px;
+  z-index: 1000;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+.drawer.show { transform: translateX(0); }
+
+/* Lock background scroll when drawer is open */
+body.no-scroll { overflow: hidden; }
+
+/* ---------- Utilities ---------- */
+.center { display: flex; justify-content: center; align-items: center; }
+.right  { margin-left: auto; }
+.nowrap { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hidden { display: none !important; }
+
+/* ---------- Responsive Tweaks ---------- */
+@media (max-width: 560px) {
+  h1 { font-size: 22px; }
+  h2 { font-size: 18px; }
+  .kpi .num { font-size: 28px; }
+  .chip { height: 42px; padding: 0 12px; }
+  input, select, textarea { min-height: 44px; font-size: 16px; }
+  table { min-width: 760px; }
+}
+
+/* ---------- Print Helpers (tickets / Rx) ---------- */
+@media print {
+  .banner, .fixed-actions, .floating-toggle, .scrim { display: none !important; }
+  body { background: #fff; color: #000; }
+  .card, .chart-card, .kpi, .table-wrap { box-shadow: none; border-color: #000; }
+}
