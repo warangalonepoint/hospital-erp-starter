@@ -1,35 +1,473 @@
-<!doctype html>
-<html lang="en" data-theme="dark">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Booking Status</title>
-  <link rel="stylesheet" href="../styles/styles.css" />
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Doctor — Booking Status</title>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="stylesheet" href="styles.css"/>
+  <style>
+    /* Page-scoped dark UI (keeps consistent even if styles.css differs) */
+    :root { --bg:#0b0f14; --card:#121821; --muted:#96a0af; --text:#eaf0ff; --accent:#4ade80; --line:#1d2631; --warn:#f59e0b; }
+    body { background:var(--bg); color:var(--text); font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, 'Helvetica Neue', Arial;}
+    .wrap{max-width:1100px;margin:16px auto 120px;padding:0 12px}
+    .header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:10px 0 16px}
+    .brand{font-weight:700;font-size:18px;opacity:.95}
+    .tabs{display:flex;gap:8px;flex-wrap:wrap}
+    .tab{background:#0f1620;border:1px solid var(--line);padding:8px 12px;border-radius:10px;color:var(--text);text-decoration:none}
+    .tab.active{background:var(--card);border-color:#243040}
+    .row{display:grid;grid-template-columns:1fr;gap:12px}
+    @media(min-width:860px){.row.three{grid-template-columns:repeat(3,1fr)}}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px}
+    .card h3{margin:0 0 10px 0;font-size:14px;color:var(--muted);font-weight:600;letter-spacing:.2px}
+    .metric{font-size:28px;font-weight:700}
+    .muted{color:var(--muted);font-size:12px}
+    .btn{background:#16202b;border:1px solid #233245;color:var(--text);padding:9px 12px;border-radius:12px;cursor:pointer;font-weight:600}
+    .btn.ghost{background:transparent;border:1px dashed #2b3646}
+    .btn.primary{background:#1c2c20;border-color:#244a33;color:#c8fadc}
+    .btn.warn{background:#2a2215;border-color:#3f3216;color:#ffe0b2}
+    .searchbar{display:flex;gap:8px;flex-wrap:wrap}
+    input,select,textarea{background:#0c121a;color:var(--text);border:1px solid #1a2431;border-radius:10px;padding:10px 12px;outline:none}
+    input:focus,select:focus,textarea:focus{border-color:#304156}
+    .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:14px}
+    table{width:100%;border-collapse:collapse;min-width:900px}
+    th,td{padding:10px 12px;border-bottom:1px solid var(--line);font-size:13px;text-align:left}
+    th{position:sticky;top:0;background:#101722;color:#b8c2d0;font-weight:700;z-index:1}
+    tr:hover td{background:#0f1520}
+    .pill{font-size:12px;padding:4px 8px;border-radius:999px;border:1px solid #253246;background:#0d1621;display:inline-flex;gap:6px;align-items:center}
+    .pill.done{border-color:#244a33;background:#0f2016;color:#c8fadc}
+    .pill.pending{border-color:#43380f;background:#1c1607;color:#ffe5a3}
+    .footerbar{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(180deg,rgba(11,15,20,0),rgba(11,15,20,.85) 12%,rgba(11,15,20,1) 40%);padding:12px;display:flex;gap:8px;justify-content:center;border-top:1px solid var(--line);backdrop-filter:blur(6px)}
+    /* Doctor Panel (drawer) */
+    .drawer{position:fixed;right:-480px;top:0;height:100vh;width:480px;max-width:96vw;background:#0f1620;border-left:1px solid var(--line);box-shadow:-8px 0 24px rgba(0,0,0,.35);transition:right .25s ease;padding:16px 14px 100px;z-index:100}
+    .drawer.show{right:0}
+    .drawer h2{margin:0 0 8px 0;font-size:18px}
+    .grid2{display:grid;grid-template-columns:1fr;gap:10px}
+    @media(min-width:560px){.grid2{grid-template-columns:1fr 1fr}}
+    .drawer .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  </style>
 </head>
 <body>
-  <header class="app-topbar">
-    <nav class="nav">
-      <a class="link-back" href="./dashboard.html">← Dashboard</a>
-      <div class="spacer"></div>
-      <button class="pill" id="themeToggle">🌗</button>
-    </nav>
-  </header>
-  <main class="container">
-    <section class="panel">
-      <h2 style="margin-bottom:.25rem">Booking Status</h2>
-      <p>Stub page. Wire your data/API next.</p>
-      <div class="chart-block" style="margin-top:1rem"><h4>Placeholder</h4><div class="chart-placeholder"></div></div>
-    </section>
-  </main>
+  <div class="wrap">
+    <div class="header">
+      <div class="brand">🩺 Doctor • <strong>Booking Status</strong></div>
+      <div class="tabs">
+        <a class="tab" href="analytics.html">Doctor Dashboard</a>
+        <button class="tab active" type="button">Booking Status</button>
+        <a class="tab" href="patients.html">Patients</a>
+        <a class="tab" href="pharmacy.html">Pharmacy</a>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="row three">
+      <div class="card"><h3>Today</h3><div class="metric" id="mToday">0</div><div class="muted">Appointments</div></div>
+      <div class="card"><h3>This Month</h3><div class="metric" id="mMonth">0</div><div class="muted">Calendar month</div></div>
+      <div class="card"><h3>YTD</h3><div class="metric" id="mYTD">0</div><div class="muted">Year to Date</div></div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card" style="margin-top:12px">
+      <h3>Search & Scopes</h3>
+      <div class="searchbar">
+        <input id="q" placeholder="Search patient, mobile, reason…"/>
+        <select id="scope">
+          <option value="today">Today</option>
+          <option value="month">This Month</option>
+          <option value="ytd">Year to Date</option>
+          <option value="all">All</option>
+        </select>
+        <input id="pickDate" type="date" title="Pick a specific date (only when scope=Today)"/>
+        <button class="btn" id="btnApply">Apply</button>
+        <button class="btn ghost" id="btnReset">Reset</button>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrap card">
+      <table id="tbl">
+        <thead>
+          <tr>
+            <th style="width:70px">Token</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Patient</th>
+            <th>Patient ID</th>
+            <th>Mobile</th>
+            <th>Reason</th>
+            <th>Status</th>
+            <th style="width:280px">Doctor</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Footer scope shortcuts -->
+  <div class="footerbar">
+    <button class="btn primary" id="btnToday">Today</button>
+    <button class="btn" id="btnMonth">This Month</button>
+    <button class="btn" id="btnYTD">YTD</button>
+    <button class="btn ghost" id="btnAll">All</button>
+  </div>
+
+  <!-- Doctor Drawer -->
+  <div class="drawer" id="drawer">
+    <h2 id="dwTitle">Patient</h2>
+    <div class="muted" id="dwSub">—</div>
+    <hr style="border-color:#1d2631;margin:10px 0 12px"/>
+    <div class="grid2">
+      <div>
+        <label>Name</label>
+        <input id="pName" placeholder="Full name"/>
+      </div>
+      <div>
+        <label>Mobile</label>
+        <input id="pMobile" placeholder="10-digit mobile" disabled/>
+      </div>
+      <div>
+        <label>Age</label>
+        <input id="pAge" type="number" min="0" max="120" placeholder="Age"/>
+      </div>
+      <div>
+        <label>Gender</label>
+        <select id="pGender">
+          <option value="">—</option>
+          <option>Male</option>
+          <option>Female</option>
+          <option>Other</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="margin-top:10px">
+      <label>Diagnosis</label>
+      <textarea id="pDiagnosis" rows="2" placeholder="e.g., Acute gastritis"></textarea>
+    </div>
+    <div style="margin-top:10px">
+      <label>Treatment / Procedure</label>
+      <textarea id="pTreatment" rows="2" placeholder="e.g., IV fluids, rest"></textarea>
+    </div>
+    <div style="margin-top:10px">
+      <label>Medicines</label>
+      <textarea id="pMedicines" rows="3" placeholder="e.g., Pantoprazole 40mg OD 5 days"></textarea>
+    </div>
+    <div style="margin-top:10px">
+      <label>Advice / Notes</label>
+      <textarea id="pAdvice" rows="2" placeholder="e.g., Avoid spicy food, review after 5 days"></textarea>
+    </div>
+
+    <div class="btns">
+      <button class="btn primary" id="btnSavePatient">Save</button>
+      <button class="btn warn" id="btnPrintRx">Print Prescription</button>
+      <button class="btn" id="btnClose">Close</button>
+    </div>
+  </div>
+
+  <iframe id="printFrame" style="display:none"></iframe>
+
   <script>
-    const root = document.documentElement;
-    const saved = localStorage.getItem('theme');
-    if (saved) root.setAttribute('data-theme', saved);
-    else if (window.matchMedia('(prefers-color-scheme: light)').matches) root.setAttribute('data-theme','light');
-    document.getElementById('themeToggle').onclick = () => {
-      const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-      root.setAttribute('data-theme', next); localStorage.setItem('theme', next);
+    /********** Shared Stores **********/
+    const LS_BOOKINGS = "erp_bookings_v1";     // created by bookings.html (Supervisor)
+    const LS_PATIENTS = "erp_patients_v1";     // created/updated here (Doctor)
+    const $ = id => document.getElementById(id);
+
+    /** Load / Save **/
+    const loadBookings = () => {
+      try { return JSON.parse(localStorage.getItem(LS_BOOKINGS) || "[]"); } catch { return []; }
     };
+    const loadPatients = () => {
+      try { return JSON.parse(localStorage.getItem(LS_PATIENTS) || "{}"); } catch { return {}; }
+    };
+    const savePatients = (obj) => localStorage.setItem(LS_PATIENTS, JSON.stringify(obj));
+
+    /** Utilities **/
+    const fmtDate = d => new Date(d).toISOString().slice(0,10);
+    const todayStr = () => fmtDate(new Date());
+    function monthRange(date=new Date()){
+      const s = new Date(date.getFullYear(), date.getMonth(), 1);
+      const e = new Date(date.getFullYear(), date.getMonth()+1, 0);
+      return {start: fmtDate(s), end: fmtDate(e)};
+    }
+    function ytdRange(date=new Date()){
+      const s = new Date(date.getFullYear(), 0, 1);
+      const e = date;
+      return {start: fmtDate(s), end: fmtDate(e)};
+    }
+    const patientIdFromMobile = mobile => `PT-${String(mobile||"").replace(/\D/g,"")}`;
+    const phoneLink = num => `tel:${num}`;
+    const escapeHtml = s => String(s||"").replace(/[&<>"']/g,c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+
+    /********** State **********/
+    let allBookings = loadBookings();
+    let patients = loadPatients();
+    // view controls
+    let scope = "today";
+    let pickDate = todayStr();
+    let q = "";
+
+    // current selection for drawer
+    let currentVisit = null;   // selected booking record (visit)
+    let currentPid = null;     // patient id string
+
+    /** Metrics **/
+    function renderMetrics(){
+      const t = todayStr();
+      const m = monthRange();
+      const y = ytdRange();
+      const countToday = allBookings.filter(r => r.date === t).length;
+      const countMonth = allBookings.filter(r => r.date >= m.start && r.date <= m.end).length;
+      const countYTD = allBookings.filter(r => r.date >= y.start && r.date <= y.end).length;
+      $("mToday").textContent = countToday;
+      $("mMonth").textContent = countMonth;
+      $("mYTD").textContent = countYTD;
+    }
+
+    /** Filtering **/
+    function scopedList(){
+      let list = allBookings.slice();
+      if(scope === "today"){
+        const d = pickDate || todayStr();
+        list = list.filter(r => r.date === d);
+      } else if(scope === "month"){
+        const m = monthRange();
+        list = list.filter(r => r.date >= m.start && r.date <= m.end);
+      } else if(scope === "ytd"){
+        const y = ytdRange();
+        list = list.filter(r => r.date >= y.start && r.date <= y.end);
+      }
+      // search
+      const qq = (q || "").toLowerCase().trim();
+      if(qq){
+        list = list.filter(r =>
+          (r.name||"").toLowerCase().includes(qq) ||
+          (r.mobile||"").includes(qq) ||
+          (r.reason||"").toLowerCase().includes(qq) ||
+          (r.slot||"").toLowerCase().includes(qq) ||
+          patientIdFromMobile(r.mobile).toLowerCase().includes(qq)
+        );
+      }
+      // sort visit order: date asc, slot asc, token asc
+      list.sort((a,b) => (a.date.localeCompare(b.date) || a.slot.localeCompare(b.slot) || (a.token||0)-(b.token||0)));
+      return list;
+    }
+
+    /** Table **/
+    function renderTable(){
+      const tbody = $("rows");
+      const list = scopedList();
+      tbody.innerHTML = "";
+      if(!list.length){
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 9; td.className = "muted"; td.textContent = "No records.";
+        tr.appendChild(td); tbody.appendChild(tr); return;
+      }
+      for(const r of list){
+        const pid = patientIdFromMobile(r.mobile);
+        const p = patients[pid] || {};
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><strong>#${r.token||"-"}</strong></td>
+          <td>${r.date}</td>
+          <td>${r.slot}</td>
+          <td>${escapeHtml(r.name||"")}</td>
+          <td>${pid}</td>
+          <td><a href="${phoneLink(r.mobile)}">${r.mobile}</a></td>
+          <td>${escapeHtml(r.reason||"")}</td>
+          <td><span class="pill ${r.status==='Done'?'done':'pending'}">${r.status==='Done'?'✔ Done':'⏳ Pending'}</span></td>
+          <td>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn" data-act="open" data-id="${r.id}">Open</button>
+              <button class="btn warn" data-act="rx" data-id="${r.id}">Prescription</button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    /** Drawer (Doctor-only edit) **/
+    function openDrawer(visit){
+      currentVisit = visit;
+      currentPid = patientIdFromMobile(visit.mobile);
+      const p = patients[currentPid] || {
+        id: currentPid,
+        mobile: visit.mobile,
+        name: visit.name || "",
+        age: "", gender: "",
+        history: [] // array per visit
+      };
+
+      // UI fill
+      $("dwTitle").textContent = p.name || visit.name || "Patient";
+      $("dwSub").textContent = `${currentPid} • ${visit.date} • ${visit.slot} • Token #${visit.token||"-"}`;
+      $("pName").value = p.name || visit.name || "";
+      $("pMobile").value = p.mobile || visit.mobile || "";
+      $("pAge").value = p.age || "";
+      $("pGender").value = p.gender || "";
+      $("pDiagnosis").value = ""; // default blank for this visit
+      $("pTreatment").value = "";
+      $("pMedicines").value = "";
+      $("pAdvice").value = "";
+      $("drawer").classList.add("show");
+    }
+    function closeDrawer(){ $("drawer").classList.remove("show"); currentVisit=null; currentPid=null; }
+
+    function savePatient(){
+      if(!currentVisit || !currentPid) return;
+      const name = $("pName").value.trim();
+      const age = $("pAge").value.trim();
+      const gender = $("pGender").value;
+      const diagnosis = $("pDiagnosis").value.trim();
+      const treatment = $("pTreatment").value.trim();
+      const medicines = $("pMedicines").value.trim();
+      const advice = $("pAdvice").value.trim();
+
+      // Upsert patient master
+      const p = patients[currentPid] || { id: currentPid, mobile: currentVisit.mobile, history: [] };
+      p.name = name || p.name || currentVisit.name || "";
+      p.age = age;
+      p.gender = gender;
+      p.mobile = currentVisit.mobile;
+      p.lastVisit = currentVisit.date;
+
+      // Append this visit summary
+      p.history.push({
+        bookingId: currentVisit.id,
+        token: currentVisit.token,
+        date: currentVisit.date,
+        slot: currentVisit.slot,
+        diagnosis, treatment, medicines, advice,
+        reason: currentVisit.reason || ""
+      });
+      patients[currentPid] = p;
+      savePatients(patients);
+
+      // Also reflect name change back to booking record (read-only except name sync)
+      const idx = allBookings.findIndex(x => x.id === currentVisit.id);
+      if(idx >= 0 && name){ allBookings[idx].name = name; localStorage.setItem(LS_BOOKINGS, JSON.stringify(allBookings)); }
+
+      alert("Saved.");
+      renderTable(); // update visible name if changed
+    }
+
+    /** Print Prescription **/
+    function printPrescription(visit){
+      const pid = patientIdFromMobile(visit.mobile);
+      const p = patients[pid] || {};
+      // Last entry for this booking (if any)
+      const hist = (p.history||[]).filter(h => h.bookingId === visit.id).slice(-1)[0] || {};
+      const docName = "Onestop Clinic — Doctor";
+      const addr = "Warangal, Telangana • +91-00000 00000";
+
+      const html = `
+        <html><head><meta charset="utf-8"><title>Prescription ${pid}</title>
+        <style>
+          body{font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto; padding:18px}
+          .rx{max-width:720px;margin:0 auto;border:1px solid #111;padding:18px}
+          h1{font-size:20px;margin:0}
+          .muted{color:#444}
+          .row{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+          .sec{margin-top:12px}
+          .box{border:1px dashed #333;padding:10px;border-radius:8px;white-space:pre-wrap}
+          .hl{font-weight:700}
+        </style></head>
+        <body onload="window.print(); setTimeout(()=>window.close(), 300);">
+          <div class="rx">
+            <div class="row">
+              <div>
+                <h1>${docName}</h1>
+                <div class="muted">${addr}</div>
+              </div>
+              <div>
+                <div><span class="hl">Date:</span> ${visit.date}</div>
+                <div><span class="hl">Token:</span> #${visit.token||"-"}</div>
+                <div><span class="hl">Time:</span> ${visit.slot}</div>
+              </div>
+            </div>
+            <hr/>
+            <div class="row">
+              <div><span class="hl">Patient:</span> ${escapeHtml(p.name || visit.name || "")}</div>
+              <div><span class="hl">Patient ID:</span> ${pid}</div>
+            </div>
+            <div class="row">
+              <div><span class="hl">Age/Gender:</span> ${(p.age||"-")}/${(p.gender||"-")}</div>
+              <div><span class="hl">Mobile:</span> ${visit.mobile}</div>
+            </div>
+
+            <div class="sec"><div class="hl">Diagnosis</div><div class="box">${escapeHtml(hist.diagnosis||"")}</div></div>
+            <div class="sec"><div class="hl">Treatment / Procedure</div><div class="box">${escapeHtml(hist.treatment||"")}</div></div>
+            <div class="sec"><div class="hl">Medicines</div><div class="box">${escapeHtml(hist.medicines||"")}</div></div>
+            <div class="sec"><div class="hl">Advice / Notes</div><div class="box">${escapeHtml(hist.advice||"")}</div></div>
+
+            <hr/>
+            <div class="muted">Computer generated prescription • ${new Date().toLocaleString()}</div>
+          </div>
+        </body></html>
+      `;
+      const frame = $("printFrame").contentWindow || $("printFrame");
+      frame.document.open(); frame.document.write(html); frame.document.close();
+    }
+
+    /********** Events **********/
+    function bind(){
+      $("btnApply").addEventListener("click", ()=>{
+        q = $("q").value; scope = $("scope").value; pickDate = $("pickDate").value || todayStr();
+        renderTable();
+      });
+      $("btnReset").addEventListener("click", ()=>{
+        q=""; scope="today"; pickDate=todayStr();
+        $("q").value=""; $("scope").value="today"; $("pickDate").value=todayStr();
+        renderTable();
+      });
+
+      $("btnToday").addEventListener("click", ()=>{$("scope").value="today"; scope="today"; pickDate=todayStr(); $("pickDate").value=todayStr(); renderTable();});
+      $("btnMonth").addEventListener("click", ()=>{$("scope").value="month"; scope="month"; renderTable();});
+      $("btnYTD").addEventListener("click", ()=>{$("scope").value="ytd"; scope="ytd"; renderTable();});
+      $("btnAll").addEventListener("click", ()=>{$("scope").value="all"; scope="all"; renderTable();});
+
+      $("rows").addEventListener("click", (e)=>{
+        const btn = e.target.closest("button.btn"); if(!btn) return;
+        const id = btn.getAttribute("data-id");
+        const act = btn.getAttribute("data-act");
+        const visit = allBookings.find(x => x.id === id);
+        if(!visit) return;
+        if(act === "open"){ openDrawer(visit); }
+        if(act === "rx"){ printPrescription(visit); }
+      });
+
+      $("btnClose").addEventListener("click", closeDrawer);
+      $("btnSavePatient").addEventListener("click", savePatient);
+      $("btnPrintRx").addEventListener("click", ()=>{
+        if(currentVisit) printPrescription(currentVisit);
+      });
+    }
+
+    function seedIfEmpty(){
+      // If Supervisor hasn't created any bookings, create demo so doctor can see layout
+      if(!allBookings.length){
+        const d = todayStr();
+        const demo = [
+          {id:crypto.randomUUID(), token:1, date:d, slot:"09:00 AM", name:"Vijay Kumar", mobile:"9000000001", reason:"Fever", status:"Pending"},
+          {id:crypto.randomUUID(), token:2, date:d, slot:"09:15 AM", name:"Suma R", mobile:"9000000002", reason:"BP check", status:"Pending"},
+          {id:crypto.randomUUID(), token:3, date:d, slot:"05:15 PM", name:"Rahul", mobile:"9000000003", reason:"Follow-up", status:"Done"},
+        ];
+        localStorage.setItem(LS_BOOKINGS, JSON.stringify(demo));
+        allBookings = demo;
+      }
+    }
+
+    function init(){
+      seedIfEmpty();
+      renderMetrics();
+      $("scope").value = "today";
+      $("pickDate").value = todayStr();
+      bind();
+      renderTable();
+    }
+    init();
   </script>
 </body>
 </html>
