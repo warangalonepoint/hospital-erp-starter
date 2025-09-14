@@ -1,229 +1,478 @@
 <!doctype html>
 <html lang="en" data-theme="light">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Admin • Hospital ERP</title>
-  <link rel="stylesheet" href="../styles/styles.css" />
-  <link rel="stylesheet" href="../styles/ui.css" />
-  <link rel="icon" href="../public/assets/icon-192.png">
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Admin</title>
+  <link rel="manifest" href="manifest.webmanifest"/>
+  <link rel="icon" href="assets/logo.png"/>
+  <link rel="stylesheet" href="styles.css?v=30"/>
+  <style>
+    /* Match dashboard look */
+    .section{margin:12px}
+    .tint{border-radius:16px;padding:16px;box-shadow:var(--shadow);border:1px solid rgba(0,0,0,.06)}
+    .tint-blue{background: color-mix(in srgb, #2563eb 16%, var(--card-bg))}
+    .tint-mint{background: color-mix(in srgb, #22c55e 14%, var(--card-bg))}
+    .tint-peach{background: color-mix(in srgb, #fb923c 14%, var(--card-bg))}
+    .kpi-grid{display:grid;gap:14px;grid-template-columns:repeat(4,1fr)}
+    @media (max-width:980px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+    @media (max-width:640px){.kpi-grid{grid-template-columns:1fr}}
+    .kpi h4{font-size:14px;opacity:.85;margin-bottom:6px}
+    .kpi .num{font-size:32px;font-weight:800}
+    .card{border-radius:16px;padding:16px;box-shadow:var(--shadow);border:1px solid rgba(0,0,0,.06)}
+    .grid{display:grid;gap:12px}
+    .grid-2{grid-template-columns:1fr 1fr}
+    .grid-3{grid-template-columns:repeat(3,1fr)}
+    @media (max-width:980px){.grid-3{grid-template-columns:1fr}}
+    .muted{color:var(--muted);font-size:13px}
+    .chip{height:40px;padding:0 14px;border-radius:999px;background:var(--card-bg);border:1px solid rgba(0,0,0,.06);cursor:pointer}
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .table-wrap{overflow:auto;border-radius:16px;border:1px solid rgba(0,0,0,.06)}
+    table{width:100%;min-width:900px;border-collapse:separate;border-spacing:0}
+    thead th{position:sticky;top:0;background:var(--card-bg);z-index:1}
+    th,td{padding:10px 12px;border-bottom:1px solid rgba(0,0,0,.06);text-align:left;font-size:13px}
+    tr:hover td{background:color-mix(in srgb, var(--card-bg) 92%, #2563eb 8%)}
+    input,select,textarea{width:100%}
+    .mini{font-size:12px;opacity:.8}
+  </style>
 </head>
 <body>
   <!-- Banner -->
   <header class="banner">
-    <div class="brand">
-      <span class="brand-mark">🛠️</span>
-      <span class="brand-title">Admin</span>
-    </div>
-    <button id="themeToggle" class="toggle" title="Toggle theme">🌙</button>
+    <button id="themeToggle" class="chip floating-toggle" aria-label="Theme">🌙</button>
   </header>
 
-  <!-- Toolbar -->
-  <nav class="toolbar">
-    <a class="chip" href="./login.html">← Login</a>
-    <a class="chip" href="./dashboard.html">Dashboard</a>
-    <button id="btnClear" class="chip">Clear Cache</button>
+  <!-- Nav actions -->
+  <nav class="fixed-actions">
+    <a class="chip" href="dashboard.html">Doctor Dashboard</a>
+    <a class="chip" href="booking-status.html">Doctor: Status</a>
+    <a class="chip" href="supervisor.html">Supervisor</a>
+    <a class="chip" href="bookings.html">Bookings</a>
+    <a class="chip" href="pharmacy.html">Pharmacy</a>
+    <a class="chip" href="settings.html">Settings</a>
+    <span id="whoami" class="chip" style="pointer-events:none">Role: Admin</span>
+    <button id="clearCacheBtn" class="chip">Clear Cache</button>
   </nav>
 
-  <main class="section">
-    <!-- Quick links -->
-    <div class="card-grid" style="margin-bottom:18px">
-      <a class="card grad-sky" href="./pharmacy.html">
-        <h2>Pharmacy</h2>
-        <p>Sell • Purchase • Stock • Reports</p>
-      </a>
-      <a class="card grad-lavender" href="./settings.html">
-        <h2>Settings</h2>
-        <p>Patients & Staff tools</p>
-      </a>
+  <!-- KPIs -->
+  <section class="section">
+    <div class="kpi-grid">
+      <div class="kpi tint tint-blue">
+        <h4>Bookings Today</h4>
+        <div class="num" id="kToday">0</div>
+        <div class="muted" id="lblToday"></div>
+      </div>
+      <div class="kpi tint tint-mint">
+        <h4>Bookings This Month</h4>
+        <div class="num" id="kMonth">0</div>
+        <div class="muted" id="lblMonth"></div>
+      </div>
+      <div class="kpi tint tint-peach">
+        <h4>Total Users</h4>
+        <div class="num" id="kUsers">0</div>
+        <div class="muted">doctor • supervisor • admin</div>
+      </div>
+      <div class="kpi tint" style="background: color-mix(in srgb, #8b5cf6 14%, var(--card-bg))">
+        <h4>Branches</h4>
+        <div class="num" id="kBranches">0</div>
+        <div class="muted">active locations</div>
+      </div>
     </div>
+  </section>
 
-    <!-- Inventory Tools -->
-    <section class="panel" aria-label="Inventory Tools">
-      <h2 style="margin-top:0">Inventory Tools</h2>
-
-      <div class="card-grid" style="margin-top:12px">
-        <!-- Scan to upload -->
-        <div class="card" style="background:var(--panel); color:var(--fg); border:1px solid var(--line)">
-          <h3>📷 Scan to Upload Stock</h3>
-          <p class="muted">Use the camera to scan an item barcode, then save/update stock.</p>
-
-          <div class="row" style="margin-top:10px">
-            <button id="scanStart" class="chip">Start Scanner</button>
-            <button id="scanStop" class="chip">Stop</button>
-            <span class="muted" id="scanStatus">—</span>
+  <!-- Quick links -->
+  <section class="section">
+    <div class="grid grid-3">
+      <div class="card">
+        <div class="toolbar" style="justify-content:space-between">
+          <div>
+            <h2 style="margin:0">User Management</h2>
+            <div class="muted">Create roles, handle access.</div>
           </div>
-
-          <div id="scanVideo" style="height:260px;border-radius:12px;background:#000;margin-top:10px;overflow:hidden"></div>
-
-          <div class="row" style="margin-top:12px">
-            <input id="iName" placeholder="Item name" style="flex:1">
-            <input id="iBarcode" placeholder="Barcode" style="max-width:220px">
-            <input id="iBatch" placeholder="Batch" style="max-width:160px">
-            <input id="iExpiry" placeholder="YYYY-MM" style="max-width:140px">
-          </div>
-          <div class="row" style="margin-top:10px">
-            <input id="iMRP" type="number" step="0.01" placeholder="MRP" style="max-width:160px">
-            <input id="iGST" type="number" step="0.01" placeholder="GST %" style="max-width:160px">
-            <input id="iQty" type="number" step="1" placeholder="Qty" style="max-width:160px">
-            <button id="btnSaveStock" class="chip" style="background:#0ea5e9;border-color:transparent;color:#06121f;font-weight:700">Save to Stock</button>
-          </div>
-        </div>
-
-        <!-- CSV import/export -->
-        <div class="card" style="background:var(--panel); color:var(--fg); border:1px solid var(--line)">
-          <h3>⬆ Import Inventory (CSV)</h3>
-          <p class="muted">Columns flexible: code/name/batch/qty/mrp/gst/expiry (barcode/code merged).</p>
-          <input type="file" id="invCSVFile" accept=".csv" />
-          <div class="row" style="margin-top:10px">
-            <button id="btnImportCSV" class="chip">Import</button>
-            <button id="btnExportInv" class="chip">Export Inventory</button>
-            <span id="importStatus" class="muted">—</span>
-          </div>
-          <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
-          <h4>Quick Exports</h4>
-          <div class="row">
-            <button id="btnExportPatients" class="chip">Patients.csv</button>
-            <button id="btnExportInvoices" class="chip">Invoices.csv</button>
-            <button id="btnExportInvItems" class="chip">Invoice_Items.csv</button>
-          </div>
-        </div>
-
-        <!-- Backup / Restore -->
-        <div class="card" style="background:var(--panel); color:var(--fg); border:1px solid var(--line)">
-          <h3>🗄️ Backup & Restore</h3>
-          <p class="muted">Download a JSON snapshot of local data, or restore from a JSON file.</p>
-          <div class="row" style="margin-top:10px">
-            <button id="btnBackup" class="chip">Download Backup (JSON)</button>
-            <input type="file" id="restoreFile" accept=".json" />
-            <button id="btnRestore" class="chip">Restore</button>
-          </div>
-          <p id="backupMsg" class="muted">—</p>
+          <a class="chip" href="#users">Open</a>
         </div>
       </div>
-    </section>
-  </main>
+      <div class="card">
+        <div class="toolbar" style="justify-content:space-between">
+          <div>
+            <h2 style="margin:0">Branch Management</h2>
+            <div class="muted">Multi-branch (Pro-ready).</div>
+          </div>
+          <a class="chip" href="#branches">Open</a>
+        </div>
+      </div>
+      <div class="card">
+        <div class="toolbar" style="justify-content:space-between">
+          <div>
+            <h2 style="margin:0">System Tools</h2>
+            <div class="muted">Export / Import • Cache.</div>
+          </div>
+          <a class="chip" href="#tools">Open</a>
+        </div>
+      </div>
+    </div>
+  </section>
 
-  <footer class="footer">Admin · Hospital ERP</footer>
+  <!-- Users -->
+  <section id="users" class="section">
+    <div class="card">
+      <div class="toolbar" style="justify-content:space-between">
+        <h2 style="margin:0">Users</h2>
+        <div class="toolbar">
+          <button class="chip" id="btnAddUser">Add User</button>
+          <button class="chip" id="btnExportUsers">Export Users CSV</button>
+          <label class="chip" for="importUsers" style="cursor:pointer">Import CSV
+            <input id="importUsers" type="file" accept=".csv" style="display:none"/>
+          </label>
+        </div>
+      </div>
 
-  <script src="../scripts/utils.js"></script>
-  <script src="../scripts/scanner.js"></script>
-  <script>
-    // Theme toggle
-    (function(){
-      const root=document.documentElement, btn=document.getElementById('themeToggle');
-      const saved=localStorage.getItem('theme')||'light';
-      root.dataset.theme=saved; btn.textContent=saved==='dark'?'🌙':'🌞';
-      btn.onclick=()=>{ const next=root.dataset.theme==='dark'?'light':'dark';
-        root.dataset.theme=next; localStorage.setItem('theme',next);
-        btn.textContent=next==='dark'?'🌙':'🌞';
+      <div class="grid grid-2" style="margin-top:10px">
+        <div>
+          <label class="muted">Name</label>
+          <input id="uName" placeholder="e.g., Dr. Vijay Kumar"/>
+        </div>
+        <div class="grid" style="grid-template-columns:1fr 1fr;gap:12px">
+          <div>
+            <label class="muted">Role</label>
+            <select id="uRole">
+              <option>doctor</option>
+              <option>supervisor</option>
+              <option>admin</option>
+            </select>
+          </div>
+          <div>
+            <label class="muted">Phone (optional)</label>
+            <input id="uPhone" placeholder="e.g., 9000000001"/>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-wrap" style="margin-top:12px">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Role</th>
+              <th>Phone</th>
+              <th>User ID</th>
+              <th style="width:260px">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="userRows"></tbody>
+        </table>
+      </div>
+      <div class="mini muted" id="usersHint" style="margin-top:8px">Users are stored in localStorage["users"]</div>
+    </div>
+  </section>
+
+  <!-- Branches -->
+  <section id="branches" class="section">
+    <div class="card">
+      <div class="toolbar" style="justify-content:space-between">
+        <h2 style="margin:0">Branches</h2>
+        <div class="toolbar">
+          <button class="chip" id="btnAddBranch">Add Branch</button>
+          <button class="chip" id="btnExportBranches">Export Branches CSV</button>
+          <label class="chip" for="importBranches" style="cursor:pointer">Import CSV
+            <input id="importBranches" type="file" accept=".csv" style="display:none"/>
+          </label>
+        </div>
+      </div>
+
+      <div class="grid grid-2" style="margin-top:10px">
+        <div>
+          <label class="muted">Branch Name</label>
+          <input id="bName" placeholder="e.g., Warangal Main"/>
+        </div>
+        <div>
+          <label class="muted">Address (optional)</label>
+          <input id="bAddr" placeholder="e.g., Hanamkonda, TG"/>
+        </div>
+      </div>
+
+      <div class="table-wrap" style="margin-top:12px">
+        <table>
+          <thead>
+            <tr>
+              <th>Branch</th>
+              <th>Address</th>
+              <th>Branch ID</th>
+              <th style="width:220px">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="branchRows"></tbody>
+        </table>
+      </div>
+      <div class="mini muted" id="branchesHint" style="margin-top:8px">Branches are stored in localStorage["branches"]</div>
+    </div>
+  </section>
+
+  <!-- Tools -->
+  <section id="tools" class="section">
+    <div class="card">
+      <h2 style="margin:0 0 10px 0">System Tools</h2>
+      <div class="toolbar">
+        <button class="chip" id="btnSeedDemo">Seed Demo Data</button>
+        <button class="chip" id="btnNuke">Factory Reset (localStorage)</button>
+      </div>
+      <div class="muted mini" style="margin-top:8px">
+        Tip: Use Export before Factory Reset to keep your Users & Branches.
+      </div>
+    </div>
+  </section>
+
+  <script type="module">
+    /* ===== Theme ===== */
+    const tt=document.getElementById('themeToggle');
+    if(localStorage.theme){document.documentElement.dataset.theme=localStorage.theme;tt.textContent=localStorage.theme==='light'?'🌞':'🌙'}
+    tt.onclick=()=>{const cur=document.documentElement.dataset.theme||'light';const nxt=cur==='light'?'dark':'light';document.documentElement.dataset.theme=nxt;localStorage.theme=nxt;tt.textContent=nxt==='light'?'🌞':'🌙'}
+
+    /* ===== Soft role badge only (no redirects) ===== */
+    const ses = JSON.parse(localStorage.getItem('session')||'{}');
+    document.getElementById('whoami').textContent = `Role: ${ses.role || 'Admin'}`;
+
+    /* ===== Helpers ===== */
+    const $=id=>document.getElementById(id);
+    const BK="bookings", USERS="users", BR="branches";
+    const nowISO=()=>new Date().toISOString();
+    const ISO=d=>new Date(d).toISOString().slice(0,10);
+    const today=ISO(new Date());
+    const monthStart=ISO(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+    const inRange=(iso,a,b)=> iso>=a && iso<=b;
+    const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+
+    const bookings=()=>JSON.parse(localStorage.getItem(BK)||'[]');
+    const getUsers=()=>JSON.parse(localStorage.getItem(USERS)||'[]');
+    const saveUsers=(arr)=>localStorage.setItem(USERS, JSON.stringify(arr));
+    const getBranches=()=>JSON.parse(localStorage.getItem(BR)||'[]');
+    const saveBranches=(arr)=>localStorage.setItem(BR, JSON.stringify(arr));
+
+    const csvEsc=v=>{const s=String(v??"");return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s};
+
+    /* ===== KPIs ===== */
+    function renderKPIs(){
+      const all=bookings();
+      const t=all.filter(b=>b.date===today).length;
+      const m=all.filter(b=>inRange(b.date, monthStart, today)).length;
+      $('kToday').textContent=t; $('lblToday').textContent=today;
+      $('kMonth').textContent=m; $('lblMonth').textContent=`${monthStart} → ${today}`;
+      $('kUsers').textContent=getUsers().length;
+      $('kBranches').textContent=getBranches().length;
+    }
+
+    /* ===== Users ===== */
+    function addUser(){
+      const name=$('uName').value.trim();
+      const role=$('uRole').value;
+      const phone=$('uPhone').value.trim();
+      if(!name){ alert('Enter name'); return; }
+      const arr=getUsers();
+      arr.push({ id:crypto.randomUUID(), name, role, phone, createdAt: nowISO() });
+      saveUsers(arr);
+      $('uName').value=''; $('uPhone').value='';
+      renderUsers();
+      renderKPIs();
+    }
+    function delUser(id){
+      const arr=getUsers().filter(u=>u.id!==id);
+      saveUsers(arr); renderUsers(); renderKPIs();
+    }
+    function editUser(id){
+      const arr=getUsers(); const i=arr.findIndex(u=>u.id===id); if(i<0) return;
+      const name=prompt('Name', arr[i].name)||arr[i].name;
+      const role=prompt('Role (doctor/supervisor/admin)', arr[i].role)||arr[i].role;
+      const phone=prompt('Phone', arr[i].phone||'')||arr[i].phone||'';
+      arr[i]={...arr[i], name, role, phone}; saveUsers(arr); renderUsers();
+    }
+    function renderUsers(){
+      const tb=$('userRows'); tb.innerHTML='';
+      const arr=getUsers();
+      if(!arr.length){ tb.innerHTML=`<tr><td colspan="5" class="muted">No users yet.</td></tr>`; return; }
+      for(const u of arr){
+        const tr=document.createElement('tr');
+        tr.innerHTML=`
+          <td>${esc(u.name)}</td>
+          <td>${esc(u.role)}</td>
+          <td>${esc(u.phone||'')}</td>
+          <td class="mini">${u.id}</td>
+          <td>
+            <div class="toolbar">
+              <button class="chip uact" data-a="edit" data-id="${u.id}">Edit</button>
+              <button class="chip uact" data-a="delete" data-id="${u.id}">Delete</button>
+            </div>
+          </td>`;
+        tb.appendChild(tr);
+      }
+      tb.querySelectorAll('.uact').forEach(b=>{
+        b.onclick=()=>{ const id=b.dataset.id, a=b.dataset.a; if(a==='edit') editUser(id); else if(a==='delete') delUser(id); };
+      });
+    }
+
+    /* Export / Import Users */
+    $('btnExportUsers').onclick=()=>{
+      const arr=getUsers();
+      const head=['id','name','role','phone','createdAt'];
+      const rows=arr.map(u=>[u.id,csvEsc(u.name),u.role,u.phone||'',u.createdAt]);
+      const text=[head.join(','),...rows.map(r=>r.join(','))].join('\n');
+      const blob=new Blob([text],{type:'text/csv;charset=utf-8'});
+      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`users_${Date.now()}.csv`; a.click(); URL.revokeObjectURL(a.href);
+    };
+    $('importUsers').addEventListener('change', e=>{
+      const f=e.target.files?.[0]; if(!f) return; const r=new FileReader();
+      r.onload=()=>{ try{
+        const lines=String(r.result||'').replace(/\r/g,'').split('\n').filter(Boolean);
+        const [hdr,...body]=lines; const H=hdr.split(',').map(h=>h.trim().toLowerCase());
+        const idx=Object.fromEntries(H.map((h,i)=>[h,i]));
+        const arr=getUsers();
+        for(const line of body){
+          const cols=line.match(/(?:^|,)(?:"([^"]*(?:""[^"]*)*)"|([^",]*))/g).map(s=>s.replace(/^,?/,'')); // simple csv split
+          const item={
+            id:(cols[idx.id]||crypto.randomUUID()).replace(/^"|"$/g,''),
+            name:(cols[idx.name]||'').replace(/^"|"$/g,''),
+            role:(cols[idx.role]||'doctor').replace(/^"|"$/g,''),
+            phone:(cols[idx.phone]||'').replace(/^"|"$/g,''),
+            createdAt:(cols[idx.createdat]||nowISO()).replace(/^"|"$/g,'')
+          };
+          if(!arr.some(u=>u.id===item.id)) arr.push(item);
+        }
+        saveUsers(arr); renderUsers(); renderKPIs(); alert('Users imported.');
+      }catch(err){ alert('Import failed'); }
+      e.target.value='';
       };
-    })();
+      r.readAsText(f);
+    });
 
-    // Clear cache (preserve theme)
-    document.getElementById('btnClear').onclick = async ()=>{
-      try{ if('caches' in window){ const ks=await caches.keys(); await Promise.all(ks.map(k=>caches.delete(k))); } }catch{}
-      const keepTheme = localStorage.getItem('theme');
-      localStorage.clear(); if(keepTheme) localStorage.setItem('theme', keepTheme);
+    /* ===== Branches ===== */
+    function addBranch(){
+      const name=$('bName').value.trim();
+      const addr=$('bAddr').value.trim();
+      if(!name){ alert('Enter branch name'); return; }
+      const arr=getBranches();
+      arr.push({ id:crypto.randomUUID(), name, addr, createdAt: nowISO() });
+      saveBranches(arr);
+      $('bName').value=''; $('bAddr').value='';
+      renderBranches(); renderKPIs();
+    }
+    function delBranch(id){
+      const arr=getBranches().filter(b=>b.id!==id);
+      saveBranches(arr); renderBranches(); renderKPIs();
+    }
+    function editBranch(id){
+      const arr=getBranches(); const i=arr.findIndex(b=>b.id===id); if(i<0) return;
+      const name=prompt('Branch Name', arr[i].name)||arr[i].name;
+      const addr=prompt('Address', arr[i].addr||'')||arr[i].addr||'';
+      arr[i]={...arr[i], name, addr}; saveBranches(arr); renderBranches();
+    }
+    function renderBranches(){
+      const tb=$('branchRows'); tb.innerHTML='';
+      const arr=getBranches();
+      if(!arr.length){ tb.innerHTML=`<tr><td colspan="4" class="muted">No branches yet.</td></tr>`; return; }
+      for(const b of arr){
+        const tr=document.createElement('tr');
+        tr.innerHTML=`
+          <td>${esc(b.name)}</td>
+          <td>${esc(b.addr||'')}</td>
+          <td class="mini">${b.id}</td>
+          <td>
+            <div class="toolbar">
+              <button class="chip bact" data-a="edit" data-id="${b.id}">Edit</button>
+              <button class="chip bact" data-a="delete" data-id="${b.id}">Delete</button>
+            </div>
+          </td>`;
+        tb.appendChild(tr);
+      }
+      tb.querySelectorAll('.bact').forEach(b=>{
+        b.onclick=()=>{ const id=b.dataset.id, a=b.dataset.a; if(a==='edit') editBranch(id); else if(a==='delete') delBranch(id); };
+      });
+    }
+
+    /* Export / Import Branches */
+    $('btnExportBranches').onclick=()=>{
+      const arr=getBranches();
+      const head=['id','name','addr','createdAt'];
+      const rows=arr.map(b=>[b.id,csvEsc(b.name),csvEsc(b.addr||''),b.createdAt]);
+      const text=[head.join(','),...rows.map(r=>r.join(','))].join('\n');
+      const blob=new Blob([text],{type:'text/csv;charset=utf-8'});
+      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`branches_${Date.now()}.csv`; a.click(); URL.revokeObjectURL(a.href);
+    };
+    $('importBranches').addEventListener('change', e=>{
+      const f=e.target.files?.[0]; if(!f) return; const r=new FileReader();
+      r.onload=()=>{ try{
+        const lines=String(r.result||'').replace(/\r/g,'').split('\n').filter(Boolean);
+        const [hdr,...body]=lines; const H=hdr.split(',').map(h=>h.trim().toLowerCase());
+        const idx=Object.fromEntries(H.map((h,i)=>[h,i]));
+        const arr=getBranches();
+        for(const line of body){
+          const cols=line.match(/(?:^|,)(?:"([^"]*(?:""[^"]*)*)"|([^",]*))/g).map(s=>s.replace(/^,?/,'')); 
+          const item={
+            id:(cols[idx.id]||crypto.randomUUID()).replace(/^"|"$/g,''),
+            name:(cols[idx.name]||'').replace(/^"|"$/g,''),
+            addr:(cols[idx.addr]||'').replace(/^"|"$/g,''),
+            createdAt:(cols[idx.createdat]||nowISO()).replace(/^"|"$/g,'')
+          };
+          if(!arr.some(b=>b.id===item.id)) arr.push(item);
+        }
+        saveBranches(arr); renderBranches(); renderKPIs(); alert('Branches imported.');
+      }catch(err){ alert('Import failed'); }
+      e.target.value='';
+      };
+      r.readAsText(f);
+    });
+
+    /* ===== Tools ===== */
+    $('btnAddUser').onclick=addUser;
+    $('btnAddBranch').onclick=addBranch;
+
+    $('btnSeedDemo').onclick=()=>{
+      // Only seed if empty
+      if(getUsers().length===0){
+        saveUsers([
+          {id:crypto.randomUUID(), name:'Dr. Vijay Kumar', role:'doctor', phone:'9000000001', createdAt:nowISO()},
+          {id:crypto.randomUUID(), name:'Suma (Supervisor)', role:'supervisor', phone:'9000000002', createdAt:nowISO()},
+          {id:crypto.randomUUID(), name:'Admin', role:'admin', phone:'9000000009', createdAt:nowISO()},
+        ]);
+      }
+      if(getBranches().length===0){
+        saveBranches([
+          {id:crypto.randomUUID(), name:'Warangal Main', addr:'Hanamkonda, TG', createdAt:nowISO()},
+          {id:crypto.randomUUID(), name:'Kazipet Unit', addr:'Kazipet, TG', createdAt:nowISO()},
+        ]);
+      }
+      if(!localStorage.getItem(BK)){
+        const d=today;
+        localStorage.setItem(BK, JSON.stringify([
+          {id:crypto.randomUUID(), token:1, date:d, slot:"09:00 AM", name:"Vijay Kumar", mobile:"9000000001", patientId:"PID-VIJ0001", reason:"Fever", status:"Pending"},
+          {id:crypto.randomUUID(), token:2, date:d, slot:"09:15 AM", name:"Suma R", mobile:"9000000002", patientId:"PID-SUM0002", reason:"BP check", status:"Pending"},
+          {id:crypto.randomUUID(), token:3, date:d, slot:"05:15 PM", name:"Rahul", mobile:"9000000003", patientId:"PID-RAH0003", reason:"Follow-up", status:"Done"}
+        ]));
+      }
+      renderUsers(); renderBranches(); renderKPIs(); alert('Demo data seeded.');
+    };
+
+    $('btnNuke').onclick=()=>{
+      if(confirm('Factory reset? This clears localStorage except theme.')) {
+        const theme=localStorage.getItem('theme');
+        localStorage.clear();
+        if(theme) localStorage.setItem('theme', theme);
+        location.reload();
+      }
+    };
+
+    $('clearCacheBtn').onclick=async()=>{
+      localStorage.clear();
+      if('caches' in window){ const ks=await caches.keys(); await Promise.all(ks.map(k=>caches.delete(k))) }
       location.reload();
     };
 
-    // ===== Scan to Upload Stock =====
-    const scanUI = {
-      box: document.getElementById('scanVideo'),
-      status: document.getElementById('scanStatus'),
-      name: document.getElementById('iName'),
-      barcode: document.getElementById('iBarcode'),
-      batch: document.getElementById('iBatch'),
-      expiry: document.getElementById('iExpiry'),
-      mrp: document.getElementById('iMRP'),
-      gst: document.getElementById('iGST'),
-      qty: document.getElementById('iQty'),
-    };
-    let stopScan = null;
-
-    document.getElementById('scanStart').onclick = async ()=>{
-      try{
-        if (stopScan) stopScan();
-        stopScan = await startScanner({
-          containerId: 'scanVideo',
-          onDetected: (code)=>{
-            scanUI.status.textContent = 'Scanned: ' + code;
-            scanUI.barcode.value = String(code).trim();
-          },
-          onError: (e)=> { scanUI.status.textContent = 'Scanner error: ' + e.message; }
-        });
-        scanUI.status.textContent = 'Scanner running…';
-      }catch(e){
-        scanUI.status.textContent = 'Start failed: ' + e.message;
-      }
-    };
-    document.getElementById('scanStop').onclick = ()=>{ try{ stopScan && stopScan(); }catch{} stopScan=null; scanUI.status.textContent='Stopped'; };
-
-    document.getElementById('btnSaveStock').onclick = ()=>{
-      const row = {
-        name: scanUI.name.value.trim(),
-        barcode: scanUI.barcode.value.trim(),
-        code: scanUI.barcode.value.trim(),
-        batch: scanUI.batch.value.trim(),
-        expiry: scanUI.expiry.value.trim(),
-        mrp: Number(scanUI.mrp.value || 0),
-        gst: Number(scanUI.gst.value || 0),
-        qty: Number(scanUI.qty.value || 0),
-      };
-      if(!row.barcode){ alert('Barcode required'); return; }
-      const inv = ERP.load('inventory', []);
-      ERP.applyPurchaseRows(inv, [row]);
-      scanUI.status.textContent = 'Saved ✓  (Inventory rows: ' + ERP.load('inventory',[]).length + ')';
-      scanUI.qty.value = '';
-    };
-
-    // ===== CSV Import / Export =====
-    document.getElementById('btnImportCSV').onclick = async ()=>{
-      const f = document.getElementById('invCSVFile').files?.[0];
-      if(!f) return alert('Choose a CSV file.');
-      const text = await f.text();
-      const count = await ERP.mergeInventoryCSVText(text);
-      document.getElementById('importStatus').textContent = `Merged ${count} rows ✓`;
-    };
-    document.getElementById('btnExportInv').onclick      = ()=> ERP.downloadCSV('inventory.csv', ERP.load('inventory', []));
-    document.getElementById('btnExportPatients').onclick = ()=> ERP.downloadCSV('patients.csv',  ERP.load('patients',  []));
-    document.getElementById('btnExportInvoices').onclick = ()=> ERP.downloadCSV('invoices.csv',  ERP.load('invoices',  []));
-    document.getElementById('btnExportInvItems').onclick = ()=> ERP.downloadCSV('invoice_items.csv', ERP.load('invoice_items', []));
-
-    // ===== Backup / Restore =====
-    document.getElementById('btnBackup').onclick = ()=>{
-      const dump = {
-        inventory: ERP.load('inventory', []),
-        patients: ERP.load('patients', []),
-        invoices: ERP.load('invoices', []),
-        invoice_items: ERP.load('invoice_items', []),
-        staff: ERP.load('staff', []),
-      };
-      const blob = new Blob([JSON.stringify(dump,null,2)], {type:'application/json'});
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'erp-backup-' + ERP.todayISO() + '.json';
-      a.click(); URL.revokeObjectURL(a.href);
-      document.getElementById('backupMsg').textContent = 'Backup downloaded ✓';
-    };
-
-    document.getElementById('btnRestore').onclick = async ()=>{
-      const f = document.getElementById('restoreFile').files?.[0];
-      if(!f) return alert('Choose a JSON backup file.');
-      const text = await f.text();
-      try{
-        const data = JSON.parse(text);
-        if (data.inventory) ERP.save('inventory', data.inventory);
-        if (data.patients) ERP.save('patients', data.patients);
-        if (data.invoices) ERP.save('invoices', data.invoices);
-        if (data.invoice_items) ERP.save('invoice_items', data.invoice_items);
-        if (data.staff) ERP.save('staff', data.staff);
-        document.getElementById('backupMsg').textContent = 'Restore complete ✓  (reload recommended)';
-      } catch(e){
-        document.getElementById('backupMsg').textContent = 'Restore failed: ' + e.message;
-      }
-    };
+    /* ===== Init ===== */
+    function init(){
+      renderKPIs();
+      renderUsers();
+      renderBranches();
+      if('serviceWorker' in navigator){ navigator.serviceWorker.register('service-worker.js').catch(()=>{}) }
+    }
+    init();
   </script>
 </body>
 </html>
