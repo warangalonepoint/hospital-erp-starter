@@ -6,7 +6,7 @@
   <title>Supervisor</title>
   <link rel="manifest" href="manifest.webmanifest"/>
   <link rel="icon" href="assets/logo.png"/>
-  <link rel="stylesheet" href="styles.css?v=30"/>
+  <link rel="stylesheet" href="styles.css?v=31"/>
   <style>
     .section{margin:12px}
     .tint{border-radius:16px;padding:16px;box-shadow:var(--shadow);border:1px solid rgba(0,0,0,.06)}
@@ -15,74 +15,329 @@
     .tint-peach{background: color-mix(in srgb, #fb923c 14%, var(--card-bg))}
     .kpi-grid{display:grid;gap:14px;grid-template-columns:repeat(3,1fr)}
     @media (max-width:760px){.kpi-grid{grid-template-columns:1fr}}
+    .kpi h4{font-size:14px;opacity:.85;margin-bottom:6px}
     .kpi .num{font-size:32px;font-weight:800}
     .card{border-radius:16px;padding:16px;box-shadow:var(--shadow);border:1px solid rgba(0,0,0,.06)}
     .grid{display:grid;gap:12px}
     .grid-3{grid-template-columns:repeat(3,1fr)}
     @media (max-width:980px){.grid-3{grid-template-columns:1fr}}
+    .muted{color:var(--muted);font-size:13px}
     .chip{height:40px;padding:0 14px;border-radius:999px;background:var(--card-bg);border:1px solid rgba(0,0,0,.06)}
-    .muted{color:var(--muted)}
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .table-wrap{overflow:auto;border-radius:16px;border:1px solid rgba(0,0,0,.06)}
+    table{width:100%;min-width:1100px;border-collapse:separate;border-spacing:0}
+    thead th{position:sticky;top:0;background:var(--card-bg);z-index:1}
+    th,td{padding:10px 12px;border-bottom:1px solid rgba(0,0,0,.06);text-align:left;font-size:13px}
+    tr:hover td{background:color-mix(in srgb, var(--card-bg) 92%, #2563eb 8%)}
+    .pill{font-size:12px;padding:4px 8px;border-radius:999px;border:1px solid rgba(0,0,0,.1)}
+    .pill.pending{background:color-mix(in srgb, #f59e0b 16%, var(--card-bg))}
+    .pill.done{background:color-mix(in srgb, #22c55e 16%, var(--card-bg))}
+    .mini{font-size:12px;opacity:.8}
   </style>
 </head>
 <body>
+  <!-- Banner -->
   <header class="banner">
     <button id="themeToggle" class="chip floating-toggle" aria-label="Theme">🌙</button>
   </header>
 
+  <!-- Global actions -->
   <nav class="fixed-actions">
-    <a class="chip" href="login.html">← Roles</a>
+    <a class="chip" href="dashboard.html">Doctor Dashboard</a>
+    <a class="chip" href="booking-status.html">Doctor: Status</a>
     <a class="chip" href="bookings.html">Bookings</a>
-    <a class="chip" href="booking-status.html">Doctor: Booking Status</a>
     <a class="chip" href="pharmacy.html">Pharmacy</a>
+    <a class="chip" href="admin.html">Admin</a>
+    <a class="chip" href="login.html">Role Tabs</a>
     <span id="whoami" class="chip" style="pointer-events:none">Role: Guest</span>
-    <button id="logoutBtn" class="chip">Logout</button>
     <button id="clearCacheBtn" class="chip">Clear Cache</button>
   </nav>
 
+  <!-- KPIs -->
   <section class="section">
     <div class="kpi-grid">
-      <div class="tint tint-blue"><h4>Today</h4><div class="num" id="kToday">0</div><div class="muted" id="lblToday"></div></div>
-      <div class="tint tint-mint"><h4>This Week</h4><div class="num" id="kWeek">0</div><div class="muted" id="lblWeek"></div></div>
-      <div class="tint tint-peach"><h4>This Month</h4><div class="num" id="kMonth">0</div><div class="muted" id="lblMonth"></div></div>
+      <div class="kpi tint tint-blue">
+        <h4>Today</h4>
+        <div class="num" id="kToday">0</div>
+        <div class="muted" id="lblToday"></div>
+      </div>
+      <div class="kpi tint tint-mint">
+        <h4>This Week</h4>
+        <div class="num" id="kWeek">0</div>
+        <div class="muted" id="lblWeek"></div>
+      </div>
+      <div class="kpi tint tint-peach">
+        <h4>This Month</h4>
+        <div class="num" id="kMonth">0</div>
+        <div class="muted" id="lblMonth"></div>
+      </div>
     </div>
   </section>
 
+  <!-- Quick shortcuts -->
   <section class="section">
     <div class="grid grid-3">
-      <div class="card"><h2 style="margin:0 0 6px 0">Create / Manage Bookings</h2><div class="muted">Book OPD slots, generate Patient IDs.</div><div style="margin-top:10px"><a class="chip" href="bookings.html">Open</a></div></div>
-      <div class="card"><h2 style="margin:0 0 6px 0">Doctor View</h2><div class="muted">Read-only booking status & notes.</div><div style="margin-top:10px"><a class="chip" href="booking-status.html">Open</a></div></div>
-      <div class="card"><h2 style="margin:0 0 6px 0">Pharmacy</h2><div class="muted">POS, stock, expiry, reports.</div><div style="margin-top:10px"><a class="chip" href="pharmacy.html">Open</a></div></div>
+      <div class="card">
+        <div class="toolbar" style="justify-content:space-between">
+          <div>
+            <h2 style="margin:0">Create / Manage Bookings</h2>
+            <div class="muted">OPD slots, auto Patient ID, Referred By.</div>
+          </div>
+          <a class="chip" href="bookings.html">Open</a>
+        </div>
+      </div>
+      <div class="card">
+        <div class="toolbar" style="justify-content:space-between">
+          <div>
+            <h2 style="margin:0">Doctor View</h2>
+            <div class="muted">Read-only list; doctor edits patient details.</div>
+          </div>
+          <a class="chip" href="booking-status.html">Open</a>
+        </div>
+      </div>
+      <div class="card">
+        <div class="toolbar" style="justify-content:space-between">
+          <div>
+            <h2 style="margin:0">Pharmacy</h2>
+            <div class="muted">POS, stock, expiry, reports.</div>
+          </div>
+          <a class="chip" href="pharmacy.html">Open</a>
+        </div>
+      </div>
     </div>
   </section>
 
+  <!-- Today's schedule -->
+  <section class="section">
+    <div class="card">
+      <div class="toolbar" style="justify-content:space-between">
+        <h2 style="margin:0">Today’s Appointments</h2>
+        <div class="toolbar">
+          <input id="q" class="chip" placeholder="Search name, mobile, PID, reason, referred by…"/>
+          <select id="status" class="chip">
+            <option value="">All</option>
+            <option value="Pending">Pending</option>
+            <option value="Done">Done</option>
+          </select>
+          <button id="btnApply" class="chip">Apply</button>
+          <button id="btnReset" class="chip">Reset</button>
+          <a class="chip" href="bookings.html">Go to Bookings →</a>
+        </div>
+      </div>
+      <div class="table-wrap" style="margin-top:10px">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:72px">Token</th>
+              <th>Time</th>
+              <th>Patient</th>
+              <th>Patient ID</th>
+              <th>Mobile</th>
+              <th>Reason</th>
+              <th>Referred By</th>
+              <th>Status</th>
+              <th style="width:280px">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+      <div class="muted mini" id="countLbl" style="margin-top:8px"></div>
+    </div>
+  </section>
+
+  <!-- Mini trend -->
+  <section class="section">
+    <div class="card">
+      <div class="toolbar" style="justify-content:space-between">
+        <h2 style="margin:0">Bookings (Last 7 Days)</h2>
+        <div class="muted">Snapshot to monitor volume spikes.</div>
+      </div>
+      <div class="table-wrap" style="margin-top:8px">
+        <table>
+          <thead><tr id="trendHead"></tr></thead>
+          <tbody><tr id="trendRow"></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <iframe id="printFrame" style="display:none"></iframe>
+
   <script type="module">
-    // Theme + badge
+    /* Theme */
     const tt=document.getElementById('themeToggle');
     if(localStorage.theme){document.documentElement.dataset.theme=localStorage.theme;tt.textContent=localStorage.theme==='light'?'🌞':'🌙'}
     tt.onclick=()=>{const cur=document.documentElement.dataset.theme||'light';const nxt=cur==='light'?'dark':'light';document.documentElement.dataset.theme=nxt;localStorage.theme=nxt;tt.textContent=nxt==='light'?'🌞':'🌙'}
-    const who=document.getElementById('whoami'); const ses=JSON.parse(localStorage.getItem('session')||'{}');
-    if(who) who.textContent = ses.role ? `Role: ${ses.role}` : 'Role: Guest';
 
-    // Actions
-    logoutBtn.onclick=()=>{localStorage.removeItem('session');location.href='login.html'}
+    /* Soft badge only */
+    (function(){ const ses=JSON.parse(localStorage.getItem('session')||'{}'); const who=document.getElementById('whoami'); if(who) who.textContent=`Role: ${ses.role||'Guest'}`; })();
+
+    /* Global actions */
     clearCacheBtn.onclick=async()=>{localStorage.clear();if('caches'in window){const ks=await caches.keys();await Promise.all(ks.map(k=>caches.delete(k)))};location.reload()}
 
-    // KPIs from bookings
-    const bookings=()=>JSON.parse(localStorage.getItem('bookings')||'[]');
+    /* Data helpers */
+    const LS="bookings";
+    const bookings=()=>JSON.parse(localStorage.getItem(LS)||'[]');
+    const save=(arr)=>localStorage.setItem(LS, JSON.stringify(arr));
+
+    const $=id=>document.getElementById(id);
     const ISO=d=>new Date(d).toISOString().slice(0,10);
     const today=ISO(new Date());
     const weekStart=(()=>{const d=new Date();const n=(d.getDay()+6)%7;d.setDate(d.getDate()-n);d.setHours(0,0,0,0);return ISO(d)})();
     const monthStart=ISO(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
     const inRange=(iso,a,b)=> iso>=a && iso<=b;
+
+    const phoneLink = n => `tel:${n}`;
+    const esc = s => String(s||'').replace(/[&<>"']/g,c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+
+    /* KPIs */
     function renderKPIs(){
       const all=bookings();
-      kToday.textContent=all.filter(b=>b.date===today).length; lblToday.textContent=today;
-      kWeek.textContent=all.filter(b=>inRange(b.date, weekStart, today)).length; lblWeek.textContent=`${weekStart} → ${today}`;
-      kMonth.textContent=all.filter(b=>inRange(b.date, monthStart, today)).length; lblMonth.textContent=`${monthStart} → ${today}`;
+      const t=all.filter(b=>b.date===today).length;
+      const w=all.filter(b=>inRange(b.date, weekStart, today)).length;
+      const m=all.filter(b=>inRange(b.date, monthStart, today)).length;
+      kToday.textContent=t; kWeek.textContent=w; kMonth.textContent=m;
+      lblToday.textContent=today;
+      lblWeek.textContent=`${weekStart} → ${today}`;
+      lblMonth.textContent=`${monthStart} → ${today}`;
     }
-    renderKPIs();
 
-    if('serviceWorker' in navigator){ navigator.serviceWorker.register('service-worker.js').catch(()=>{}) }
+    /* Today’s table */
+    const state={q:"",status:""};
+    function todays(){
+      let list = bookings().filter(b=>b.date===today);
+      const q=(state.q||"").trim().toLowerCase();
+      if(q){
+        list=list.filter(r=>
+          (r.name||"").toLowerCase().includes(q) ||
+          (r.mobile||"").includes(q) ||
+          (r.patientId||"").toLowerCase().includes(q) ||
+          (r.reason||"").toLowerCase().includes(q) ||
+          (r.referredBy||"").toLowerCase().includes(q) ||
+          (r.slot||"").toLowerCase().includes(q)
+        );
+      }
+      if(state.status){ list=list.filter(r=>r.status===state.status); }
+      list.sort((a,b)=> a.slot.localeCompare(b.slot) || (a.token||0)-(b.token||0));
+      return list;
+    }
+
+    function renderToday(){
+      const tbody=$('rows'); tbody.innerHTML='';
+      const list=todays();
+      if(!list.length){
+        const tr=document.createElement('tr'); const td=document.createElement('td'); td.colSpan=9; td.className='muted'; td.textContent='No bookings for today.'; tr.appendChild(td); tbody.appendChild(tr);
+      }else{
+        for(const r of list){
+          const tr=document.createElement('tr');
+          tr.innerHTML=`
+            <td><strong>#${r.token||"-"}</strong></td>
+            <td>${r.slot}</td>
+            <td>${esc(r.name||"")}</td>
+            <td>${r.patientId||""}</td>
+            <td><a href="${phoneLink(r.mobile)}">${r.mobile}</a></td>
+            <td>${esc(r.reason||"")}</td>
+            <td>${esc(r.referredBy||"—")}</td>
+            <td><span class="pill ${r.status==='Done'?'done':'pending'}">${r.status==='Done'?'✔ Done':'⏳ Pending'}</span></td>
+            <td>
+              <div class="toolbar">
+                <a class="chip" href="bookings.html">Edit</a>
+                <button class="chip act" data-act="ticket" data-id="${r.id}">Ticket</button>
+                <button class="chip act" data-act="toggle" data-id="${r.id}">${r.status==='Done'?'Mark Pending':'Mark Done'}</button>
+              </div>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        }
+      }
+      $('countLbl').textContent = `${list.length} appointment${list.length===1?'':'s'} today • ${today}`;
+    }
+
+    /* Row actions */
+    document.getElementById('rows').addEventListener('click', e=>{
+      const btn=e.target.closest('.act'); if(!btn) return;
+      const id=btn.getAttribute('data-id'); const act=btn.getAttribute('data-act');
+      const all=bookings(); const i=all.findIndex(x=>x.id===id); if(i<0) return;
+
+      if(act==='toggle'){ all[i].status = all[i].status==='Done'?'Pending':'Done'; save(all); renderKPIs(); renderToday(); }
+      if(act==='ticket'){ printTicket(all[i]); }
+    });
+
+    /* Print ticket */
+    function printTicket(r){
+      const html=`
+        <html><head><meta charset="utf-8"><title>Ticket #${r.token}</title>
+        <style>
+          body{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; padding:16px}
+          .box{border:1px dashed #111; padding:12px; max-width: 320px}
+          h2{margin:0 0 4px 0}
+          .muted{color:#333;font-size:12px}
+          .row{display:flex; justify-content:space-between}
+          .big{font-size:24px; font-weight:700}
+        </style></head>
+        <body onload="window.print(); setTimeout(()=>window.close(), 300);">
+          <div class="box">
+            <h2>Warangal OneStop Clinic</h2>
+            <div class="muted">OPD Token Ticket</div>
+            <hr/>
+            <div class="row"><div>Token</div><div class="big">#${r.token}</div></div>
+            <div class="row"><div>Date</div><div>${r.date}</div></div>
+            <div class="row"><div>Time</div><div>${r.slot}</div></div>
+            <div class="row"><div>Patient</div><div>${esc(r.name)}</div></div>
+            <div class="row"><div>Mobile</div><div>${r.mobile}</div></div>
+            <div class="row"><div>Patient ID</div><div>${r.patientId||""}</div></div>
+            <div class="row"><div>Referred By</div><div>${esc(r.referredBy||"—")}</div></div>
+            <div class="row"><div>Status</div><div>${r.status}</div></div>
+            ${r.reason?`<div class="row"><div>Notes</div><div>${esc(r.reason)}</div></div>`:""}
+            <hr/>
+            <div class="muted">Please arrive 10 minutes early.</div>
+          </div>
+        </body></html>`;
+      const frame=document.getElementById('printFrame').contentWindow||document.getElementById('printFrame');
+      frame.document.open(); frame.document.write(html); frame.document.close();
+    }
+
+    /* Mini trend (last 7 days) */
+    function renderMiniTrend(){
+      const head=document.getElementById('trendHead');
+      const row=document.getElementById('trendRow');
+      head.innerHTML=''; row.innerHTML='';
+      const end=new Date(); const start=new Date(); start.setDate(end.getDate()-6);
+      const counts={};
+      const ISO=d=>new Date(d).toISOString().slice(0,10);
+      for(let d=new Date(start); d<=end; d.setDate(d.getDate()+1)){ counts[ISO(d)]=0; }
+      bookings().forEach(b=>{ if(b.date in counts) counts[b.date]++; });
+      Object.keys(counts).forEach(k=>{
+        const th=document.createElement('th'); th.textContent=k.slice(5); head.appendChild(th);
+        const td=document.createElement('td'); td.textContent=counts[k]; row.appendChild(td);
+      });
+    }
+
+    /* Filters */
+    btnApply.onclick=()=>{ state.q=$('q').value; state.status=$('status').value; renderToday(); };
+    btnReset.onclick=()=>{ $('q').value=''; $('status').value=''; state.q=''; state.status=''; renderToday(); };
+
+    /* Seed demo data once (if empty) */
+    function seedIfEmpty(){
+      const all=bookings(); if(all.length) return;
+      const d=today;
+      const demo=[
+        {id:crypto.randomUUID(), token:1, date:d, slot:"09:00 AM", name:"Vijay Kumar", mobile:"9000000001", patientId:"PID-VIJ0001", reason:"Fever", referredBy:"Dr. Rao", status:"Pending"},
+        {id:crypto.randomUUID(), token:2, date:d, slot:"09:15 AM", name:"Suma R", mobile:"9000000002", patientId:"PID-SUM0002", reason:"BP check", referredBy:"ABC Hospital", status:"Pending"},
+        {id:crypto.randomUUID(), token:3, date:d, slot:"05:15 PM", name:"Rahul", mobile:"9000000003", patientId:"PID-RAH0003", reason:"Follow-up", referredBy:"—", status:"Done"}
+      ];
+      save(demo);
+    }
+
+    function init(){
+      seedIfEmpty();
+      renderKPIs();
+      renderToday();
+      renderMiniTrend();
+      if('serviceWorker' in navigator){ navigator.serviceWorker.register('service-worker.js').catch(()=>{}) }
+    }
+    init();
   </script>
 </body>
 </html>
