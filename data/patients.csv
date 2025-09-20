@@ -1,4 +1,0 @@
-patient_id,barcode_text,name,phone,age,gender,notes
-PID-20250913-0001,PID-20250913-0001,Rahul Verma,9876543210,32,M,Diabetic
-PID-20250913-0002,PID-20250913-0002,Srilatha Devi,9123456780,45,F,Allergy: Penicillin
-PID-20250913-0003,PID-20250913-0003,Imran Khan,9000001111,28,M,—
